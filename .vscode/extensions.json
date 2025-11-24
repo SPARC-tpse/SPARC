@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "Nuxtr.nuxt-vscode-extentions",
+    "DavidAnson.vscode-markdownlint",
+    "shardulm94.trailing-spaces",
+    "Vue.volar",
+    "ms-python.pylint",
+    "yahyabatulu.vscode-markdown-alert",
+    "fill-labs.dependi"
+  ]
+}

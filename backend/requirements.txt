@@ -1,4 +1,8 @@
 uvicorn==0.38.0
 django==5.2.8
+<<<<<<< HEAD
 djangorestframework==3.15.2
 django-cors-headers==4.6.0
+=======
+djangorestframework==3.16.1
+>>>>>>> 7467639aa3ab23dd4065d5f5a591da8f9a812ae5

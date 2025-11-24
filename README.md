@@ -6,7 +6,8 @@ try CI, tesing and release with django, vue, docker, PostgreSQL and uvcorn, pyli
 > 1. This repo is under active development till 15.02.2026
 > 2. All instructions provided where tested on Fedora 43
 
-> [!IMPORTANT] Before you commit!
+> [!IMPORTANT]
+> Before you commit!
 > Run the tests before you commit and check that pylint does not complain about the formating of your code.
 
 > [!TIP]
@@ -18,23 +19,27 @@ try CI, tesing and release with django, vue, docker, PostgreSQL and uvcorn, pyli
 SPARC/
 ├── backend/
 │   ├── Dockerfile
+│   ├── manage.py
 │   ├── requirements.txt
 │   └── sparc/
-│       ├── manage.py
-│       ├── sparc/
-│       └── app/
+│       ├── __init__.py
+│       ├── asgi.py
+│       ├── models.py
+│       ├── settings.py
+│       ├── urls.py
+│       └── wsgi.py
 ├── frontend/
 │   ├── .nuxt/
 │   ├── app/
 │   ├── node_module/
 │   ├── public/
-│   ├── .gitignore
 │   ├── Dockerfile
 │   ├── nuxt.config.ts
 │   ├── package-lock.json
 │   ├── package.json
-│   ├── README.md
 │   └── tsconfig.json
+├── .gitignore
+├── README.md
 └── docker-compose.yml
 ```
 
@@ -85,11 +90,13 @@ sudo dnf install docker-ce
 setup tests:\
 `mkdir tests`
 
+setup django admin(for manageing backend)
+`docker compose exec web python manage.py createsuperuser`
+
 ## run app
 
 ### build and run from source
 
-This
 `docker compose up --build`
 
 ### run release on linux
@@ -105,8 +112,10 @@ This
 
 - nuxt          (v4.2.1)
 - vue           (v3.5.24)
-- uvcorn        (v)
-- django        (v)
+- vue-router  (v4.6.3)
+- uvcorn        (v0.38.0) (gunicorn instead?)
+- django        (v5.2.8)
+- djangorestframework (v3.16.1)
 - PostgreSQL    (v18.0)
 - nginx         (? we probably don't need a reverse proxy because we are not connected to the internet)
 

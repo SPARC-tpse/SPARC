@@ -1,0 +1,51 @@
+name: Docker Build and Push (API)
+
+on:
+  push:
+    # Triggers the workflow when pushing to the main branch OR when a version tag is created
+    branches: [ "main" ]
+    tags: [ 'v*.*.*' ]
+
+env:
+  # Define variables for your image, replacing {username} and {repository}
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }} # e.g., your-username/my-app
+
+jobs:
+  build_and_push_api:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # Permission to checkout the code
+      packages: write # Permission to push images to GHCR
+
+    steps:
+      - name: 1. Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 2. Log in to the Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+
+      - name: 3. Extract metadata (tags and labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # Set tags based on git ref (e.g., branch name or tag name)
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha,format=short
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+
+      - name: 4. Build and Push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: . # Build context is the root of the repository
+          file: ./Dockerfile.django # Specify your Dockerfile path (if not Dockerfile)
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha # Optional: Enable GitHub Actions caching for faster builds
+          cache-to: type=gha,mode=max

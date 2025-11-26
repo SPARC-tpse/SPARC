@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 03b6fcb780231aad779f61993331f2cb18bc1eb7
 services:
   backend:
     build: ./backend

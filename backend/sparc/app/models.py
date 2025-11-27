@@ -15,7 +15,7 @@ class Order(models.Model):
     ]
     
     name = models.CharField(max_length=255)
-    order_id = models
+    order_id = models.IntegerField()
     target_amount = models.IntegerField()
     bill_of_materials = models.FileField(upload_to="bill_of_materials/", null = True, blank = True)
     files = models.FileField(upload_to="files/", null = True, blank = True)
@@ -29,6 +29,29 @@ class Order(models.Model):
     
     def __str__(self):
         return f"{self.order_id} - {self.name}"
+    
+    
+class Disruption(models.Model):
+    
+    name = models.CharField(max_length=255)
+    disruption_id = models.IntegerField()
+    type = models.CharField(max_length=255)
+    ressource = models.CharField(max_length=255)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    
+    def __str__(self):
+        return f"{self.disruption_id} - {self.name}"
+    
+    
+class Ressource(models.Model):
+    
+    name = models.CharField(max_length=255)
+    ressource_id = models.IntegerField()
+    type = models.CharField(max_length=255)
+    
+    def __str__(self):
+        return f"{self.ressource_id} - {self.name}"
     
 
     

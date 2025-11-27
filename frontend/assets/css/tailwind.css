@@ -1,0 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: radial-gradient(circle at 20% 20%, rgba(102, 126, 234, 0.08), transparent 25%),
+      radial-gradient(circle at 80% 0%, rgba(236, 72, 153, 0.08), transparent 25%),
+      #0b1021;
+  }
+  input,
+  select,
+  textarea {
+    @apply rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 text-sm text-white outline-none transition;
+  }
+  input:focus,
+  select:focus,
+  textarea:focus {
+    @apply border-pink-400/60 ring-2 ring-pink-400/20;
+  }
+  .input {
+    @apply rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 text-sm text-white outline-none transition;
+  }
+  .input:focus {
+    @apply border-pink-400/60 ring-2 ring-pink-400/20;
+  }
+}

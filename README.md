@@ -115,11 +115,11 @@ just do this:\
 `sudo docker rm -f <container-name>`
 
 ### run release on linux
-`sudo docker save -o sparc-backend.tar sparc-backend`
-`sudo docker save -o sparc-frontend.tar sparc-backend`
-`sudo docker save -o postgres:18.tar postgres:18`
+`sudo docker save -o <image-name>.tar <image-name>`
 
+`docker load -i <image-name>.tar`
 
+`docker compose up -d`
 
 ## run tests
 

@@ -252,3 +252,4 @@ function badgeTone(kind, value) {
     </main>
   </div>
 </template>
+

@@ -87,6 +87,16 @@ sudo dnf install docker-ce
 ```
 `sudo systemctl enable --now docker`
 
+if you had docker destop installed before but uninstalled you might get this error:
+
+unable to get image 'sparc-frontend': Cannot connect to the Docker daemon at unix:///home/user_name/.docker/desktop/docker.sock. Is the docker daemon running?
+
+just delete this folder: `rm -rf ~/.docker`
+and run `sudo docker compose up --build` again
+
+handy to know:
+`docker ps -a` shows you all the containers you have
+
 setup tests:\
 `mkdir tests`
 
@@ -99,7 +109,17 @@ setup django admin(for manageing backend)
 
 `docker compose up --build`
 
+if you get this error:\
+Error response from daemon: Conflict. The container name "/django-backend" is already in use by container\
+just do this:\
+`sudo docker rm -f <container-name>`
+
 ### run release on linux
+`sudo docker save -o <image-name>.tar <image-name>`
+
+`docker load -i <image-name>.tar`
+
+`docker compose up -d`
 
 ## run tests
 

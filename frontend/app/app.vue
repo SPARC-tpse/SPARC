@@ -1,4 +1,3 @@
-
 <script setup lang="js">
 import '../assets/css/tailwind.css'
 import { ref } from 'vue'
@@ -252,5 +251,22 @@ function badgeTone(kind, value) {
       </section>
     </main>
   </div>
+
+  <button class="btn" @click="changeMessage">
+    Change Text
+  </button>
 </template>
->>>>>>> frontend
+
+<style scoped>
+.hello {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 3rem;
+  padding: 2rem;
+}
+
+.btn {
+  margin-left: 2rem;
+  padding: 0.5rem 1rem;
+  font-size: 1.2rem;
+}
+</style>

@@ -34,6 +34,8 @@ class Disruption(models.Model):
         Resource,
         on_delete=models.CASCADE,
         related_name="disruptions",
+        null = True,
+        blank = True,
     )
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()

@@ -1,3 +1,4 @@
+
 <script setup lang="js">
 import '../assets/css/tailwind.css'
 import { ref } from 'vue'
@@ -252,4 +253,5 @@ function badgeTone(kind, value) {
     </main>
   </div>
 </template>
+
 

@@ -2,7 +2,6 @@
 <script setup lang="js">
 import '../assets/css/tailwind.css'
 import { ref } from 'vue'
-
 const tab = ref('new')
 
 const orders = ref([
@@ -253,5 +252,4 @@ function badgeTone(kind, value) {
     </main>
   </div>
 </template>
-
 

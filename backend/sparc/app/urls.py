@@ -1,8 +1,9 @@
 from django.urls import path
-from .views import OrderListCreateView, OrderDetailView
-
+from .views_api import get_resources, get_disruption_types
 
 urlpatterns = [
-    path('orders/<int:pk>/', OrderDetailView.as_view(), name='order-detail'),
-    path("orders/", OrderListCreateView.as_view(), name="order-list-create"),
+    path("api/resources/", get_resources, name="get_resources"),
+    path("api/disruption-types/", get_disruption_types,
+         name="get_disruption_types"),
+
 ]

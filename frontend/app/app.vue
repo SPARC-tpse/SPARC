@@ -2,6 +2,14 @@
 import '../assets/css/tailwind.css'
 import { ref } from 'vue'
 
+// --- Darkmode Option ---
+const isDarkMode = ref(true)
+
+function toggleDarkMode() {
+  isDarkMode.value = !isDarkMode.value
+}
+// -------------------------------
+
 const tab = ref('new')
 
 const orders = ref([
@@ -100,17 +108,44 @@ function badgeTone(kind, value) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-950 text-slate-100">
-    <header class="flex items-center justify-between border-b border-gray-600 px-6 py-4 bg-gradient-to-r from-indigo-900 via-slate-900 to-pink-900">
-      <div class="font-semibold tracking-[0.12em] uppercase text-white">SPARC MES · Orders</div>
-      <div class="flex gap-2">
-        <button class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-slate-100 hover:border-pink-700" @click="resetForm">
+  <div
+    class="min-h-screen transition-colors duration-300 wrapper"
+    :class="isDarkMode ? 'bg-slate-950 text-slate-100 dark-mode' : 'bg-slate-50 text-slate-900 light-mode'"
+  >
+
+    <header
+      class="flex items-center justify-between border-b px-6 py-4 transition-colors duration-300"
+      :class="isDarkMode
+        ? 'border-gray-600 bg-gradient-to-r from-indigo-900 via-slate-900 to-pink-900'
+        : 'border-slate-200 bg-white text-slate-800 shadow-sm'"
+    >
+      <div class="font-semibold tracking-[0.12em] uppercase" :class="isDarkMode ? 'text-white' : 'text-indigo-900'">
+        SPARC MES · Orders
+      </div>
+
+      <div class="flex gap-2 items-center">
+        <button
+          @click="toggleDarkMode"
+          class="mr-2 rounded-full p-2 hover:bg-opacity-20 hover:bg-gray-500 transition"
+          :title="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+        >
+          <span v-if="isDarkMode">🌙</span>
+          <span v-else>☀️</span>
+        </button>
+
+        <button
+          class="rounded-lg border px-3 py-2 text-sm transition-colors"
+          :class="isDarkMode
+            ? 'border-gray-700 bg-gray-900 text-slate-100 hover:border-pink-700'
+            : 'border-slate-300 bg-white text-slate-700 hover:border-indigo-500 hover:text-indigo-600'"
+          @click="resetForm"
+        >
           Reset
         </button>
         <button
-          class="rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-40"
-          :class="canSubmit ? 'bg-gradient-to-r from-indigo-500 to-pink-500' : 'bg-gray-800'"
-          :disabled="!canSubmit"
+          class="rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-40 transition-all"
+          :class="canSubmit() ? 'bg-gradient-to-r from-indigo-500 to-pink-500 shadow-md' : 'bg-gray-500'"
+          :disabled="!canSubmit()"
           @click="submitOrder"
         >
           Create
@@ -119,17 +154,25 @@ function badgeTone(kind, value) {
     </header>
 
     <main class="max-w-5xl mx-auto p-6 space-y-6">
-      <div class="inline-flex rounded-xl bg-gray-800 p-1 border border-gray-800 shadow-lg shadow-black">
+
+      <div
+        class="inline-flex rounded-xl p-1 border shadow-lg transition-colors"
+        :class="isDarkMode ? 'bg-gray-800 border-gray-800 shadow-black' : 'bg-white border-slate-200 shadow-slate-200'"
+      >
         <button
-          class="px-4 py-2 text-sm font-semibold rounded-lg"
-          :class="tab === 'new' ? 'bg-gradient-to-r from-indigo-500 to-pink-900 text-white shadow' : 'text-slate-200 hover:text-white'"
+          class="px-4 py-2 text-sm font-semibold rounded-lg transition-all"
+          :class="tab === 'new'
+            ? 'bg-gradient-to-r from-indigo-500 to-pink-900 text-white shadow'
+            : (isDarkMode ? 'text-slate-200 hover:text-white' : 'text-slate-500 hover:text-indigo-600')"
           @click="tab = 'new'"
         >
           New
         </button>
         <button
-          class="px-4 py-2 text-sm font-semibold rounded-lg"
-          :class="tab === 'overview' ? 'bg-gradient-to-r from-indigo-500 to-pink-900 text-white shadow' : 'text-slate-200 hover:text-white'"
+          class="px-4 py-2 text-sm font-semibold rounded-lg transition-all"
+          :class="tab === 'overview'
+            ? 'bg-gradient-to-r from-indigo-500 to-pink-900 text-white shadow'
+            : (isDarkMode ? 'text-slate-200 hover:text-white' : 'text-slate-500 hover:text-indigo-600')"
           @click="tab = 'overview'"
         >
           Overview
@@ -138,78 +181,80 @@ function badgeTone(kind, value) {
 
       <section v-if="tab === 'new'" class="space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <label class="flex flex-col gap-1 text-sm text-slate-300">
+          <label class="flex flex-col gap-1 text-sm label-text">
             Name
             <input v-model="newOrder.name" class="input" />
           </label>
-          <label class="flex flex-col gap-1 text-sm text-slate-300">
+          <label class="flex flex-col gap-1 text-sm label-text">
             ID (auto)
-            <input :value="formId" class="input bg-gray-800 text-slate-400" disabled />
+            <input :value="formId" class="input disabled-input" disabled />
           </label>
-          <label class="flex flex-col gap-1 text-sm text-slate-300">
+          <label class="flex flex-col gap-1 text-sm label-text">
             Target amount
             <input v-model="newOrder.target" type="number" class="input" />
           </label>
-          <label class="flex flex-col gap-1 text-sm text-slate-300">
+          <label class="flex flex-col gap-1 text-sm label-text">
             Product name
             <input v-model="newOrder.product" class="input" />
           </label>
-          <label class="flex flex-col gap-1 text-sm text-slate-300">
+          <label class="flex flex-col gap-1 text-sm label-text">
             Start date
-            <input
-              v-model="newOrder.start"
-              type="date"
-              inputmode="numeric"
-              class="input"
-            />
+            <input v-model="newOrder.start" type="date" inputmode="numeric" class="input" />
           </label>
-          <label class="flex flex-col gap-1 text-sm text-slate-300">
+          <label class="flex flex-col gap-1 text-sm label-text">
             End date
-            <input
-              v-model="newOrder.end"
-              type="date"
-              inputmode="numeric"
-              class="input"
-            />
+            <input v-model="newOrder.end" type="date" inputmode="numeric" class="input" />
           </label>
-          <label class="flex flex-col gap-1 text-sm text-slate-300">
+          <label class="flex flex-col gap-1 text-sm label-text">
             Status
-            <select v-model="newOrder.status" class="input bg-slate-900 text-white">
+            <select v-model="newOrder.status" class="input">
               <option>Planned</option>
               <option>Running</option>
               <option>Paused</option>
               <option>Done</option>
             </select>
           </label>
-          <label class="flex flex-col gap-1 text-sm text-slate-300">
+          <label class="flex flex-col gap-1 text-sm label-text">
             Priority
-            <select v-model="newOrder.priority" class="input bg-slate-900 text-white">
+            <select v-model="newOrder.priority" class="input">
               <option>High</option>
               <option>Medium</option>
               <option>Low</option>
             </select>
           </label>
-          <label class="flex flex-col gap-1 text-sm text-slate-300 sm:col-span-2">
+          <label class="flex flex-col gap-1 text-sm label-text sm:col-span-2">
             Comments
             <textarea v-model="newOrder.comments" rows="3" class="input" />
           </label>
         </div>
 
-        <div class="rounded-xl border border-gray-900 bg-slate-900 p-4 space-y-3 shadow-lg shadow-black">
+        <div
+          class="rounded-xl border p-4 space-y-3 shadow-lg transition-colors"
+          :class="isDarkMode
+            ? 'border-gray-900 bg-slate-900 shadow-black'
+            : 'border-slate-200 bg-white shadow-slate-200'"
+        >
           <div class="flex items-center justify-between">
             <h3 class="font-semibold">Process steps</h3>
-            <button class="text-sm text-pink-200 hover:text-pink-100" @click="addStep">+ Add step</button>
+            <button
+              class="text-sm hover:underline"
+              :class="isDarkMode ? 'text-pink-200 hover:text-pink-100' : 'text-pink-600 hover:text-pink-800'"
+              @click="addStep"
+            >+ Add step</button>
           </div>
           <div class="space-y-2">
-            <div class="grid grid-cols-[30px,1fr,1fr,1fr] gap-2 text-xs text-slate-400">
+            <div class="grid grid-cols-[30px,1fr,1fr,1fr] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
               <span>#</span><span>Worker</span><span>Resource</span><span>Notes</span>
             </div>
             <div
               v-for="(step, i) in steps"
               :key="i"
-              class="grid grid-cols-[30px,1fr,1fr,1fr] gap-2 items-center rounded-lg border border-gray-700 bg-gray-700 p-2"
+              class="grid grid-cols-[30px,1fr,1fr,1fr] gap-2 items-center rounded-lg border p-2 transition-colors"
+              :class="isDarkMode
+                ? 'border-gray-700 bg-gray-700'
+                : 'border-slate-200 bg-slate-50'"
             >
-              <span class="text-xs text-slate-400">{{ i + 1 }}</span>
+              <span class="text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">{{ i + 1 }}</span>
               <input v-model="step.worker" class="input h-10" />
               <input v-model="step.resource" class="input h-10" />
               <input v-model="step.notes" class="input h-10" />
@@ -218,29 +263,37 @@ function badgeTone(kind, value) {
         </div>
       </section>
 
-      <section v-else class="rounded-xl border border-gray-700 bg-slate-900 p-4 space-y-3 shadow-lg shadow-black">
+      <section v-else
+        class="rounded-xl border p-4 space-y-3 shadow-lg transition-colors"
+        :class="isDarkMode
+            ? 'border-gray-700 bg-slate-900 shadow-black'
+            : 'border-slate-200 bg-white shadow-slate-200'"
+      >
         <div class="flex items-center justify-between">
           <h3 class="font-semibold">Orders overview</h3>
-          <span class="text-xs text-slate-300">{{ orders.length }} total</span>
+          <span class="text-xs" :class="isDarkMode ? 'text-slate-300' : 'text-slate-500'">{{ orders.length }} total</span>
         </div>
         <div class="grid gap-2">
-          <div class="grid grid-cols-[1.5fr,1fr,1fr,1fr,1fr,0.8fr] gap-2 text-xs text-slate-400">
+          <div class="grid grid-cols-[1.5fr,1fr,1fr,1fr,1fr,0.8fr] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
             <span>Name</span><span>ID</span><span>Status</span><span>Start</span><span>End</span><span>Priority</span>
           </div>
           <div
             v-for="order in orders"
             :key="order.id"
-            class="grid grid-cols-[1.5fr,1fr,1fr,1fr,1fr,0.8fr] gap-2 items-center rounded-lg border border-gray-700 bg-gray-700 p-3 text-sm"
+            class="grid grid-cols-[1.5fr,1fr,1fr,1fr,1fr,0.8fr] gap-2 items-center rounded-lg border p-3 text-sm transition-colors"
+            :class="isDarkMode
+              ? 'border-gray-700 bg-gray-700'
+              : 'border-slate-200 bg-slate-50 hover:bg-slate-100'"
           >
             <span class="font-medium">{{ order.name }}</span>
-            <span class="text-slate-200">{{ order.id }}</span>
+            <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">{{ order.id }}</span>
             <span>
               <span class="px-2 py-1 rounded-full text-xs font-semibold" :class="badgeTone('status', order.status)">
                 {{ order.status }}
               </span>
             </span>
-            <span class="text-slate-200">{{ order.start }}</span>
-            <span class="text-slate-200">{{ order.end }}</span>
+            <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">{{ order.start }}</span>
+            <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">{{ order.end }}</span>
             <span>
               <span class="px-2 py-1 rounded-full text-xs font-semibold" :class="badgeTone('priority', order.priority)">
                 {{ order.priority }}
@@ -253,3 +306,37 @@ function badgeTone(kind, value) {
   </div>
 </template>
 
+<style scoped>
+/* Color styles for Inputs
+*/
+
+.input {
+  @apply w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors;
+}
+
+/* Dark Mode Styles for Inputs */
+.dark-mode .input {
+  @apply border-gray-700 bg-gray-800 text-slate-100 placeholder-slate-500 focus:border-pink-500 focus:ring-1 focus:ring-pink-500;
+}
+
+/* Light Mode Styles for Inputs */
+.light-mode .input {
+  @apply border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500;
+}
+
+/* special style for disable input */
+.dark-mode .disabled-input {
+  @apply bg-gray-900 text-slate-500;
+}
+.light-mode .disabled-input {
+  @apply bg-slate-100 text-slate-500;
+}
+
+/* Labels text color */
+.dark-mode .label-text {
+  @apply text-slate-300;
+}
+.light-mode .label-text {
+  @apply text-slate-600;
+}
+</style>

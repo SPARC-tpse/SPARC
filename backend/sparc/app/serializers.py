@@ -36,5 +36,5 @@ class DisruptionSerialzier(serializers.ModelSerializer):
     def get_resource_name_by_id(self, obj: Disruption) -> str:
         return Database.get_resource_name_by_id(obj.resource_id)
     
-    def get_disruption_type_name(self, obj: Disruption) -> str:
+    def get_disruption_type_name_by_id(self, obj: Disruption) -> str:
         return Database.get_disruption_type_name_by_id(obj.type_id)

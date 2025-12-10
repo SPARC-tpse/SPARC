@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from sparc.app.models import Order, Process, Resource, DisruptionType
+from sparc.app.models import Order, Process, Resource, DisruptionType, Disruption
 
 class ProcessSerializer(serializers.ModelSerializer):
     class Meta:
@@ -16,9 +16,14 @@ class OrderSerializer(serializers.ModelSerializer):
 class ResourceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Resource
-        fields = ["id", "name"]   # only what Vue needs
+        fields = ['id', 'name', 'type', 'status']
 
 class DisruptionTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = DisruptionType
-        fields = ["id", "name"]
+        fields = ['id', 'name']
+
+class DisruptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Disruption
+        fields = "__all__"

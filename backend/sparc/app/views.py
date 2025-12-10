@@ -1,12 +1,14 @@
 from rest_framework import generics
-from .models import Order
+from .models import Order, Resource, DisruptionType
 from .serializers import OrderSerializer
+from django.http import JsonResponse
 
-class OrderListCreateView(generics.ListCreateAPIView):
-    queryset = Order.objects.all()
-    serializer_class = OrderSerializer
 
-class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Order.objects.all()
-    serializer_class = OrderSerializer
-    lookup_field = 'pk'
+def get_resources(request):
+    data = list(Resource.objects.values("id", "name"))
+    return JsonResponse(data, safe=False)
+
+def get_disruption_types(request):
+    data = list(DisruptionType.objects.values("id", "name"))
+    return JsonResponse(data, safe=False)
+

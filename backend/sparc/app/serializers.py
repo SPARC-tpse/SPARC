@@ -24,19 +24,13 @@ class DisruptionTypeSerializer(serializers.ModelSerializer):
         model = DisruptionType
         fields = ['id', 'name']
 
-class DisruptionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Disruption
-        fields = "__all__"
-
 class DisruptionSerialzier(serializers.ModelSerializer):
     resource_name = serializers.SerializerMethodField()
     disruption_type_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Disruption
-        fields = ('id', 'name', 'start_date', 'end_date', 'resource', 'resource_name', 'type', 'disruption_type_name')
-
+        fields = ('id', 'name', 'start_date', 'end_date', 'resource', 'resource_name', 'type', 'disruption_type_name','comment')
 
     def get_resource_name_by_id(self, obj: Disruption) -> str:
         return Database.get_resource_name_by_id(obj.resource_id)

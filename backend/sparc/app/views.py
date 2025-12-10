@@ -30,6 +30,7 @@ def get_disruptions(request):
             "end_date": d["end_date"],
             "disruption_type_name": Database.get_disruption_type_name_by_id(d["type_id"]),
             "resource_name": Database.get_resource_name_by_id(d["resource_id"]),
+            "comment":d["comment"],
         })
 
     return JsonResponse(response_data, safe=False)
@@ -48,6 +49,7 @@ def create_disruption(request):
         resource_id = data.get("resource")
         start_date = data.get("start_date")
         end_date = data.get("end_date")
+        comment = data.get("comment")
 
         d_type = DisruptionType.objects.get(id=type_id)
         resource = Resource.objects.get(id=resource_id)
@@ -57,7 +59,8 @@ def create_disruption(request):
             type=d_type,
             resource=resource,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
+            comment = comment,
         )
 
         return JsonResponse({"id": disruption.id, "status": "created"}, status=201)

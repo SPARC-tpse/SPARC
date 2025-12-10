@@ -39,6 +39,7 @@ class Disruption(models.Model):
     )
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
+    comment = models.CharField(max_length=1023, blank= True, null= True)
 
     def __str__(self):
         return f"{self.id} - {self.name}"

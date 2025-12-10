@@ -5,6 +5,7 @@ from django.http import JsonResponse
 import json
 from .models import Disruption, Resource, DisruptionType
 from datetime import datetime
+from .services import Database
 
 
 def get_resources(request):
@@ -16,8 +17,23 @@ def get_disruption_types(request):
     return JsonResponse(data, safe=False)
 
 def get_disruptions(request):
-    data = list(Disruption.objects.values())
-    return JsonResponse(data, safe = False)
+    disruptions = Disruption.objects.all().values()
+
+    response_data = []
+    for d in disruptions:
+        response_data.append({
+            "id": d["id"],
+            "name": d["name"],
+            "type": d["type_id"],
+            "resource": d["resource_id"],
+            "start_date": d["start_date"],
+            "end_date": d["end_date"],
+            "disruption_type_name": Database.get_disruption_type_name_by_id(d["type_id"]),
+            "resource_name": Database.get_resource_name_by_id(d["resource_id"]),
+        })
+
+    return JsonResponse(response_data, safe=False)
+
 
 @csrf_exempt
 def create_disruption(request):

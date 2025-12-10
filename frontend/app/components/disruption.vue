@@ -196,7 +196,7 @@ onMounted(() => {
                     class="px-2 py-1 rounded-full text-xs font-semibold"
                     :class="badgeTone('type', d.type)"
                 >
-                    {{ d.disr }}
+                    {{ d.disruption_type_name }}
                 </span>
             </span>
             <span>
@@ -204,7 +204,7 @@ onMounted(() => {
                     class="px-2 py-1 rounded-full text-xs font-semibold"
                     :class="badgeTone('resource', d.resource)"
                 >
-                    {{ resources.find(r => r.id === d.resource)?.name || d.resource }}
+                    {{ d.resource_name }}
                 </span>
             </span>
             <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">

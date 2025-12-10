@@ -1,4 +1,4 @@
-from ..models import Resource, Disruption, DisruptionType
+from .models import Resource, Disruption, DisruptionType
 
 
 ##class to provide a database-frotend interface. Any methods needed by the frontend may be added here

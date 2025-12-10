@@ -15,9 +15,16 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "process"]
 
 class ResourceSerializer(serializers.ModelSerializer):
+    resource_type_name = serializers.SerializerMethodField()
+    
     class Meta:
         model = Resource
-        fields = ['id', 'name', 'type', 'status']
+        fields = ['id', 'name', 'type', 'status', 'resource_type_name']
+    
+    def get_resource_type_name(self, obj: Resource) -> str:
+        return Database.get_resource_type_name_by_id(obj.type_id)
+    
+   
 
 class DisruptionTypeSerializer(serializers.ModelSerializer):
     class Meta:

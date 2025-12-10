@@ -3,14 +3,58 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import json
-from .models import Disruption, Resource, DisruptionType
+from .models import Disruption, Resource, ResourceType, DisruptionType
 from datetime import datetime
 from .services import Database
 
 
 def get_resources(request):
-    data = list(Resource.objects.values("id", "name"))
+    resources = Resource.objects.all().values()
+
+    response_data = []
+    for r in resources:
+        response_data.append({
+            "id": r["id"],
+            "name": r["name"],
+            "type": r["type_id"],
+            "status": r["status"],
+            "resource_type_name": Database.get_resource_type_name_by_id(r["type_id"]),
+        })
+
+    return JsonResponse(response_data, safe=False)
+
+@csrf_exempt
+def create_resource(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST request required"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+
+        name = data.get("name")
+        type_id = data.get("type")
+        status = data.get("status", "")
+
+        resource_type = ResourceType.objects.get(id=type_id)
+
+        resource = Resource.objects.create(
+            name=name,
+            type=resource_type,
+            status=status,
+        )
+
+        return JsonResponse({"id": resource.id, "status": "created"}, status=201)
+
+    except ResourceType.DoesNotExist:
+        return JsonResponse({"error": "ResourceType not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+def get_resource_types(request):
+    data = list(ResourceType.objects.values("id", "name"))
     return JsonResponse(data, safe=False)
+
+
 
 def get_disruption_types(request):
     data = list(DisruptionType.objects.values("id", "name"))
@@ -34,7 +78,6 @@ def get_disruptions(request):
         })
 
     return JsonResponse(response_data, safe=False)
-
 
 @csrf_exempt
 def create_disruption(request):

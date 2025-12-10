@@ -13,7 +13,12 @@ class ResourceType(models.Model):
 
 class Resource(models.Model):
     name = models.CharField(max_length=255)
-    type = models.ForeignKey(ResourceType, on_delete=models.CASCADE)
+    type = models.ForeignKey(ResourceType,
+     on_delete=models.CASCADE,
+        related_name="resources",
+        null = True,
+        blank = True,
+    )
     status = models.CharField(max_length=255)
 
     def __str__(self):
@@ -86,3 +91,34 @@ class Order(models.Model):
 
     def __str__(self):
         return f"{self.id} - {self.name}"
+
+
+
+
+'''
+from sparc.app.models import ResourceType, Resource, DisruptionType
+
+# --- Resource Types ---
+rt_machine = ResourceType.objects.create(name="Machine")
+rt_station = ResourceType.objects.create(name="Station")
+rt_tool = ResourceType.objects.create(name="Tool")
+
+print("Resource types created:", rt_machine, rt_station, rt_tool)
+
+# --- Resources ---
+res_press = Resource.objects.create(name="Press Machine 01", type=rt_machine, status="Available")
+res_laser = Resource.objects.create(name="Laser Cutter A2", type=rt_machine, status="Down")
+res_station1 = Resource.objects.create(name="Assembly Station 01", type=rt_station, status="Running")
+
+print("Resources created:", res_press, res_laser, res_station1)
+
+# --- Disruption Types ---
+dt_mechanical = DisruptionType.objects.create(name="Mechanical Failure")
+dt_electrical = DisruptionType.objects.create(name="Electrical Issue")
+dt_operator = DisruptionType.objects.create(name="Operator Error")
+
+print("Disruption types created:", dt_mechanical, dt_electrical, dt_operator)
+
+
+
+'''

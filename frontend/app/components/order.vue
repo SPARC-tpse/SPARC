@@ -2,6 +2,9 @@
 import '../assets/css/tailwind.css'
 import { ref } from 'vue'
 
+const config = useRuntimeConfig();
+const API_BASE_URL = config.public.apiBaseUrl;
+
 // --- Props & Emits ---
 const props = defineProps({
   isDarkMode: {

@@ -3,7 +3,7 @@ from .models import Resource, ResourceType, Disruption, DisruptionType
 
 ##class to provide a database-frotend interface. Any methods needed by the frontend may be added here
 class Database:
-    
+
     @staticmethod
     def get_resource_type_name_by_id(resource_type_id:int)->str:
         if not resource_type_id:
@@ -13,7 +13,7 @@ class Database:
             return resource_type.name
         except ResourceType.DoesNotExist:
             return "ResourceType Not Found"
-        
+
     @staticmethod
     def get_resource_name_by_id(resource_id: int) -> str:
         if not resource_id:

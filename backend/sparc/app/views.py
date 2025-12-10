@@ -7,7 +7,7 @@ from .models import Disruption, Resource, ResourceType, DisruptionType
 from datetime import datetime
 from .services import Database
 
-
+##resources
 def get_resources(request):
     resources = Resource.objects.all().values()
 
@@ -55,6 +55,8 @@ def get_resource_types(request):
     return JsonResponse(data, safe=False)
 
 
+#############################################
+#disruptions
 
 def get_disruption_types(request):
     data = list(DisruptionType.objects.values("id", "name"))

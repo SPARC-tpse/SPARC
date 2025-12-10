@@ -28,7 +28,7 @@ async function submitResource() {
         status: newResource.value.status,
     };
     try {
-        const response = await axios.post(`${API_BASE_URL}/resource/create/`, payload);
+        const response = await axios.post(`${API_BASE_URL}/resources/create/`, payload);
         console.log("Created:", response.data);
         resetForm();
         await fetchResources();
@@ -84,7 +84,7 @@ onMounted(() => {
                 <button
                     class="rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-40 transition-all shadow-md"
                     :class="canSubmit ? 'bg-gradient-to-r from-indigo-500 to-pink-500' : 'bg-gray-500'"
-                    :disabled="!canSubmit" @click="submitOrder">Create</button>
+                    :disabled="!canSubmit" @click="submitResource">Create</button>
 
             </div>
         </header>

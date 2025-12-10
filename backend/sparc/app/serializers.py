@@ -2,10 +2,12 @@ from rest_framework import serializers
 from sparc.app.models import Order, Process, Resource, DisruptionType, Disruption
 from .services import Database
 
+
 class ProcessSerializer(serializers.ModelSerializer):
     class Meta:
         model = Process
         fields = ["id", "start_time", "end_time"]
+
 
 class OrderSerializer(serializers.ModelSerializer):
     process = ProcessSerializer(many=True)
@@ -14,22 +16,23 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = ["id", "name", "process"]
 
+
 class ResourceSerializer(serializers.ModelSerializer):
     resource_type_name = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Resource
         fields = ['id', 'name', 'type', 'status', 'resource_type_name']
-    
+
     def get_resource_type_name(self, obj: Resource) -> str:
         return Database.get_resource_type_name_by_id(obj.type_id)
-    
-   
+
 
 class DisruptionTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = DisruptionType
         fields = ['id', 'name']
+
 
 class DisruptionSerialzier(serializers.ModelSerializer):
     resource_name = serializers.SerializerMethodField()

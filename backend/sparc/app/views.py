@@ -1,7 +1,10 @@
-from rest_framework import generics
-from .models import Order, Resource, DisruptionType, ResourceType
-from .serializers import OrderSerializer
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
+import json
+from .models import Disruption, Resource, DisruptionType
+from datetime import datetime
 
 
 def get_resources(request):
@@ -12,4 +15,38 @@ def get_disruption_types(request):
     data = list(DisruptionType.objects.values("id", "name"))
     return JsonResponse(data, safe=False)
 
-def get_resource_type(request):
+def get_disruptions(request):
+    data = list(Disruption.objects.values())
+    return JsonResponse(data, safe = False)
+
+@csrf_exempt
+def create_disruption(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST request required"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+
+        name = data.get("name")
+        type_id = data.get("type")
+        resource_id = data.get("resource")
+        start_date = data.get("start_date")
+        end_date = data.get("end_date")
+
+        d_type = DisruptionType.objects.get(id=type_id)
+        resource = Resource.objects.get(id=resource_id)
+
+        disruption = Disruption.objects.create(
+            name=name,
+            type=d_type,
+            resource=resource,
+            start_date=start_date,
+            end_date=end_date
+        )
+
+        return JsonResponse({"id": disruption.id, "status": "created"}, status=201)
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+

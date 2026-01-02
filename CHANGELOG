@@ -1,0 +1,4 @@
+v0.1.0
+===
+fix/postgres_version_issue
+- update path in docker-compose.yaml to postgresql v18

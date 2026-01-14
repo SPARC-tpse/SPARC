@@ -1,0 +1,19 @@
+v0.1.0
+===
+fix/restructure_frontend
+- updated gitignore
+- frontend in nuxt best practice design
+- update changelog
+- added edit view for order and disruption
+
+feature/frontend_disruptions
+- added disruption view
+
+feature/backend_models
+- implement ER-diagram
+
+feature/frontend
+- draft for order view
+
+feature/hello-world
+- basic structure of the website

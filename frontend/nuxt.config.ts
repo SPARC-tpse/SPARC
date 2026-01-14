@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-
+  //css: ['~/assets/css/tailwind.css'],
   ssr: false,
   postcss: {
     plugins: {
@@ -10,5 +10,4 @@ export default defineNuxtConfig({
       autoprefixer: {}
     }
   }
-
 })

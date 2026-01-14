@@ -7,7 +7,7 @@ services:
     volumes:
       - ./backend:/app
     environment:
-      - DJANGO_SETTINGS_MODULE=sparc.settings
+      - DJANGO_SETTINGS_MODULE=config.settings
     depends_on:
       - db
 
@@ -32,7 +32,7 @@ services:
       - POSTGRES_USER=django
       - POSTGRES_PASSWORD=django
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/18/data
 
 volumes:
   pgdata:

@@ -6,7 +6,7 @@
 
     // Immediately redirect on mount
     // TODO: redirect to dashboard once finished
-    navigateTo('/order/overview', { replace: true })
+    navigateTo('/overview', { replace: true })
 </script>
 
 <template>

@@ -35,6 +35,10 @@ function addStep() {
   steps.value.push({ worker: '', resource: '', notes: '' })
 }
 
+function removeStep(index) {
+  steps.value.splice(index, 1)
+}
+
 function resetForm() {
   newOrder.value = {
     name: '',
@@ -153,13 +157,13 @@ async function submitOrder() {
           >+ Add step</button>
         </div>
         <div class="space-y-2">
-          <div class="grid grid-cols-[30px,1fr,1fr,1fr] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-            <span>#</span><span>Worker</span><span>Resource</span><span>Notes</span>
+          <div class="grid grid-cols-[30px,1fr,1fr,1fr,90px] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
+            <span>#</span><span>Worker</span><span>Resource</span><span>Notes</span><span>Action</span>
           </div>
           <div
             v-for="(step, i) in steps"
             :key="i"
-            class="grid grid-cols-[30px,1fr,1fr,1fr] gap-2 items-center rounded-lg border p-2 transition-colors"
+            class="grid grid-cols-[30px,1fr,1fr,1fr,90px] gap-2 items-center rounded-lg border p-2 transition-colors"
             :class="isDarkMode
               ? 'border-gray-700 bg-gray-700'
               : 'border-slate-200 bg-slate-50'"
@@ -168,6 +172,15 @@ async function submitOrder() {
             <input v-model="step.worker" class="input h-10" />
             <input v-model="step.resource" class="input h-10" />
             <input v-model="step.notes" class="input h-10" />
+            <button
+              class="px-2 py-1 text-xs rounded border transition-colors"
+              :class="isDarkMode
+                ? 'border-rose-500/70 text-rose-200 hover:bg-rose-500/10'
+                : 'border-rose-200 text-rose-600 hover:bg-rose-50'"
+              @click="removeStep(i)"
+            >
+              Delete
+            </button>
           </div>
         </div>
       </div>

@@ -33,6 +33,10 @@ function addStep() {
   steps.value.push({ worker: '', resource: '', notes: '' })
 }
 
+function removeStep(index) {
+  steps.value.splice(index, 1)
+}
+
 async function loadOrder() {
   // TODO: Fetch from backend
   // const response = await $fetch(`/api/orders/${orderId}`)
@@ -55,6 +59,11 @@ async function loadOrder() {
     { worker: 'Lena', resource: 'test resource', notes: 'test note' },
     { worker: 'Max', resource: 'test resource', notes: 'test note2' }
   ]
+}
+
+function editProcessStep(stepIndex) {
+  const stepId = `${orderId}-${stepIndex + 1}`
+  navigateTo(`/order/process-steps/${stepId}`)
 }
 
 async function updateOrder() {
@@ -159,13 +168,13 @@ onMounted(() => {
           >+ Add step</button>
         </div>
         <div class="space-y-2">
-          <div class="grid grid-cols-[30px,1fr,1fr,1fr] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-            <span>#</span><span>Worker</span><span>Resource</span><span>Notes</span>
+          <div class="grid grid-cols-[30px,1fr,1fr,1fr,150px] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
+            <span>#</span><span>Worker</span><span>Resource</span><span>Notes</span><span>Action</span>
           </div>
           <div
             v-for="(step, i) in steps"
             :key="i"
-            class="grid grid-cols-[30px,1fr,1fr,1fr] gap-2 items-center rounded-lg border p-2 transition-colors"
+            class="grid grid-cols-[30px,1fr,1fr,1fr,150px] gap-2 items-center rounded-lg border p-2 transition-colors"
             :class="isDarkMode
               ? 'border-gray-700 bg-gray-700'
               : 'border-slate-200 bg-slate-50'"
@@ -174,6 +183,26 @@ onMounted(() => {
             <input v-model="step.worker" class="input h-10" />
             <input v-model="step.resource" class="input h-10" />
             <input v-model="step.notes" class="input h-10" />
+            <div class="flex gap-2">
+              <button
+                class="px-2 py-1 text-xs rounded border transition-colors"
+                :class="isDarkMode
+                  ? 'border-gray-600 hover:bg-gray-600 text-slate-200'
+                  : 'border-slate-300 hover:bg-slate-200 text-slate-700'"
+                @click="editProcessStep(i)"
+              >
+                Edit
+              </button>
+              <button
+                class="px-2 py-1 text-xs rounded border transition-colors"
+                :class="isDarkMode
+                  ? 'border-rose-500/70 text-rose-200 hover:bg-rose-500/10'
+                  : 'border-rose-200 text-rose-600 hover:bg-rose-50'"
+                @click="removeStep(i)"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       </div>

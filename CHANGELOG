@@ -1,5 +1,9 @@
 v0.1.0
 ===
+
+fix/restructure_frontend
+- added resoucre page
+
 fix/restructure_frontend
 - updated gitignore
 - frontend in nuxt best practice design

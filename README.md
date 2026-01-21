@@ -1,10 +1,9 @@
-# test_django
-
-try CI, tesing and release with django, vue, docker, PostgreSQL and uvcorn, pylint, github
+# SPARC
 
 > [!IMPORTANT]
 > 1. This repo is under active development till 15.02.2026
-> 2. All instructions provided where tested on Fedora 43
+> 2. Instructions are planted to be performed on an ubuntu system
+> 3. This project was only planed for use in a private network
 
 > [!IMPORTANT]
 > Before you commit!
@@ -15,120 +14,117 @@ try CI, tesing and release with django, vue, docker, PostgreSQL and uvcorn, pyli
 
 ## project structure
 
-``` txt
+```txt
 SPARC/
-├── backend/
+├── backend
+│   ├── app                                         | 
+│   │   ├── admin.py                                | what is visible in admin view
+│   │   ├── apps.py                                 | app config
+│   │   ├── __init__.py                             |
+│   │   ├── migrations                              |
+│   │   │   └── __init__.py
+│   │   ├── models.py                               | definition of all Entety of the ER diagram
+│   │   ├── serializers.py                          | serilizer definitions of the models
+│   │   ├── test.py                                 | test cases
+│   │   ├── urls.py                                 | urls for the api
+│   │   └── views.py                                | definitions of api functions
+│   ├── config                                      | 
+│   │   ├── asgi.py                                 |
+│   │   ├── __init__.py                             |
+│   │   ├── settings.py                             |
+│   │   ├── urls.py                                 |
+│   │   └── wsgi.py                                 | 
+│   ├── Dockerfile                                  |
+│   ├── manage.py                                   |
+│   ├── requirements.txt                            |
+│   └── staticfiles
+│       ├── admin
+│       └── rest_framework
+├── frontend                                        |
+│   ├── app                                         |
+│   │   ├── app.vue                                 |
+│   │   ├── assets                                  |
+│   │   │   └── css                                 |
+│   │   │       └── tailwind.css                    |
+│   │   ├── components                              |
+│   │   │   ├── Navbar.vue                          | navbar with the diffrent views as buttons
+│   │   │   └── Topbar.vue                          | topbar with title and submit button
+│   │   ├── composables                             |
+│   │   │   └── useTheme.js
+│   │   ├── layouts
+│   │   │   └── custom.vue
+│   │   └── pages
+│   │       ├── disruption
+│   │       │   ├── edit
+│   │       │   │   └── [id].vue
+│   │       │   ├── index.vue
+│   │       │   ├── new.vue
+│   │       │   └── overview.vue
+│   │       ├── index.vue
+│   │       └── order
+│   │           ├── edit
+│   │           │   └── [id].vue
+│   │           ├── index.vue
+│   │           ├── new.vue
+│   │           └── overview.vue
 │   ├── Dockerfile
-│   ├── manage.py
-│   ├── requirements.txt
-│   └── sparc/
-│       ├── __init__.py
-│       ├── asgi.py
-│       ├── models.py
-│       ├── settings.py
-│       ├── urls.py
-│       └── wsgi.py
-├── frontend/
-│   ├── .nuxt/
-│   ├── app/
-│   ├── node_module/
-│   ├── public/
-│   ├── Dockerfile
+│   ├── node_modules
 │   ├── nuxt.config.ts
-│   ├── package-lock.json
 │   ├── package.json
+│   ├── package-lock.json
+│   ├── postcss.config.cjs
+│   ├── public
+│   │   ├── favicon.ico
+│   │   └── robots.txt
+│   ├── tailwind.config.cjs
 │   └── tsconfig.json
+├── .gitattributes
 ├── .gitignore
-├── README.md
-└── docker-compose.yml
+├── CHANGELOG
+├── docker-compose.yml
+├── LICENSE
+├── package-lock.json
+└── README.md
 ```
-
-## inital setup
-`mkdir SPARC`\
-`touch docker-compose.yml`
-
-setup backend:\
-`mkdir backend`\
-`cd backend`\
-`touch Dockerfile`\
-`python3.14 -m venv venv`\
-`source venv/bin/activate`\
-`pip install django uvicorn djangorestframework`\
-`python -m django --version`\
-`django-admin startproject sparc .`\
-`python manage.py runserver`
-
-setup frontend:\
-`mkdir frontend`\
-`cd frontend`\
-`touch Dockerfile`\
-`npm create nuxt@latest .`\
-`npm run dev -- -o`
-
-setup docker:\
-```
-sudo dnf remove docker
-                docker-client
-                docker-client-latest
-                docker-common
-                docker-latest
-                docker-latest-logrotate
-                docker-logrotate
-                docker-selinux
-                docker-engine-selinux
-                docker-engine
-```
-```
-sudo dnf install docker-ce
-                 docker-ce-cli
-                 containerd.io
-                 docker-buildx-plugin
-                 docker-compose-plugin
-```
-`sudo systemctl enable --now docker`
-
-if you had docker destop installed before but uninstalled you might get this error:
-
-unable to get image 'sparc-frontend': Cannot connect to the Docker daemon at unix:///home/user_name/.docker/desktop/docker.sock. Is the docker daemon running?
-
-just delete this folder: `rm -rf ~/.docker`
-and run `sudo docker compose up --build` again
-
-handy to know:
-`docker ps -a` shows you all the containers you have
-
-setup tests:\
-`mkdir tests`
-
-setup django admin(for manageing backend)
-`docker compose exec web python manage.py createsuperuser`
 
 ## run app
 
-### build and run from source
+### from source
 
 `docker compose up --build`
 
-if you get this error:\
-Error response from daemon: Conflict. The container name "/django-backend" is already in use by container\
-just do this:\
-`sudo docker rm -f <container-name>`
+> [!Warning]
+> if you get this error:
+> 
+> Error response from daemon: Conflict. The container name "/django-backend" is already in use by container
+> 
+> just do this:
+>
+> `sudo docker rm -f <container-name>`
 
-### run release on linux
-`sudo docker save -o <image-name>.tar <image-name>`
 
-`docker load -i <image-name>.tar`
+### on ubuntu server
+In this repo (if manually else just take from repo release):
+1. `docker compose build`
+2. `docker save sparc-backend sparc-frontend postgres:18 -o sparc-images.tar`
 
-`docker compose up -d`
+install docker on server:
+https://docs.docker.com/engine/install/ubuntu/
+
+on server: (make sure that the docker-compose.yml does not use build instead of image or uses volumes)
+1. `docker load -i sparc-images.tar`
+2. `docker compose down` (when updating)
+3. `docker compose up -d`
+4. `docker stop django-backend nuxt-frontend postgres-db`
 
 ## run tests
 
-## package manager
+## Package manager
 
 - pip (v25.3)
 - npm (v10.9.3)
 
-## depenencies
+## Dependencies
 
 - nuxt          (v4.2.1)
 - vue           (v3.5.24)
@@ -138,5 +134,3 @@ just do this:\
 - djangorestframework (v3.16.1)
 - PostgreSQL    (v18.0)
 - nginx         (? we probably don't need a reverse proxy because we are not connected to the internet)
-
-## update branch

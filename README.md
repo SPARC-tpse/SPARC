@@ -9,15 +9,45 @@
 > Before you commit!
 > Run the tests before you commit and check that pylint does not complain about the formating of your code.
 
-> [!TIP]
-> we assume for every command that we start in the root directory
+## run app
+
+### from source
+
+`docker compose up --build`
+
+> [!Warning]
+> if you get this error:
+>
+> Error response from daemon: Conflict. The container name "/django-backend" is already in use by container
+>
+> just do this:
+>
+> `sudo docker rm -f <container-name>`
+
+
+### on ubuntu server
+In this repo (if manually else just take from repo release):
+1. `docker compose build`
+2. `docker save sparc-backend sparc-frontend postgres:18 -o sparc-images.tar`
+
+install docker on server:
+https://docs.docker.com/engine/install/ubuntu/
+
+on server: (make sure that the docker-compose.yml does not use build instead of image or uses volumes)
+1. `docker load -i sparc-images.tar`
+2. `docker compose down` (when updating)
+3. `docker compose up -d`
+4. `docker stop django-backend nuxt-frontend postgres-db`
+
+## run tests
+`sudo docker compose exec backend python manage.py test`
 
 ## project structure
 
 ```txt
 SPARC/
 ├── backend
-│   ├── app                                         | 
+│   ├── app                                         |
 │   │   ├── admin.py                                | what is visible in admin view
 │   │   ├── apps.py                                 | app config
 │   │   ├── __init__.py                             |
@@ -28,12 +58,12 @@ SPARC/
 │   │   ├── test.py                                 | test cases
 │   │   ├── urls.py                                 | urls for the api
 │   │   └── views.py                                | definitions of api functions
-│   ├── config                                      | 
+│   ├── config                                      |
 │   │   ├── asgi.py                                 |
 │   │   ├── __init__.py                             |
 │   │   ├── settings.py                             |
 │   │   ├── urls.py                                 |
-│   │   └── wsgi.py                                 | 
+│   │   └── wsgi.py                                 |
 │   ├── Dockerfile                                  |
 │   ├── manage.py                                   |
 │   ├── requirements.txt                            |
@@ -86,38 +116,6 @@ SPARC/
 ├── package-lock.json
 └── README.md
 ```
-
-## run app
-
-### from source
-
-`docker compose up --build`
-
-> [!Warning]
-> if you get this error:
-> 
-> Error response from daemon: Conflict. The container name "/django-backend" is already in use by container
-> 
-> just do this:
->
-> `sudo docker rm -f <container-name>`
-
-
-### on ubuntu server
-In this repo (if manually else just take from repo release):
-1. `docker compose build`
-2. `docker save sparc-backend sparc-frontend postgres:18 -o sparc-images.tar`
-
-install docker on server:
-https://docs.docker.com/engine/install/ubuntu/
-
-on server: (make sure that the docker-compose.yml does not use build instead of image or uses volumes)
-1. `docker load -i sparc-images.tar`
-2. `docker compose down` (when updating)
-3. `docker compose up -d`
-4. `docker stop django-backend nuxt-frontend postgres-db`
-
-## run tests
 
 ## Package manager
 

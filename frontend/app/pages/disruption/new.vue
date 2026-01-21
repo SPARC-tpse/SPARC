@@ -48,20 +48,36 @@ function resetForm() {
 }
 
 async function submitDisruption() {
-  if (!canSubmit.value) return
+    if (!canSubmit.value) return
 
-  const disruption = {
+    const disruption = {
     id: formId.value,
     ...newDisruption.value
-  }
+    }
 
-  // TODO: Send to backend
-  console.log('Submitting disruption:', disruption)
+    const baseURL = config.public.apiBase || 'http://localhost:8000/api'
+    const endpoint = '/disruptions/new_disruption'
 
-  resetForm()
+    console.log('Submitting disruption:', disruption)
+    try {
+      const response = await $fetch(`${baseURL}${endpoint}`, {
+        method: 'POST',
+        body: newDisruption,
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      return response
+    } catch (error) {
+      console.error('API Error:', error)
+      throw error
+    }
 
-  // Navigate to overview
-  await navigateTo('/disruption/overview')
+    resetForm()
+
+    // Navigate to overview
+    await navigateTo('/disruption/overview')
 }
 </script>
 

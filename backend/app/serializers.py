@@ -11,7 +11,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ["id", "name", "process"]
+        fields = ["id", "start_date", "end_date", "name", "product_name", "priority", "status", "process"]
 
 class ResourceSerializer(serializers.ModelSerializer):
     class Meta:

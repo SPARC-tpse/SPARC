@@ -51,29 +51,42 @@ function resetForm() {
 }
 
 async function submitOrder() {
-  if (!canSubmit.value) return
+    if (!canSubmit.value) return
 
-  const processSteps = steps.value.filter(step => step.worker || step.resource || step.notes)
-  const order = {
-    id: formId.value,
-    name: newOrder.value.name,
-    start: newOrder.value.start,
-    end: newOrder.value.end,
-    target: Number(newOrder.value.target),
-    product: newOrder.value.product,
-    status: newOrder.value.status,
-    priority: newOrder.value.priority,
-    comments: newOrder.value.comments,
-    process: processSteps
-  }
+    const processSteps = steps.value.filter(step => step.worker || step.resource || step.notes)
+    const order = {
+        id: formId.value,
+        name: newOrder.value.name,
+        start: newOrder.value.start,
+        end: newOrder.value.end,
+        target: Number(newOrder.value.target),
+        product: newOrder.value.product,
+        status: newOrder.value.status,
+        priority: newOrder.value.priority,
+        comments: newOrder.value.comments,
+        process: processSteps
+    }
 
-  // TODO: Send to backend
-  console.log('Submitting order:', order)
+    console.log('Submitting order:', order)
 
-  resetForm()
+    const baseURL = 'http://localhost:8000/api'
+    const endpoint = '/orders/create_order'
 
-  // Navigate to overview
-  await navigateTo('/order/overview')
+    try {
+      const response = await $fetch(`${baseURL}${endpoint}`, {
+        method: 'POST',
+        body: order
+      })
+      return response
+    } catch (error) {
+      console.error('API Error:', error)
+      throw error
+    }
+
+    resetForm()
+
+    // Navigate to overview
+    await navigateTo('/order/overview')
 }
 </script>
 

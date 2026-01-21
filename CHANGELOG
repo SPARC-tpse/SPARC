@@ -1,5 +1,14 @@
 v0.1.0
 ===
+fix/restructure_backend
+- split into config and app folder
+- update model
+- call backend from disruption and order frontend
+- admin view
+- part of Order backend integration
+- check if the dates make sense
+- check if generated id already exists
+
 fix/postgresql_version_issue
 - update path in docker-compose.yaml to postgresql v18
 

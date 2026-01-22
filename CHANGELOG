@@ -8,6 +8,7 @@ fix/restructure_backend
 - part of Order backend integration
 - check if the dates make sense
 - check if generated id already exists
+- include staticfiles folder
 
 fix/postgresql_version_issue
 - update path in docker-compose.yaml to postgresql v18

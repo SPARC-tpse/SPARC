@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from sparc.app.models import Order, Process, Resource, DisruptionType
+from .models import Order, Process, Resource, DisruptionType
 
 class ProcessSerializer(serializers.ModelSerializer):
     class Meta:
@@ -11,7 +11,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ["id", "name", "process"]
+        fields = ["id", "start_date", "end_date", "name", "product_name", "priority", "status", "process"]
 
 class ResourceSerializer(serializers.ModelSerializer):
     class Meta:

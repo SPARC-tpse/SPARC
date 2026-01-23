@@ -34,10 +34,9 @@ function addStep() {
 }
 
 async function loadOrder() {
-  // TODO: Fetch from backend
-  // const response = await $fetch(`/api/orders/${orderId}`)
-  // order.value = response.data
-  // steps.value = response.data.process || [{ worker: '', resource: '', notes: '' }]
+  const response = await $fetch(`/api/orders/${orderId}`)
+  order.value = response.data
+  steps.value = response.data.process || [{ worker: '', resource: '', notes: '' }]
 
   // Mock data for now
   order.value = {

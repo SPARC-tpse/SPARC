@@ -70,7 +70,7 @@ async function submitOrder() {
     console.log('Submitting order:', order)
 
     const baseURL = 'http://localhost:8000/api'
-    const endpoint = '/orders/create_order'
+    const endpoint = '/orders/'
 
     try {
       const response = await $fetch(`${baseURL}${endpoint}`, {

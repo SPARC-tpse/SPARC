@@ -49,8 +49,8 @@ function editOrder(orderId) {
 
 // TODO: Fetch from backend on mount
 onMounted(async () => {
-  // const response = await $fetch('/api/orders')
-  // orders.value = response.data
+  const response = await $fetch('/api/orders')
+  orders.value = response.data
 })
 </script>
 

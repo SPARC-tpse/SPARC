@@ -1,5 +1,13 @@
 v0.1.0
 ===
+feature/order_backend_integration
+- add error handling
+- implement update_order
+- implement delete_order
+- change urls of api
+- add delete button
+- call the api from the frontend
+
 fix/restructure_backend
 - split into config and app folder
 - update model

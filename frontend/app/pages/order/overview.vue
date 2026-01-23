@@ -1,5 +1,5 @@
 <script setup lang="js">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useTheme } from '~/composables/useTheme'
 
 definePageMeta({
@@ -7,6 +7,10 @@ definePageMeta({
 })
 
 const { isDarkMode } = useTheme()
+
+//STATE LOGIC
+const isDeleteMode = ref(false) // Default is false (so Edit Mode is default)
+const deleteConfirmId = ref(null) 
 
 const orders = ref([
   {
@@ -43,14 +47,42 @@ function badgeTone(kind, value) {
   return kind === 'status' ? (statusTone[value] || statusTone.default) : (priorityTone[value] || priorityTone.default)
 }
 
-function editOrder(orderId) {
-  navigateTo(`/order/edit/${orderId}`)
+// 1. Delete Mode Toggle (Top)
+function toggleDeleteMode() {
+  isDeleteMode.value = !isDeleteMode.value
+  // Close all open confirmations when toggling
+  deleteConfirmId.value = null
 }
 
-// TODO: Fetch from backend on mount
+// 2. Row Button Logic
+function handleRowAction(id) {
+  if (!isDeleteMode.value) {
+    // STANDARD: Edit Mode (Delete Mode is OFF)
+    navigateTo(`/order/edit/${id}`)
+  } else {
+    // DELETE MODE (Delete Mode is ON)
+    if (deleteConfirmId.value === id) {
+      // Was already in Confirm status -> Cancel
+      deleteConfirmId.value = null
+    } else {
+      // Starts the deletion process for this row
+      deleteConfirmId.value = id
+    }
+  }
+}
+
+// 3. Actual deletion (Confirm button next to name)
+async function executeDelete(id) {
+  console.log(`Deleting Order ${id}`)
+  // TODO: API Call await $fetch(...)
+  orders.value = orders.value.filter(o => o.id !== id)
+  deleteConfirmId.value = null
+  // Optional: If list is empty or done, could turn off isDeleteMode
+}
+
 onMounted(async () => {
-  const response = await $fetch('/api/orders')
-  orders.value = response.data
+  // const response = await $fetch('/api/orders')
+  // orders.value = response.data
 })
 </script>
 
@@ -74,26 +106,61 @@ onMounted(async () => {
             <h3 class="font-semibold">Orders overview</h3>
             <span class="text-xs" :class="isDarkMode ? 'text-slate-300' : 'text-slate-500'">{{ orders.length }} total</span>
           </div>
-          <NuxtLink
-            to="/order/new"
-            class="px-3 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md bg-gradient-to-r from-indigo-500 to-pink-500 hover:shadow-lg"
-          >
-            + New Order
-          </NuxtLink>
+
+          <div class="flex gap-2">
+            <button
+              @click="toggleDeleteMode"
+              class="px-3 py-2 rounded-lg text-sm font-semibold border transition-all shadow-sm"
+              :class="[
+                // If Delete Mode is ON -> Button looks 'pressed' or active
+                isDeleteMode
+                  ? 'bg-slate-200 text-slate-800 border-slate-300'
+                  : 'bg-white text-slate-700 border-slate-200 hover:border-red-400 hover:text-red-600',
+
+                // Dark Mode variants
+                isDarkMode && isDeleteMode ? 'bg-slate-700 text-white border-slate-600' : '',
+                isDarkMode && !isDeleteMode ? 'bg-slate-800 text-slate-200 border-slate-700 hover:border-red-500 hover:text-red-400' : ''
+              ]"
+            >
+              {{ isDeleteMode ? 'Done deleting' : 'Delete mode' }}
+            </button>
+
+            <NuxtLink
+              to="/order/new"
+              class="px-3 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md bg-gradient-to-r from-indigo-500 to-pink-500 hover:shadow-lg"
+            >
+              + New Order
+            </NuxtLink>
+          </div>
         </div>
+
         <div class="grid gap-2">
-          <div class="grid grid-cols-[1.5fr,1fr,1fr,1fr,1fr,0.8fr,80px] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
+          <div class="grid grid-cols-[1.5fr,1fr,1fr,1fr,1fr,0.8fr,120px] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
             <span>Name</span><span>ID</span><span>Status</span><span>Start</span><span>End</span><span>Priority</span><span>Action</span>
           </div>
+
           <div
             v-for="order in orders"
             :key="order.id"
-            class="grid grid-cols-[1.5fr,1fr,1fr,1fr,1fr,0.8fr,80px] gap-2 items-center rounded-lg border p-3 text-sm transition-colors"
-            :class="isDarkMode
-              ? 'border-gray-700 bg-gray-700'
-              : 'border-slate-200 bg-slate-50 hover:bg-slate-100'"
+            class="grid grid-cols-[1.5fr,1fr,1fr,1fr,1fr,0.8fr,120px] gap-2 items-center rounded-lg border p-3 text-sm transition-colors"
+            :class="[
+              isDarkMode ? 'border-gray-700 bg-slate-900' : 'border-slate-200 bg-slate-50 hover:bg-slate-100',
+              // Highlight row red if deletion needs confirmation
+              deleteConfirmId === order.id && !isDarkMode ? 'bg-red-50 border-red-100' : '',
+              deleteConfirmId === order.id && isDarkMode ? 'bg-red-900/10 border-red-900/30' : ''
+            ]"
           >
-            <span class="font-medium">{{ order.name }}</span>
+            <span class="font-medium flex items-center gap-2 overflow-hidden">
+               <button
+                  v-if="deleteConfirmId === order.id"
+                  @click="executeDelete(order.id)"
+                  class="bg-red-600 text-white text-[10px] px-2 py-1 rounded animate-pulse hover:bg-red-700 shrink-0 shadow-sm"
+               >
+                 Confirm
+               </button>
+               <span class="truncate">{{ order.name }}</span>
+            </span>
+
             <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">{{ order.id }}</span>
             <span>
               <span class="px-2 py-1 rounded-full text-xs font-semibold" :class="badgeTone('status', order.status)">
@@ -107,14 +174,29 @@ onMounted(async () => {
                 {{ order.priority }}
               </span>
             </span>
+
             <button
-              @click="editOrder(order.id)"
-              class="px-2 py-1 text-xs rounded border transition-colors"
-              :class="isDarkMode
-                ? 'border-gray-600 hover:bg-gray-600 text-slate-200'
-                : 'border-slate-300 hover:bg-slate-200 text-slate-700'"
+              @click="handleRowAction(order.id)"
+              class="px-2 py-1 text-xs rounded border transition-colors w-full text-center"
+              :class="[
+                // 1. STANDARD: Edit Mode (Indigo/Blue) - If Delete Mode is OFF
+                !isDeleteMode && isDarkMode ? 'border-indigo-800 text-indigo-200 hover:bg-indigo-900' : '',
+                !isDeleteMode && !isDarkMode ? 'border-indigo-300 text-indigo-700 hover:bg-indigo-50' : '',
+
+                // 2. DELETE MODE: Cancel State (Gray) - If Delete Mode is ON AND row is currently being confirmed
+                isDeleteMode && deleteConfirmId === order.id && isDarkMode ? 'border-slate-500 text-slate-400 hover:bg-slate-800' : '',
+                isDeleteMode && deleteConfirmId === order.id && !isDarkMode ? 'border-slate-400 text-slate-600 hover:bg-slate-200' : '',
+
+                // 3. DELETE MODE: Init State (Red) - If Delete Mode is ON but row is still normal
+                isDeleteMode && deleteConfirmId !== order.id && isDarkMode ? 'border-red-900 text-red-400 hover:bg-red-900/30' : '',
+                isDeleteMode && deleteConfirmId !== order.id && !isDarkMode ? 'border-red-200 text-red-600 hover:bg-red-50' : ''
+              ]"
             >
-              Edit
+              {{
+                !isDeleteMode
+                  ? 'Edit'
+                  : (deleteConfirmId === order.id ? 'Cancel deletion' : 'Delete')
+              }}
             </button>
           </div>
         </div>

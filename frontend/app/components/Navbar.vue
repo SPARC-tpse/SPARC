@@ -57,7 +57,7 @@ const isActive = (path) => {
     </NuxtLink>
 
     <NuxtLink
-      to="/resource"
+      to="/resource/overview"
       class="w-full px-3 py-2 text-left rounded-lg border text-sm font-medium transition-all"
       :class="[
         isActive('/resource')

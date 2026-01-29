@@ -69,8 +69,8 @@ async function submitOrder() {
 
     console.log('Submitting order:', order)
 
-    const baseURL = 'http://192.168.178.59:8000/api'
-    const endpoint = '/orders/create_order'
+    const { public: { baseURL } } = useRuntimeConfig()
+    const endpoint = '/api/orders/create_order'
 
     try {
       const response = await $fetch(`${baseURL}${endpoint}`, {

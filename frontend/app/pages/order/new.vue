@@ -71,7 +71,9 @@ async function submitOrder() {
 
     const config = useRuntimeConfig();
     const API_BASE_URL = config.public.apiBaseUrl;
-    const endpoint = '/orders/create_order'
+    const endpoint = '/api/orders/create_order'
+
+    console.log("base url: " + API_BASE_URL);
 
     try {
       const response = await $fetch(`${API_BASE_URL}${endpoint}`, {

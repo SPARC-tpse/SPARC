@@ -65,7 +65,7 @@ const isActive = (path) => {
           : (isDarkMode ? 'border-gray-700 bg-gray-800 hover:bg-gray-700 text-slate-200' : 'border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700')
       ]"
     >
-      Ressources
+      Resources
     </NuxtLink>
 
     <!-- Spacer to push mode indicator to bottom -->

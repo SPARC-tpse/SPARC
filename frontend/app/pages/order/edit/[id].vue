@@ -13,10 +13,10 @@ const orderId = route.params.id
 const order = ref({
   id: orderId,
   name: '',
-  start: '',
-  end: '',
-  target: '',
-  product: '',
+  start_date: '',
+  end_date: '',
+  target_amount: '',
+  product_name: '',
   status: 'Planned',
   priority: 'Medium',
   comments: ''
@@ -26,7 +26,7 @@ const steps = ref([{ worker: '', resource: '', notes: '' }])
 
 const canSubmit = computed(() => {
   const o = order.value
-  return Boolean(o.name && o.start && o.end && o.target && o.product)
+  return Boolean(o.name && o.start_date && o.end_date && o.target_amount && o.product_name)
 })
 
 function addStep() {
@@ -34,47 +34,52 @@ function addStep() {
 }
 
 async function loadOrder() {
-  const response = await $fetch(`/api/orders/${orderId}`)
-  order.value = response.data
-  steps.value = response.data.process || [{ worker: '', resource: '', notes: '' }]
+    const config = useRuntimeConfig();
+    const API_BASE_URL = config.public.apiBaseUrl;
+    const ENDPOINT = '/api/orders/get/'
 
-  // Mock data for now
-  order.value = {
-    id: orderId,
-    name: 'Test Order',
-    start: '2025-11-27',
-    end: '2025-11-28',
-    target: 1200,
-    product: 'Ventil platinen',
-    status: 'Running',
-    priority: 'High',
-    comments: 'set-up phase done.'
-  }
-  steps.value = [
-    { worker: 'Lena', resource: 'test resource', notes: 'test note' },
-    { worker: 'Max', resource: 'test resource', notes: 'test note2' }
-  ]
+    try {
+        const response = await $fetch(`${API_BASE_URL}${ENDPOINT}${orderId}`, {
+            method: 'GET'
+        })
+        console.log("response data:" + response)
+        console.log(response)
+        order.value = response
+        steps.value = response.process || [{ worker: '', resource: '', notes: '' }]
+    } catch (error) {
+        console.error('API Error:', error)
+        alert('Failed to load order')
+    }
 }
 
 async function updateOrder() {
-  if (!canSubmit.value) return
+    if (!canSubmit.value) return
 
-  const processSteps = steps.value.filter(step => step.worker || step.resource || step.notes)
-  const updatedOrder = {
-    ...order.value,
-    target: Number(order.value.target),
-    process: processSteps
-  }
+    const processSteps = steps.value.filter(step => step.worker || step.resource || step.notes)
+    const updatedOrder = {
+        ...order.value,
+        target_amount: Number(order.value.target_amount),
+        process: processSteps
+    }
 
-  // TODO: Send to backend
-  console.log('Updating order:', updatedOrder)
+    console.log('Updating order:', updatedOrder)
 
-  // Navigate back to overview
-  await navigateTo('/order/overview')
-}
+    const config = useRuntimeConfig();
+    const API_BASE_URL = config.public.apiBaseUrl;
+    const ENDPOINT = '/api/orders/put/'
 
-function cancelEdit() {
-  navigateTo('/order/overview')
+    try {
+      const response = await $fetch(`${API_BASE_URL}${ENDPOINT}${orderId}`, {
+        method: 'PUT',
+        body: updatedOrder
+      })
+      // Navigate back to overview
+      await navigateTo('/order/overview')
+      //return response
+    } catch (error) {
+      console.error('API Error:', error)
+      alert(error)
+    }
 }
 
 onMounted(() => {
@@ -87,10 +92,9 @@ onMounted(() => {
     <Topbar
       title="Orders · Edit"
       :can-submit="canSubmit"
-      :show-reset="true"
+      :show-reset="false"
       :show-create="true"
       create-label="Update"
-      @reset="cancelEdit"
       @submit="updateOrder"
     />
 
@@ -106,19 +110,19 @@ onMounted(() => {
         </label>
         <label class="flex flex-col gap-1 text-sm label-text">
           Target amount
-          <input v-model="order.target" type="number" class="input" />
+          <input v-model="order.target_amount" type="number" class="input" />
         </label>
         <label class="flex flex-col gap-1 text-sm label-text">
           Product name
-          <input v-model="order.product" class="input" />
+          <input v-model="order.product_name" class="input" />
         </label>
         <label class="flex flex-col gap-1 text-sm label-text">
           Start date
-          <input v-model="order.start" type="date" inputmode="numeric" class="input" />
+          <input v-model="order.start_date" type="date" inputmode="numeric" class="input" />
         </label>
         <label class="flex flex-col gap-1 text-sm label-text">
           End date
-          <input v-model="order.end" type="date" inputmode="numeric" class="input" />
+          <input v-model="order.end_date" type="date" inputmode="numeric" class="input" />
         </label>
         <label class="flex flex-col gap-1 text-sm label-text">
           Status
@@ -132,9 +136,9 @@ onMounted(() => {
         <label class="flex flex-col gap-1 text-sm label-text">
           Priority
           <select v-model="order.priority" class="input">
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
+            <option value="1">High</option>
+            <option value="2">Medium</option>
+            <option value="3">Low</option>
           </select>
         </label>
         <label class="flex flex-col gap-1 text-sm label-text sm:col-span-2">

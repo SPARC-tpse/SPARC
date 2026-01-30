@@ -2,16 +2,17 @@ from rest_framework import serializers
 from .models import Order, Process, Resource, DisruptionType
 
 class ProcessSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Process
-        fields = ["id", "start_time", "end_time"]
+        fields = ["id", "name", "start_time", "end_time", "work_time", "setup_time", "workers", "resource"]
 
 class OrderSerializer(serializers.ModelSerializer):
-    process = ProcessSerializer(many=True)
+    #process = ProcessSerializer(many=True)
 
     class Meta:
         model = Order
-        fields = ["id", "start_date", "end_date", "name", "product_name", "priority", "status", "process"]
+        fields = ["id", "start_date", "end_date", "name", "product_name", "priority", "status", "target_amount", "comments"]
 
 class ResourceSerializer(serializers.ModelSerializer):
     class Meta:

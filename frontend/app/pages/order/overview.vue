@@ -1,89 +1,142 @@
 <script setup lang="js">
-import { ref, onMounted } from 'vue'
-import { useTheme } from '~/composables/useTheme'
+    import { ref, onMounted } from 'vue'
+    import { useTheme } from '~/composables/useTheme'
+    import { useOrderWebSocket } from '~/composables/useOrderWebSocket'
 
-definePageMeta({
-  layout: 'custom'
-})
+    definePageMeta({
+      layout: 'custom'
+    })
 
-const { isDarkMode } = useTheme()
+    const { isDarkMode } = useTheme()
 
-//STATE LOGIC
-const isDeleteMode = ref(false) // Default is false (so Edit Mode is default)
-const deleteConfirmId = ref(null) 
+    //STATE LOGIC
+    const isDeleteMode = ref(false) // Default is false (so Edit Mode is default)
+    const deleteConfirmId = ref(null)
 
-const orders = ref([
-  {
-    id: 'ORD-1042',
-    name: 'Test Order',
-    start: '2025-11-27',
-    end: '2025-11-28',
-    target: 1200,
-    product: 'Ventil platinen',
-    status: 'Running',
-    priority: 'High',
-    comments: 'set-up phase done.',
-    process: [
-      { worker: 'Lena', resource: 'test resource', notes: 'test note' },
-      { worker: 'Max', resource: 'test resource', notes: 'test note2' }
-    ]
-  }
-])
+    const orders = ref([
+      {
+        id: 'ORD-1042',
+        name: 'Test Order',
+        start_date: '2025-11-27',
+        end_date: '2025-11-28',
+        target: 1200,
+        product: 'Ventil platinen',
+        status: 'Running',
+        priority: 'High',
+        comments: 'set-up phase done.',
+        process: [
+          { worker: 'Lena', resource: 'test resource', notes: 'test note' },
+          { worker: 'Max', resource: 'test resource', notes: 'test note2' }
+        ]
+      }
+    ])
 
-function badgeTone(kind, value) {
-  const statusTone = {
-    Running: 'bg-emerald-600 text-emerald-100',
-    Planned: 'bg-blue-600 text-blue-100',
-    Paused: 'bg-amber-600 text-amber-100',
-    Done: 'bg-slate-600 text-slate-100',
-    default: 'bg-slate-600 text-slate-100'
-  }
-  const priorityTone = {
-    High: 'bg-pink-600 text-pink-100',
-    Medium: 'bg-indigo-600 text-indigo-100',
-    Low: 'bg-slate-600 text-slate-100',
-    default: 'bg-slate-600 text-slate-100'
-  }
-  return kind === 'status' ? (statusTone[value] || statusTone.default) : (priorityTone[value] || priorityTone.default)
-}
+    // Handle real-time updates
+    const handleOrderUpdate = async (data) => {
+      console.log('Order update received:', data)
 
-// 1. Delete Mode Toggle (Top)
-function toggleDeleteMode() {
-  isDeleteMode.value = !isDeleteMode.value
-  // Close all open confirmations when toggling
-  deleteConfirmId.value = null
-}
-
-// 2. Row Button Logic
-function handleRowAction(id) {
-  if (!isDeleteMode.value) {
-    // STANDARD: Edit Mode (Delete Mode is OFF)
-    navigateTo(`/order/edit/${id}`)
-  } else {
-    // DELETE MODE (Delete Mode is ON)
-    if (deleteConfirmId.value === id) {
-      // Was already in Confirm status -> Cancel
-      deleteConfirmId.value = null
-    } else {
-      // Starts the deletion process for this row
-      deleteConfirmId.value = id
+      if (data.action === 'created') {
+        // Add new order to the list
+        orders.value.push(data.data)
+      } else if (data.action === 'updated') {
+        // Update existing order
+        const index = orders.value.findIndex(o => o.id === data.data.id)
+        if (index !== -1) {
+          orders.value[index] = data.data
+        }
+      } else if (data.action === 'deleted') {
+        // Remove order from list
+        orders.value = orders.value.filter(o => o.id !== data.data.id)
+      }
     }
-  }
-}
+    // Connect to WebSocket
+    const { connected } = useOrderWebSocket(handleOrderUpdate)
 
-// 3. Actual deletion (Confirm button next to name)
-async function executeDelete(id) {
-  console.log(`Deleting Order ${id}`)
-  // TODO: API Call await $fetch(...)
-  orders.value = orders.value.filter(o => o.id !== id)
-  deleteConfirmId.value = null
-  // Optional: If list is empty or done, could turn off isDeleteMode
-}
+    function badgeTone(kind, value) {
+      const statusTone = {
+        Running: 'bg-emerald-600 text-emerald-100',
+        Planned: 'bg-blue-600 text-blue-100',
+        Paused: 'bg-amber-600 text-amber-100',
+        Done: 'bg-slate-600 text-slate-100',
+        default: 'bg-slate-600 text-slate-100'
+      }
+      const priorityTone = {
+        High: 'bg-pink-600 text-pink-100',
+        Medium: 'bg-indigo-600 text-indigo-100',
+        Low: 'bg-slate-600 text-slate-100',
+        default: 'bg-slate-600 text-slate-100'
+      }
+      return kind === 'status' ? (statusTone[value] || statusTone.default) : (priorityTone[value] || priorityTone.default)
+    }
 
-onMounted(async () => {
-  // const response = await $fetch('/api/orders')
-  // orders.value = response.data
-})
+    // 1. Delete Mode Toggle (Top)
+    function toggleDeleteMode() {
+      isDeleteMode.value = !isDeleteMode.value
+      // Close all open confirmations when toggling
+      deleteConfirmId.value = null
+    }
+
+    // 2. Row Button Logic
+    function handleRowAction(id) {
+      if (!isDeleteMode.value) {
+        // STANDARD: Edit Mode (Delete Mode is OFF)
+        console.log(`Edit Order ${id}`)
+        navigateTo(`/order/edit/${id}`)
+      } else {
+        // DELETE MODE (Delete Mode is ON)
+        if (deleteConfirmId.value === id) {
+          // Was already in Confirm status -> Cancel
+          deleteConfirmId.value = null
+        } else {
+          // Starts the deletion process for this row
+          deleteConfirmId.value = id
+        }
+      }
+    }
+
+    // 3. Actual deletion (Confirm button next to name)
+    async function executeDelete(id) {
+        console.log(`Deleting Order ${id}`)
+
+        const config = useRuntimeConfig();
+        const API_BASE_URL = config.public.apiBaseUrl;
+        const ENDPOINT = '/api/orders/delete/'
+
+        try {
+            const response = await $fetch(`${API_BASE_URL}${ENDPOINT}${id}`, {
+                method: 'DELETE'
+            })
+            return response
+        } catch (error) {
+            console.error('API Error:', error)
+            alert('Failed to delete order')
+        }
+
+        // TODO: refresh does not work for some reason
+        orders.value = orders.value.filter(o => o.id !== id)
+        deleteConfirmId.value = null
+    }
+
+    async function fetchOrders() {
+        const config = useRuntimeConfig();
+        const API_BASE_URL = config.public.apiBaseUrl;
+        const ENDPOINT = '/api/orders/get';
+
+        try {
+            const response = await $fetch(`${API_BASE_URL}${ENDPOINT}`, {
+                method: 'GET'
+            })
+            console.log("response data:" + response)
+            orders.value = response
+        } catch (error) {
+            console.error('API Error:', error)
+            throw error
+        }
+    }
+
+    onMounted(async () => {
+      await fetchOrders();
+    })
 </script>
 
 <template>
@@ -150,6 +203,7 @@ onMounted(async () => {
               deleteConfirmId === order.id && isDarkMode ? 'bg-red-900/10 border-red-900/30' : ''
             ]"
           >
+            <!-- name + delete confirm button -->
             <span class="font-medium flex items-center gap-2 overflow-hidden">
                <button
                   v-if="deleteConfirmId === order.id"
@@ -161,14 +215,23 @@ onMounted(async () => {
                <span class="truncate">{{ order.name }}</span>
             </span>
 
+            <!-- id -->
             <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">{{ order.id }}</span>
+
+            <!-- status -->
             <span>
               <span class="px-2 py-1 rounded-full text-xs font-semibold" :class="badgeTone('status', order.status)">
                 {{ order.status }}
               </span>
             </span>
-            <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">{{ order.start }}</span>
-            <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">{{ order.end }}</span>
+
+            <!-- start_date -->
+            <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">{{ order.start_date }}</span>
+
+            <!-- end_date -->
+            <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">{{ order.end_date }}</span>
+
+            <!-- priority -->
             <span>
               <span class="px-2 py-1 rounded-full text-xs font-semibold" :class="badgeTone('priority', order.priority)">
                 {{ order.priority }}

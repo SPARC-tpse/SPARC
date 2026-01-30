@@ -12,6 +12,7 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',         # for viewing the database with easy ui based access
     'django.contrib.auth',          # needed?
     'django.contrib.contenttypes',  # Required for Django to work
@@ -20,8 +21,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',   # For serving CSS/JS files
     'rest_framework',
     'corsheaders',
-    #'app',
     'app.apps.SparcConfig',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -116,3 +117,14 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
 ]
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+os.makedirs(MEDIA_ROOT, exist_ok=True)
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}

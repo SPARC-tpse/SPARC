@@ -63,15 +63,21 @@ class Worker(models.Model):
 
 
 class Process(models.Model):
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
-    work_time = models.TimeField()
-    setup_time = models.TimeField()
+    name = models.CharField(max_length=255)
+    start_time = models.DateTimeField(null=True)
+    end_time = models.DateTimeField(null=True)
+    work_time = models.TimeField(null=True)
+    setup_time = models.TimeField(null=True)
     workers = models.ManyToManyField(
         Worker,
         related_name="processes",
         blank=True,
     )
+    resource = models.ForeignKey(
+        Resource,
+        on_delete=models.CASCADE
+    )
+
 
     class Meta:
         db_table = 'sparc_process'
@@ -83,8 +89,8 @@ class Process(models.Model):
 class Order(models.Model):
     name = models.CharField(max_length=255)
     target_amount = models.IntegerField()
-    bill_of_materials = models.FileField(upload_to="bill_of_materials/", null=True, blank=True)
-    files = models.FileField(upload_to="files/", null=True, blank=True)
+    bill_of_materials = models.FileField(upload_to="orders/bom/", null=True, blank=True)
+    files = models.FileField(upload_to="orders/files/", null=True, blank=True)
     start_date = models.DateField()
     end_date = models.DateField()
     product_name = models.CharField(max_length=255)

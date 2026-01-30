@@ -20,16 +20,13 @@ const newOrder = ref({
 })
 
 const steps = ref([{ worker: '', resource: '', notes: '' }])
-const formId = ref(makeId())
+const bomFiles = ref([])
+const generalFiles = ref([])
 
 const canSubmit = computed(() => {
   const o = newOrder.value
   return Boolean(o.name && o.start && o.end && o.target && o.product)
 })
-
-function makeId() {
-  return `ORD-${Math.floor(Math.random() * 100000)}`
-}
 
 function addStep() {
   steps.value.push({ worker: '', resource: '', notes: '' })
@@ -47,7 +44,18 @@ function resetForm() {
     comments: ''
   }
   steps.value = [{ worker: '', resource: '', notes: '' }]
-  formId.value = makeId()
+  bomFiles.value = []
+  generalFiles.value = []
+}
+
+function handleBomFilesUploaded(files) {
+  bomFiles.value = files
+  console.log('BOM files updated:', files)
+}
+
+function handleGeneralFilesUploaded(files) {
+  generalFiles.value = files
+  console.log('General files updated:', files)
 }
 
 async function submitOrder() {
@@ -55,7 +63,6 @@ async function submitOrder() {
 
     const processSteps = steps.value.filter(step => step.worker || step.resource || step.notes)
     const order = {
-        id: formId.value,
         name: newOrder.value.name,
         start: newOrder.value.start,
         end: newOrder.value.end,
@@ -71,25 +78,30 @@ async function submitOrder() {
 
     const config = useRuntimeConfig();
     const API_BASE_URL = config.public.apiBaseUrl;
-    const endpoint = '/api/orders/create_order'
-
-    console.log("base url: " + API_BASE_URL);
+    const ENDPOINT = '/api/orders/post'
 
     try {
-      const response = await $fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'POST',
-        body: order
-      })
-      return response
+        const response = await $fetch(`${API_BASE_URL}${ENDPOINT}`, {
+            method: 'POST',
+            body: order
+        })
+        resetForm()
+        // alternatively:
+        // await navigateTo('/order/overview')
     } catch (error) {
-      console.error('API Error:', error)
-      throw error
+      console.error('API Error:', error);
+      const backendMessage =
+        error?.data?.error ||
+        error?.response?._data?.error ||
+        error?.cause?.data?.error
+
+      if (backendMessage) {
+        alert(backendMessage)
+      } else {
+        alert('Unexpected error occurred')
+      }
+      //throw error
     }
-
-    resetForm()
-
-    // Navigate to overview
-    await navigateTo('/order/overview')
 }
 </script>
 
@@ -110,10 +122,6 @@ async function submitOrder() {
         <label class="flex flex-col gap-1 text-sm label-text">
           Name
           <input v-model="newOrder.name" class="input" />
-        </label>
-        <label class="flex flex-col gap-1 text-sm label-text">
-          ID (auto)
-          <input :value="formId" class="input disabled-input" disabled />
         </label>
         <label class="flex flex-col gap-1 text-sm label-text">
           Target amount
@@ -148,12 +156,48 @@ async function submitOrder() {
             <option>Low</option>
           </select>
         </label>
+
+        <!-- comments -->
         <label class="flex flex-col gap-1 text-sm label-text sm:col-span-2">
           Comments
           <textarea v-model="newOrder.comments" rows="3" class="input" />
         </label>
       </div>
 
+      <!-- file uploads -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- bom upload -->
+        <div
+          class="rounded-xl border p-4 shadow-lg transition-colors"
+          :class="isDarkMode
+            ? 'border-gray-900 bg-slate-900 shadow-black'
+            : 'border-slate-200 bg-white shadow-slate-200'"
+        >
+          <FileUpload
+            file-type="bom"
+            label="Bill of Materials"
+            @files-uploaded="handleBomFilesUploaded"
+            @file-deleted="handleBomFilesUploaded"
+          />
+        </div>
+
+        <!-- general files upload -->
+        <div
+          class="rounded-xl border p-4 shadow-lg transition-colors"
+          :class="isDarkMode
+            ? 'border-gray-900 bg-slate-900 shadow-black'
+            : 'border-slate-200 bg-white shadow-slate-200'"
+        >
+          <FileUpload
+            file-type="general"
+            label="Additional Files"
+            @files-uploaded="handleGeneralFilesUploaded"
+            @file-deleted="handleGeneralFilesUploaded"
+          />
+        </div>
+      </div>
+
+      <!-- process steps -->
       <div
         class="rounded-xl border p-4 space-y-3 shadow-lg transition-colors"
         :class="isDarkMode

@@ -3,15 +3,16 @@ import { ref, computed, onMounted } from 'vue'
 import { useTheme } from '~/composables/useTheme'
 import { useRoute } from 'vue-router'
 
+// Layout für die Sidebar aktivieren
 definePageMeta({
   layout: 'custom'
 })
 
 const { isDarkMode } = useTheme()
 const route = useRoute()
+const { fetchResources, updateResource } = useApi()
 const resourceId = route.params.id
 
-// Form Object
 const resource = ref({
   id: resourceId,
   name: '',
@@ -19,63 +20,57 @@ const resource = ref({
   status: ''
 })
 
-// Validation: Require name, type, and status to enable update
-const canSubmit = computed(() =>
-  resource.value.name && resource.value.type && resource.value.status
-)
+const canSubmit = computed(() => !!(resource.value.name && resource.value.type))
 
-async function loadResource() {
-  // TODO: Fetch from backend
-  // const response = await $fetch(`/api/resources/${resourceId}`)
-  // resource.value = response.data
-
-  // Mock data for initial load
-  resource.value = {
-    id: resourceId,
-    name: 'Excavator 01',
-    type: 'machinery',
-    status: 'available'
+onMounted(async () => {
+  try {
+    const allResources = await fetchResources()
+    // ID säubern (Klammern entfernen) und suchen
+    const found = allResources.find(r => String(r.id) === String(resourceId).replace('()', ''))
+    if (found) {
+      resource.value = { ...found }
+    }
+  } catch (err) {
+    console.error("Fehler beim Laden der Resource:", err)
   }
-}
+})
 
-async function updateResource() {
+async function handleUpdate() {
   if (!canSubmit.value) return
-
-  // TODO: Send update to backend
-  console.log('Updating resource:', resource.value)
-
-  // Navigate back to overview
-  await navigateTo('/resource/overview')
+  try {
+    console.log('Updating resource:', resource.value)
+    await updateResource(resourceId, resource.value)
+    await navigateTo('/resource/overview')
+  } catch (err) {
+    console.error("Fehler beim Update:", err)
+    alert("Update fehlgeschlagen.")
+  }
 }
 
 function cancelEdit() {
   navigateTo('/resource/overview')
 }
-
-onMounted(() => {
-  loadResource()
-})
 </script>
 
 <template>
   <div :class="isDarkMode ? 'dark-mode' : 'light-mode'">
-    <Topbar
-      title="Resources · Edit"
-      :can-submit="canSubmit"
-      :show-reset="true"
+    <Topbar 
+      title="Resources · Edit" 
+      :can-submit="canSubmit" 
+      :show-reset="true" 
       :show-create="true"
-      create-label="Update"
-      @reset="cancelEdit"
-      @submit="updateResource"
+      create-label="Update" 
+      @reset="cancelEdit" 
+      @submit="handleUpdate" 
     />
 
     <main class="max-w-5xl mx-auto p-6 space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label class="flex flex-col gap-1 text-sm label-text">
           Resource Name
-          <input v-model="resource.name" class="input" />
+          <input v-model="resource.name" class="input" placeholder="e.g. Excavator 01" />
         </label>
-
+        
         <label class="flex flex-col gap-1 text-sm label-text">
           ID
           <input :value="resource.id" class="input disabled-input" disabled />
@@ -123,6 +118,7 @@ onMounted(() => {
 .dark-mode .disabled-input {
   @apply bg-gray-900 text-slate-500;
 }
+
 .light-mode .disabled-input {
   @apply bg-slate-100 text-slate-500;
 }
@@ -130,7 +126,17 @@ onMounted(() => {
 .dark-mode .label-text {
   @apply text-slate-300;
 }
+
 .light-mode .label-text {
   @apply text-slate-600;
+}
+
+/* Stellt sicher, dass der Hintergrund die ganze Seite füllt */
+.dark-mode {
+  @apply min-h-screen bg-slate-950 text-slate-100;
+}
+
+.light-mode {
+  @apply min-h-screen bg-slate-50 text-slate-900;
 }
 </style>

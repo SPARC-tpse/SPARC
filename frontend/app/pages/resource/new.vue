@@ -2,90 +2,87 @@
 import { ref, computed } from 'vue'
 import { useTheme } from '~/composables/useTheme'
 
+// WICHTIG: Layout definieren, damit die Sidebar erscheint
 definePageMeta({
-    layout: 'custom'
+  layout: 'custom'
 })
-
 
 const { isDarkMode } = useTheme()
+const { createResource, updateResource } = useApi()
+const route = useRoute()
 
-const newResource = ref({
-    name: "",
-    type: "",
-    status: ""
+// Prüfen, ob wir im Edit-Modus sind
+const resourceId = route.params.id
+const isEdit = computed(() => !!resourceId)
+
+const resource = ref({
+  name: '',
+  type: '',
+  status: ''
 })
 
-const formId = ref(`DIS-${Math.floor(Math.random() * 10000)}`)
-const canSubmit = computed(() => newResource.value.name && newResource.value.type)
+const canSubmit = computed(() => !!(resource.value.name && resource.value.type))
 
-const types = ref([])
+async function submitForm() {
+  if (!canSubmit.value) return
+  const payload = { ...resource.value }
+  delete payload.id
 
-function resetForm() {
-    newResource.value = {
-        name: '',
-        type: '',
-        status: ''
-    }
-}
-async function submitResource() {
-    if (!canSubmit.value) return
-
-    const resource = {
-        id: formId.value,
-        ...newResource.value
-    }
-
-    // TODO: Send to backend
-    console.log('Submitting resource:', resource)
-
-    resetForm()
-
-    // Navigate to overview
+  try {
+    await createResource(payload)
     await navigateTo('/resource/overview')
+  } catch (err) {
+    console.error("Details:", err.response?._data)
+  }
 }
 
-</script>
+function cancel() {
+  navigateTo('/resource/overview')
+}
 
+const typeOptions = ref([])
+
+const { fetchResourceTypes } = useApi()
+
+onMounted(async () => {
+  try {
+    const [typeData] = await Promise.all([
+      fetchResourceTypes(),
+    ])
+    typeOptions.value = typeData
+  } catch (err) {
+    console.error("API Error:", err)
+  }
+})
+</script>
 
 <template>
   <div :class="isDarkMode ? 'dark-mode' : 'light-mode'">
-    <Topbar
-      title="Resources · New"
-      :can-submit="canSubmit"
-      :show-reset="true"
-      :show-create="true"
-      create-label="Create"
-      @reset="resetForm"
-      @submit="submitResource"
-    />
+    <Topbar :title="isEdit ? 'Resources · Edit' : 'Resources · New'" :can-submit="canSubmit" :show-reset="true"
+      :show-create="true" :create-label="isEdit ? 'Update' : 'Create'" @reset="cancel" @submit="submitForm" />
 
     <main class="max-w-5xl mx-auto p-6 space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label class="flex flex-col gap-1 text-sm label-text">
           Resource Name
-          <input v-model="newResource.name" class="input" />
+          <input v-model="resource.name" class="input" />
         </label>
-
         <label class="flex flex-col gap-1 text-sm label-text">
-          ID (auto)
-          <input :value="formId" class="input disabled-input" disabled />
+          ID
+          <input :value="resource.id || 'Auto-generated'" class="input disabled-input" disabled />
         </label>
-
         <label class="flex flex-col gap-1 text-sm label-text">
           Type
-          <select v-model="newResource.type" class="input">
+          <select v-model="resource.type" class="input">
             <option disabled value="">-- choose type --</option>
-            <option value="machinery">Machinery</option>
-            <option value="worker">Worker</option>
-            <option value="tool">Tool</option>
-            <option value="vehicle">Vehicle</option>
+            <option v-for="t in resourceTypes" :key="t.id" :value="t.id">
+              {{ t.name }}
+            </option>
           </select>
         </label>
-
         <label class="flex flex-col gap-1 text-sm label-text">
           Status
-          <select v-model="newResource.status" class="input">
-            <option disabled value="">-- choose status --</option>
+          <select v-model="resource.status" class="input">
             <option value="available">Available / Ready</option>
             <option value="in-use">In Use / Active</option>
             <option value="maintenance">Under Maintenance</option>
@@ -113,6 +110,7 @@ async function submitResource() {
 .dark-mode .disabled-input {
   @apply bg-gray-900 text-slate-500;
 }
+
 .light-mode .disabled-input {
   @apply bg-slate-100 text-slate-500;
 }
@@ -120,7 +118,16 @@ async function submitResource() {
 .dark-mode .label-text {
   @apply text-slate-300;
 }
+
 .light-mode .label-text {
   @apply text-slate-600;
+}
+
+.dark-mode {
+  @apply min-h-screen bg-slate-950 text-slate-100;
+}
+
+.light-mode {
+  @apply min-h-screen bg-slate-50 text-slate-900;
 }
 </style>

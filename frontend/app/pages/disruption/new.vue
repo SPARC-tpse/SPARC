@@ -79,14 +79,20 @@ async function submitDisruption() {
   await navigateTo('/disruption/overview')
 }
 
-// Fetch options on mount
+const { fetchResources, fetchDisruptionTypes, fetchDisruptions } = useApi()
+
 onMounted(async () => {
-  const [resData, typeData] = await Promise.all([
-    $fetch('http://localhost:8000/api/resources/get_resources'),
-    $fetch('http://localhost:8000/api/disruptionTypes/get_disruptionTypes')
-  ])
-  resourceOptions.value = resData
-  typeOptions.value = typeData
+  try {
+    const [resData, typeData] = await Promise.all([
+      fetchResources(),
+      fetchDisruptionTypes()
+    ])
+    resourceOptions.value = resData
+    typeOptions.value = typeData
+
+  } catch (err) {
+    console.error("API Error:", err)
+  }
 })
 
 </script>

@@ -20,6 +20,9 @@ const disruption = ref({
   type: ''
 })
 
+const resourceOptions = ref([])
+const typeOptions = ref([])
+
 const canSubmit = computed(() =>
   disruption.value.name && disruption.value.resource
 )
@@ -59,30 +62,28 @@ function cancelEdit() {
   navigateTo('/disruption/overview')
 }
 
-// Fetch options on mount
+
+const { fetchResources, fetchDisruptionTypes, fetchDisruptions } = useApi()
+
 onMounted(async () => {
-  const [resData, typeData] = await Promise.all([
-    $fetch('http://localhost:8000/api/resources/get_options'),
-    $fetch('http://localhost:8000/api/disruptions/get_type_options')
-  ])
-  resourceOptions.value = resData
-  typeOptions.value = typeData
-  loadDisruption()
+  try {
+    const [resData, typeData] = await Promise.all([
+      fetchResources(),
+      fetchDisruptionTypes()
+    ])
+    resourceOptions.value = resData
+    typeOptions.value = typeData
+  } catch (err) {
+    console.error("API Error:", err)
+  }
 })
 
 </script>
 
 <template>
   <div :class="isDarkMode ? 'dark-mode' : 'light-mode'">
-    <Topbar
-      title="Disruptions · Edit"
-      :can-submit="canSubmit"
-      :show-reset="true"
-      :show-create="true"
-      create-label="Update"
-      @reset="cancelEdit"
-      @submit="updateDisruption"
-    />
+    <Topbar title="Disruptions · Edit" :can-submit="canSubmit" :show-reset="true" :show-create="true"
+      create-label="Update" @reset="cancelEdit" @submit="updateDisruption" />
 
     <main class="max-w-5xl mx-auto p-6 space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -99,12 +100,9 @@ onMounted(async () => {
           <label class="text-sm label-text">Start</label>
           <div class="flex gap-2">
             <input v-model="disruption.start" type="datetime-local" class="input" />
-            <button
-              type="button"
-              @click="setNow('start')"
+            <button type="button" @click="setNow('start')"
               class="px-3 rounded-lg text-sm border transition-colors whitespace-nowrap"
-              :class="isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-slate-300 hover:bg-slate-100'"
-            >
+              :class="isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-slate-300 hover:bg-slate-100'">
               Now
             </button>
           </div>
@@ -114,32 +112,27 @@ onMounted(async () => {
           <label class="text-sm label-text">End</label>
           <div class="flex gap-2">
             <input v-model="disruption.end" type="datetime-local" class="input" />
-            <button
-              type="button"
-              @click="setNow('end')"
+            <button type="button" @click="setNow('end')"
               class="px-3 rounded-lg text-sm border transition-colors whitespace-nowrap"
-              :class="isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-slate-300 hover:bg-slate-100'"
-            >
+              :class="isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-slate-300 hover:bg-slate-100'">
               Now
             </button>
           </div>
         </div>
 
-        <label class="flex flex-col gap-1 text-sm label-text">
-          Resource
-          <select v-model="disruption.resource" class="input">
-            <option disabled value="">-- choose --</option>
-            <option v-for="r in resources" :key="r.id" :value="r.id">{{ r.name }}</option>
-          </select>
-        </label>
+        <select v-model="disruption.resource" class="input">
+          <option disabled value="">-- choose --</option>
+          <option v-for="opt in resourceOptions" :key="opt.id" :value="opt.id">
+            {{ opt.name }}
+          </option>
+        </select>
 
-        <label class="flex flex-col gap-1 text-sm label-text">
-          Type
-          <select v-model="disruption.type" class="input">
-            <option disabled value="">-- choose --</option>
-            <option v-for="t in types" :key="t.id" :value="t.id">{{ t.name }}</option>
-          </select>
-        </label>
+        <select v-model="disruption.type" class="input">
+          <option disabled value="">-- choose --</option>
+          <option v-for="opt in typeOptions" :key="opt.id" :value="opt.id">
+            {{ opt.name }}
+          </option>
+        </select>
       </div>
     </main>
   </div>
@@ -161,6 +154,7 @@ onMounted(async () => {
 .dark-mode .disabled-input {
   @apply bg-gray-900 text-slate-500;
 }
+
 .light-mode .disabled-input {
   @apply bg-slate-100 text-slate-500;
 }
@@ -168,6 +162,7 @@ onMounted(async () => {
 .dark-mode .label-text {
   @apply text-slate-300;
 }
+
 .light-mode .label-text {
   @apply text-slate-600;
 }

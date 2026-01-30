@@ -1,8 +1,8 @@
 from rest_framework.decorators import api_view
 from django.http import JsonResponse
 from rest_framework.request import Request
-from .models import Order, Disruption, DisruptionType, Resource
-from .serializers import OrderSerializer, DisruptionSerializer, ResourceSerializer, DisruptionTypeSerializer
+from .models import Order, Disruption, DisruptionType, Resource, ResourceType
+from .serializers import OrderSerializer, DisruptionSerializer, ResourceSerializer, DisruptionTypeSerializer, ResourceTypeSerializer
 from datetime import datetime
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
@@ -147,12 +147,42 @@ def get_resources(request: Request) -> JsonResponse:
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+@api_view(['POST'])
+def create_resource(request: Request) -> JsonResponse:
+    serializer = ResourceSerializer(data=request.data)
+    if serializer.is_valid():
+        new_res = serializer.save()
+        return JsonResponse({'id': new_res.id, 'message': 'Resource created'}, status=201)
+    return JsonResponse({'error': serializer.errors}, status=400)
+
+@api_view(['POST'])
+def update_resource(request: Request, resource_id: int) -> JsonResponse:
+    try:
+        resource = Resource.objects.get(id=resource_id)
+        serializer = ResourceSerializer(instance=resource, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse({'message': 'Resource updated'})
+        return JsonResponse({'error': serializer.errors}, status=400)
+    except Resource.DoesNotExist:
+        return JsonResponse({'error': 'Resource not found'}, status=404)
+
 #-------------DisruptionTypes----------------(DisruptionTypes written like that to avoid ambiguity with disruption.type which would be called disruption_type)
 @api_view(['GET'])
 def get_disruptionTypes(request: Request) -> JsonResponse:
     try:
         types = DisruptionType.objects.all()
         serializer = DisruptionTypeSerializer(types, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+#------------------ResourceTypes-------------------------------------
+@api_view(['GET'])
+def get_resourceTypes(request: Request) -> JsonResponse:
+    try:
+        types = ResourceType.objects.all()
+        serializer = ResourceTypeSerializer(types, many=True)
         return JsonResponse(serializer.data, safe=False)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

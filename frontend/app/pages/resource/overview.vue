@@ -7,31 +7,20 @@ definePageMeta({
 })
 
 const { isDarkMode } = useTheme()
+const { fetchResources } = useApi()
+const resources = ref([])
 
-const resources = ref([
-  {
-    id: 'RES-001',
-    name: 'Excavator 01',
-    type: 'Machinery',
-    status: 'Available'
-  },
-  {
-    id: 'RES-002',
-    name: 'John Doe',
-    type: 'Worker',
-    status: 'In Use'
+onMounted(async () => {
+  try {
+    resources.value = await fetchResources()
+  } catch (err) {
+    console.error("Fehler beim Laden der Resources:", err)
   }
-])
+})
 
 function editResource(resourceId) {
   navigateTo(`/resource/edit/${resourceId}`)
 }
-
-// TODO: Fetch from backend on mount
-onMounted(async () => {
-  // const response = await $fetch('/api/resources')
-  // resources.value = response.data
-})
 </script>
 
 <template>

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import get_orders, create_order, update_order, delete_order, get_disruptions, create_disruption, update_disruption, delete_disruption, get_disruptionTypes, get_resources
+from .views import get_orders, create_order, update_order, delete_order, get_disruptions, create_disruption, update_disruption, delete_disruption, get_disruptionTypes, get_resources, create_resource, get_resourceTypes
 
 urlpatterns = [
 
@@ -20,4 +20,8 @@ urlpatterns = [
     
     #Resources
     path("resources/get_resources", get_resources, name="get_resources"),
+    path("resources/create_resource", create_resource, name="create_resource"),
+    
+    #ResourceTypes
+     path("resourceTypes/get_resourceTypes", get_resourceTypes, name="get_resourceTypes"),
 ]

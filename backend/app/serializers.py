@@ -20,10 +20,16 @@ class OrderSerializer(serializers.ModelSerializer):
 class ResourceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Resource
-        fields = ["id", "name"]
+        fields = ["id", "name", "type", "status"]
+        read_only_fields = ["id"]
 
 
 class DisruptionTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DisruptionType
+        fields = ["id", "name"]
+
+class ResourceTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = DisruptionType
         fields = ["id", "name"]
@@ -37,3 +43,4 @@ class DisruptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Disruption
         fields = ["id", "name", "start", "end", "resource", "type", "resource_name", "type_name"]
+        read_only_fields = ["id"]

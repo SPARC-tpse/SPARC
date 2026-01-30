@@ -10,15 +10,6 @@ const { isDarkMode } = useTheme()
 const route = useRoute()
 const disruptionId = route.params.id
 
-const resources = ref([
-  { id: 1, name: 'Machine A' },
-  { id: 2, name: 'Conveyor' }
-])
-
-const types = ref([
-  { id: 1, name: 'Error' },
-  { id: 2, name: 'Maintenance' }
-])
 
 const disruption = ref({
   id: disruptionId,
@@ -68,9 +59,17 @@ function cancelEdit() {
   navigateTo('/disruption/overview')
 }
 
-onMounted(() => {
+// Fetch options on mount
+onMounted(async () => {
+  const [resData, typeData] = await Promise.all([
+    $fetch('http://localhost:8000/api/resources/get_options'),
+    $fetch('http://localhost:8000/api/disruptions/get_type_options')
+  ])
+  resourceOptions.value = resData
+  typeOptions.value = typeData
   loadDisruption()
 })
+
 </script>
 
 <template>

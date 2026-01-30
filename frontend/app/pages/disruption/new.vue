@@ -8,15 +8,9 @@ definePageMeta({
 
 const { isDarkMode } = useTheme()
 
-const resources = ref([
-  { id: 1, name: 'Machine A' },
-  { id: 2, name: 'Conveyor' }
-])
+const resourceOptions = ref([])
+const typeOptions = ref([])
 
-const types = ref([
-  { id: 1, name: 'Error' },
-  { id: 2, name: 'Maintenance' }
-])
 
 const formId = ref(`DIS-${Math.floor(Math.random() * 10000)}`)
 
@@ -29,7 +23,9 @@ const newDisruption = ref({
 })
 
 const canSubmit = computed(() =>
-  newDisruption.value.name && newDisruption.value.resource
+  !!(newDisruption.value.name &&
+    newDisruption.value.resource &&
+    newDisruption.value.type)
 )
 
 function setNow(field) {
@@ -48,50 +44,57 @@ function resetForm() {
 }
 
 async function submitDisruption() {
-    if (!canSubmit.value) return
+  if (!canSubmit.value) return
 
-    const disruption = {
-    id: formId.value,
+  // 1. Prepare the data object properly
+  const disruptionData = {
     ...newDisruption.value
-    }
+  }
 
-    const baseURL = config.public.apiBase || 'http://localhost:8000/api'
-    const endpoint = '/disruptions/new_disruption'
+  // 2. Access runtime config properly if using Nuxt
+  const config = useRuntimeConfig()
+  const baseURL = config.public?.apiBase || 'http://localhost:8000/api'
+  const endpoint = '/disruptions/create_disruption'
 
-    console.log('Submitting disruption:', disruption)
-    try {
-      const response = await $fetch(`${baseURL}${endpoint}`, {
-        method: 'POST',
-        body: newDisruption,
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      })
-      return response
-    } catch (error) {
-      console.error('API Error:', error)
-      throw error
-    }
+  console.log('Submitting disruption:', disruptionData)
 
-    resetForm()
+  try {
+    await $fetch(`${baseURL}${endpoint}`, {
+      method: 'POST',
+      body: disruptionData,
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
 
-    // Navigate to overview
-    await navigateTo('/disruption/overview')
+    console.log('Success!')
+
+  } catch (error) {
+    console.error('API Error:', error)
+    alert('Failed to create disruption. Check console.')
+    return
+  }
+
+  resetForm()
+  await navigateTo('/disruption/overview')
 }
+
+// Fetch options on mount
+onMounted(async () => {
+  const [resData, typeData] = await Promise.all([
+    $fetch('http://localhost:8000/api/resources/get_resources'),
+    $fetch('http://localhost:8000/api/disruptionTypes/get_disruptionTypes')
+  ])
+  resourceOptions.value = resData
+  typeOptions.value = typeData
+})
+
 </script>
 
 <template>
   <div :class="isDarkMode ? 'dark-mode' : 'light-mode'">
-    <Topbar
-      title="Disruptions · New"
-      :can-submit="canSubmit"
-      :show-reset="true"
-      :show-create="true"
-      create-label="Create"
-      @reset="resetForm"
-      @submit="submitDisruption"
-    />
+    <Topbar title="Disruptions · New" :can-submit="canSubmit" :show-reset="true" :show-create="true"
+      create-label="Create" @reset="resetForm" @submit="submitDisruption" />
 
     <main class="max-w-5xl mx-auto p-6 space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -108,12 +111,9 @@ async function submitDisruption() {
           <label class="text-sm label-text">Start</label>
           <div class="flex gap-2">
             <input v-model="newDisruption.start" type="datetime-local" class="input" />
-            <button
-              type="button"
-              @click="setNow('start')"
+            <button type="button" @click="setNow('start')"
               class="px-3 rounded-lg text-sm border transition-colors whitespace-nowrap"
-              :class="isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-slate-300 hover:bg-slate-100'"
-            >
+              :class="isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-slate-300 hover:bg-slate-100'">
               Now
             </button>
           </div>
@@ -123,12 +123,9 @@ async function submitDisruption() {
           <label class="text-sm label-text">End</label>
           <div class="flex gap-2">
             <input v-model="newDisruption.end" type="datetime-local" class="input" />
-            <button
-              type="button"
-              @click="setNow('end')"
+            <button type="button" @click="setNow('end')"
               class="px-3 rounded-lg text-sm border transition-colors whitespace-nowrap"
-              :class="isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-slate-300 hover:bg-slate-100'"
-            >
+              :class="isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-slate-300 hover:bg-slate-100'">
               Now
             </button>
           </div>
@@ -138,7 +135,9 @@ async function submitDisruption() {
           Resource
           <select v-model="newDisruption.resource" class="input">
             <option disabled value="">-- choose --</option>
-            <option v-for="r in resources" :key="r.id" :value="r.id">{{ r.name }}</option>
+            <option v-for="opt in resourceOptions" :key="opt.id" :value="opt.id">
+              {{ opt.name }}
+            </option>
           </select>
         </label>
 
@@ -146,7 +145,7 @@ async function submitDisruption() {
           Type
           <select v-model="newDisruption.type" class="input">
             <option disabled value="">-- choose --</option>
-            <option v-for="t in types" :key="t.id" :value="t.id">{{ t.name }}</option>
+            <option v-for="opt in typeOptions" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
           </select>
         </label>
       </div>
@@ -170,6 +169,7 @@ async function submitDisruption() {
 .dark-mode .disabled-input {
   @apply bg-gray-900 text-slate-500;
 }
+
 .light-mode .disabled-input {
   @apply bg-slate-100 text-slate-500;
 }
@@ -177,6 +177,7 @@ async function submitDisruption() {
 .dark-mode .label-text {
   @apply text-slate-300;
 }
+
 .light-mode .label-text {
   @apply text-slate-600;
 }

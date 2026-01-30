@@ -23,10 +23,15 @@ function editDisruption(disruptionId) {
   navigateTo(`/disruption/edit/${disruptionId}`)
 }
 
-// TODO: Fetch from backend on mount
 onMounted(async () => {
-  // const response = await $fetch('/api/disruptions')
-  // disruptions.value = response.data
+  try {
+    const config = useRuntimeConfig()
+    const baseURL = config.public?.apiBase || 'http://localhost:8000/api'
+    const data = await $fetch(`${baseURL}/disruptions/get_disruptions`)
+    disruptions.value = data
+  } catch (error) {
+    console.error('Fehler beim Laden der Disruptions:', error)
+  }
 })
 </script>
 

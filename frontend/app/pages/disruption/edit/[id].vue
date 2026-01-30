@@ -1,6 +1,7 @@
 <script setup lang="js">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useTheme } from '~/composables/useTheme'
+import { useRoute } from 'vue-router'
 
 definePageMeta({
   layout: 'custom'
@@ -10,6 +11,8 @@ const { isDarkMode } = useTheme()
 const route = useRoute()
 const disruptionId = route.params.id
 
+// API Methoden importieren
+const { fetchResources, fetchDisruptionTypes, fetchDisruptions, saveDisruption } = useApi()
 
 const disruption = ref({
   id: disruptionId,
@@ -23,61 +26,55 @@ const disruption = ref({
 const resourceOptions = ref([])
 const typeOptions = ref([])
 
-const canSubmit = computed(() =>
-  disruption.value.name && disruption.value.resource
-)
+const canSubmit = computed(() => !!(disruption.value.name && disruption.value.resource))
 
 function setNow(field) {
   const now = new Date()
+  // ISO-Format für datetime-local Input (YYYY-MM-DDTHH:mm)
   disruption.value[field] = now.toISOString().slice(0, 16)
 }
 
-async function loadDisruption() {
-  // TODO: Fetch from backend
-  // const response = await $fetch(`/api/disruptions/${disruptionId}`)
-  // disruption.value = response.data
+onMounted(async () => {
+  try {
+    // 1. Optionen für Dropdowns laden
+    const [resData, typeData, allDisruptions] = await Promise.all([
+      fetchResources(),
+      fetchDisruptionTypes(),
+      fetchDisruptions()
+    ])
+    
+    resourceOptions.value = resData
+    typeOptions.value = typeData
 
-  // Mock data for now
-  disruption.value = {
-    id: disruptionId,
-    name: 'Machine Malfunction',
-    start: '2025-12-27T10:00',
-    end: '2025-12-27T12:30',
-    resource: 1,
-    type: 1
+    const found = allDisruptions.find(d => String(d.id) === String(disruptionId))
+    
+    if (found) {
+      disruption.value = {
+        ...found,
+        start: found.start ? found.start.slice(0, 16) : '',
+        end: found.end ? found.end.slice(0, 16) : ''
+      }
+    }
+  } catch (err) {
+    console.error("API Error beim Laden:", err)
   }
-}
+})
 
 async function updateDisruption() {
   if (!canSubmit.value) return
 
-  // TODO: Send to backend
-  console.log('Updating disruption:', disruption.value)
-
-  // Navigate back to overview
-  await navigateTo('/disruption/overview')
+  try {
+    // Nutze die saveDisruption Funktion aus deiner useApi
+    await saveDisruption(disruption.value, disruptionId)
+    await navigateTo('/disruption/overview')
+  } catch (err) {
+    console.error('Fehler beim Updaten der Disruption:', err)
+  }
 }
 
 function cancelEdit() {
   navigateTo('/disruption/overview')
 }
-
-
-const { fetchResources, fetchDisruptionTypes, fetchDisruptions } = useApi()
-
-onMounted(async () => {
-  try {
-    const [resData, typeData] = await Promise.all([
-      fetchResources(),
-      fetchDisruptionTypes()
-    ])
-    resourceOptions.value = resData
-    typeOptions.value = typeData
-  } catch (err) {
-    console.error("API Error:", err)
-  }
-})
-
 </script>
 
 <template>

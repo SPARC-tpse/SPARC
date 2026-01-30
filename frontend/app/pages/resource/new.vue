@@ -68,7 +68,7 @@ function cancel() {
         <label class="flex flex-col gap-1 text-sm label-text">
           Status
           <select v-model="resource.status" class="input">
-              <option disabled value="">-- choose type --</option>
+            <option disabled value="">-- choose type --</option>
             <option value="available">Available / Ready</option>
             <option value="in-use">In Use / Active</option>
             <option value="maintenance">Under Maintenance</option>

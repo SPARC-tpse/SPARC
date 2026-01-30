@@ -1,5 +1,5 @@
 <script setup lang="js">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useTheme } from '~/composables/useTheme'
 
 definePageMeta({
@@ -7,32 +7,22 @@ definePageMeta({
 })
 
 const { isDarkMode } = useTheme()
-
-const disruptions = ref([
-  {
-    id: 'DIS-1234',
-    name: 'Machine Malfunction',
-    start: '2025-12-27T10:00',
-    end: '2025-12-27T12:30',
-    resource: 'Machine A',
-    type: 'Error'
-  }
-])
-
-function editDisruption(disruptionId) {
-  navigateTo(`/disruption/edit/${disruptionId}`)
-}
+const { fetchDisruptions } = useApi()
+const disruptions = ref([])
 
 onMounted(async () => {
   try {
-    const config = useRuntimeConfig()
-    const baseURL = config.public?.apiBase || 'http://localhost:8000/api'
-    const data = await $fetch(`${baseURL}/disruptions/get_disruptions`)
-    disruptions.value = data
-  } catch (error) {
-    console.error('Fehler beim Laden der Disruptions:', error)
+    // Nutzt die zentrale API-Funktion
+    disruptions.value = await fetchDisruptions()
+  } catch (err) {
+    console.error("Fehler beim Laden der Disruptions:", err)
   }
 })
+
+function editDisruption(disruptionId) {
+  // Korrekter Pfad inklusive Unterordner
+  navigateTo(`/disruption/edit/${disruptionId}`)
+}
 </script>
 
 <template>
@@ -66,7 +56,7 @@ onMounted(async () => {
         </div>
 
         <div class="grid gap-2">
-          <div class="grid grid-cols-[1.2fr,1fr,1fr,1fr,1fr,0.8fr,80px] gap-2 text-xs"
+          <div class="grid grid-cols-[1.2fr,0.8fr,1fr,1fr,1fr,1fr,80px] gap-2 text-xs"
                :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
             <span>Name</span>
             <span>ID</span>
@@ -80,13 +70,14 @@ onMounted(async () => {
           <div
             v-for="disruption in disruptions"
             :key="disruption.id"
-            class="grid grid-cols-[1.2fr,1fr,1fr,1fr,1fr,0.8fr,80px] gap-2 items-center rounded-lg border p-3 text-sm transition-colors"
+            class="grid grid-cols-[1.2fr,0.8fr,1fr,1fr,1fr,1fr,80px] gap-2 items-center rounded-lg border p-3 text-sm transition-colors"
             :class="isDarkMode
               ? 'border-gray-700 bg-gray-700'
               : 'border-slate-200 bg-slate-50 hover:bg-slate-100'"
           >
             <span class="font-medium">{{ disruption.name }}</span>
             <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">{{ disruption.id }}</span>
+            
             <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">
               {{ new Date(disruption.start).toLocaleString('en-GB', {
                 day: '2-digit',
@@ -95,6 +86,7 @@ onMounted(async () => {
                 minute: '2-digit'
               }) }}
             </span>
+
             <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">
               {{ disruption.end ? new Date(disruption.end).toLocaleString('en-GB', {
                 day: '2-digit',
@@ -103,12 +95,17 @@ onMounted(async () => {
                 minute: '2-digit'
               }) : '—' }}
             </span>
-            <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">{{ disruption.resource }}</span>
+
+            <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">
+              {{ disruption.resource_name || '—' }}
+            </span>
+
             <span>
-              <span class="px-2 py-1 rounded-full text-xs font-semibold bg-amber-600 text-amber-100">
-                {{ disruption.type }}
+              <span class="px-2 py-1 rounded-full text-xs font-semibold bg-amber-600 text-amber-50">
+                {{ disruption.type_name }}
               </span>
             </span>
+
             <button
               @click="editDisruption(disruption.id)"
               class="px-2 py-1 text-xs rounded border transition-colors"
@@ -127,9 +124,9 @@ onMounted(async () => {
 
 <style scoped>
 .dark-mode {
-  @apply bg-slate-950 text-slate-100;
+  @apply min-h-screen bg-slate-950 text-slate-100;
 }
 .light-mode {
-  @apply bg-slate-50 text-slate-900;
+  @apply min-h-screen bg-slate-50 text-slate-900;
 }
 </style>

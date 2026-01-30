@@ -24,21 +24,18 @@ def get_disruptions(request: Request) -> JsonResponse:
 
 @api_view(['POST'])
 def create_disruption(request: Request) -> JsonResponse:
-    # Wir nutzen den Serializer, um die Daten zu validieren und zu speichern
     serializer = DisruptionSerializer(data=request.data)
     
     if serializer.is_valid():
         try:
-            # Das sorgt für die automatische ID-Generierung in Django
             new_entry = serializer.save() 
             return JsonResponse({
                 'id': new_entry.id, 
                 'message': 'Disruption created successfully'
             }, status=201)
         except Exception as e:
-            return JsonResponse({'error': f'Datenbank-Fehler: {str(e)}'}, status=500)
+            return JsonResponse({'error': f'Database-error: {str(e)}'}, status=500)
     else:
-        # Wenn hier ein Fehler kommt, siehst du EXAKT, welches Feld (Date, Type, etc.) fehlt
         return JsonResponse({'error': serializer.errors}, status=400)
 
 @api_view(['PUT'])
@@ -69,7 +66,7 @@ def delete_disruption(request: Request, disruption_id: int) -> JsonResponse:
         disruption = Disruption.objects.get(id=disruption_id)
         disruption.delete()
         return JsonResponse({'message': 'Disruption deleted successfully'})
-    except Disruption.DoesNotExist: # Corrected from Order
+    except Disruption.DoesNotExist:
         return JsonResponse({'error': 'Disruption not found'}, status=404)
 
 
@@ -126,8 +123,6 @@ def create_order(request: Request) -> JsonResponse:
 def update_order(request: Request, order_id: int) -> JsonResponse:
     try:
         order = Order.objects.get(id=order_id)
-        # Update logic here
-        # order.field = request.data.get('field')
         order.save()
         return JsonResponse({'message': 'Order updated successfully'})
     except Order.DoesNotExist:

@@ -75,7 +75,7 @@ function editResource(resourceId) {
             <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">{{ resource.id }}</span>
             
             <span :class="isDarkMode ? 'text-slate-200' : 'text-slate-600'">
-              {{ resource.type }}
+              {{ resource.type_name }}
             </span>
 
             <span>

@@ -75,7 +75,7 @@ onMounted(async () => {
           Type
           <select v-model="resource.type" class="input">
             <option disabled value="">-- choose type --</option>
-            <option v-for="t in resourceTypes" :key="t.id" :value="t.id">
+            <option v-for="t in typeOptions" :key="t.id" :value="t.id">
               {{ t.name }}
             </option>
           </select>

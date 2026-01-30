@@ -22,16 +22,18 @@ const resource = ref({
 
 const canSubmit = computed(() => !!(resource.value.name && resource.value.type))
 
+const resourceTypes = ref([])
+
 onMounted(async () => {
   try {
+    resourceTypes.value = await $fetch('http://localhost:8000/api/resourceTypes/get_all')
     const allResources = await fetchResources()
-    // ID säubern (Klammern entfernen) und suchen
-    const found = allResources.find(r => String(r.id) === String(resourceId).replace('()', ''))
+    const found = allResources.find(r => String(r.id) === String(resourceId))
     if (found) {
       resource.value = { ...found }
     }
   } catch (err) {
-    console.error("Fehler beim Laden der Resource:", err)
+    console.error("Fehler beim Laden:", err)
   }
 })
 

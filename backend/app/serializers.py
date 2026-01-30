@@ -18,9 +18,11 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class ResourceSerializer(serializers.ModelSerializer):
+    type_name = serializers.CharField(source='type.name', read_only=True)
+
     class Meta:
         model = Resource
-        fields = ["id", "name", "type", "status"]
+        fields = ["id", "name", "type", "type_name", "status"]
         read_only_fields = ["id"]
 
 

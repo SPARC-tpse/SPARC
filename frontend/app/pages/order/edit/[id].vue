@@ -7,6 +7,8 @@ definePageMeta({
 })
 
 const { isDarkMode } = useTheme()
+const config = useRuntimeConfig()
+const API_BASE_URL = config.public.apiBaseUrl
 const route = useRoute()
 const orderId = route.params.id
 
@@ -22,24 +24,72 @@ const order = ref({
   comments: ''
 })
 
-const steps = ref([{ worker: '', resource: '', notes: '' }])
+const steps = ref([{ name: '', resource: '', setupTime: '', status: 'Planned' }])
 
 const canSubmit = computed(() => {
   const o = order.value
   return Boolean(o.name && o.start && o.end && o.target && o.product)
 })
 
+function normalizePriority(value) {
+  if (typeof value === 'number') {
+    if (value === 3) return 'High'
+    if (value === 2) return 'Medium'
+    if (value === 1) return 'Low'
+  }
+  if (typeof value === 'string') return value
+  return 'Unknown'
+}
+
+function mapOrder(apiOrder) {
+  return {
+    id: apiOrder.id,
+    name: apiOrder.name,
+    start: apiOrder.start_date ?? apiOrder.start,
+    end: apiOrder.end_date ?? apiOrder.end,
+    target: apiOrder.target_amount ?? apiOrder.target ?? '',
+    product: apiOrder.product_name ?? apiOrder.product,
+    status: apiOrder.status,
+    priority: normalizePriority(apiOrder.priority),
+    comments: apiOrder.comments ?? '',
+    process: apiOrder.process ?? [],
+    process_steps: apiOrder.process_steps ?? []
+  }
+}
+
 function addStep() {
-  steps.value.push({ worker: '', resource: '', notes: '' })
+  steps.value.push({ name: '', resource: '', setupTime: '', status: 'Planned' })
+}
+
+function removeStep(index) {
+  steps.value.splice(index, 1)
 }
 
 async function loadOrder() {
-  // TODO: Fetch from backend
-  // const response = await $fetch(`/api/orders/${orderId}`)
-  // order.value = response.data
-  // steps.value = response.data.process || [{ worker: '', resource: '', notes: '' }]
+  try {
+    const response = await $fetch(`${API_BASE_URL}/orders/get_orders`)
+    const list = Array.isArray(response) ? response.map(mapOrder) : []
+    const found = list.find((item) => String(item.id) === String(orderId))
+    if (found) {
+      order.value = { ...order.value, ...found }
+      const existingSteps = (found.process_steps && found.process_steps.length)
+        ? found.process_steps
+        : (found.process || [])
+      steps.value = existingSteps.length
+        ? existingSteps.map((step, idx) => ({
+            name: step.name ?? '',
+            resource: step.resource ?? '',
+            setupTime: step.setup_time ?? '',
+            status: step.status ?? 'Planned',
+            nr: step.number ?? step.nr ?? idx + 1
+          }))
+        : [{ name: '', resource: '', setupTime: '', status: 'Planned' }]
+      return
+    }
+  } catch (error) {
+    console.error('API Error:', error)
+  }
 
-  // Mock data for now
   order.value = {
     id: orderId,
     name: 'Test Order',
@@ -52,26 +102,50 @@ async function loadOrder() {
     comments: 'set-up phase done.'
   }
   steps.value = [
-    { worker: 'Lena', resource: 'test resource', notes: 'test note' },
-    { worker: 'Max', resource: 'test resource', notes: 'test note2' }
+    { name: 'Assembly', resource: 'Machine A', setupTime: '00:30', status: 'Running' },
+    { name: 'Quality Check', resource: 'Station 2', setupTime: '00:10', status: 'Planned' }
   ]
+}
+
+function editProcessStep(stepIndex) {
+  const stepId = `${orderId}-${stepIndex + 1}`
+  navigateTo(`/order/process-steps/${stepId}`)
 }
 
 async function updateOrder() {
   if (!canSubmit.value) return
 
-  const processSteps = steps.value.filter(step => step.worker || step.resource || step.notes)
+  const processSteps = steps.value
+    .map((step, index) => ({
+      nr: index + 1,
+      name: step.name,
+      resource: step.resource,
+      setup_time: step.setupTime,
+      status: step.status
+    }))
+    .filter((step) => step.name || step.resource || step.setup_time || step.status)
   const updatedOrder = {
-    ...order.value,
+    id: order.value.id,
+    name: order.value.name,
+    start: order.value.start,
+    end: order.value.end,
     target: Number(order.value.target),
-    process: processSteps
+    product: order.value.product,
+    status: order.value.status,
+    priority: order.value.priority,
+    comments: order.value.comments,
+    process_steps: processSteps
   }
 
-  // TODO: Send to backend
-  console.log('Updating order:', updatedOrder)
-
-  // Navigate back to overview
-  await navigateTo('/order/overview')
+  try {
+    await $fetch(`${API_BASE_URL}/orders/update_order`, {
+      method: 'PUT',
+      body: updatedOrder
+    })
+    await navigateTo('/order/overview')
+  } catch (error) {
+    console.error('API Error:', error)
+  }
 }
 
 function cancelEdit() {
@@ -159,21 +233,47 @@ onMounted(() => {
           >+ Add step</button>
         </div>
         <div class="space-y-2">
-          <div class="grid grid-cols-[30px,1fr,1fr,1fr] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-            <span>#</span><span>Worker</span><span>Resource</span><span>Notes</span>
+          <div class="grid grid-cols-[40px,1.2fr,1.2fr,0.8fr,0.8fr,150px] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
+            <span>Nr</span><span>Name</span><span>Resource</span><span>Setup</span><span>Status</span><span>Action</span>
           </div>
           <div
             v-for="(step, i) in steps"
             :key="i"
-            class="grid grid-cols-[30px,1fr,1fr,1fr] gap-2 items-center rounded-lg border p-2 transition-colors"
+            class="grid grid-cols-[40px,1.2fr,1.2fr,0.8fr,0.8fr,150px] gap-2 items-center rounded-lg border p-2 transition-colors"
             :class="isDarkMode
               ? 'border-gray-700 bg-gray-700'
               : 'border-slate-200 bg-slate-50'"
           >
             <span class="text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">{{ i + 1 }}</span>
-            <input v-model="step.worker" class="input h-10" />
+            <input v-model="step.name" class="input h-10" />
             <input v-model="step.resource" class="input h-10" />
-            <input v-model="step.notes" class="input h-10" />
+            <input v-model="step.setupTime" type="time" class="input h-10" />
+            <select v-model="step.status" class="input h-10">
+              <option>Planned</option>
+              <option>Running</option>
+              <option>Paused</option>
+              <option>Done</option>
+            </select>
+            <div class="flex gap-2">
+              <button
+                class="px-2 py-1 text-xs rounded border transition-colors"
+                :class="isDarkMode
+                  ? 'border-gray-600 hover:bg-gray-600 text-slate-200'
+                  : 'border-slate-300 hover:bg-slate-200 text-slate-700'"
+                @click="editProcessStep(i)"
+              >
+                Edit
+              </button>
+              <button
+                class="px-2 py-1 text-xs rounded border transition-colors"
+                :class="isDarkMode
+                  ? 'border-rose-500/70 text-rose-200 hover:bg-rose-500/10'
+                  : 'border-rose-200 text-rose-600 hover:bg-rose-50'"
+                @click="removeStep(i)"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       </div>

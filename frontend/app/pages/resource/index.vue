@@ -6,7 +6,7 @@
 
     // Immediately redirect on mount
     // TODO: redirect to dashboard once finished
-    navigateTo('/dashboard', { replace: true })
+    navigateTo('/resource/overview', { replace: true })
 </script>
 
 <template>

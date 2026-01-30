@@ -1,5 +1,5 @@
 <script setup lang="js">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useTheme } from '~/composables/useTheme'
 
 definePageMeta({
@@ -7,24 +7,35 @@ definePageMeta({
 })
 
 const { isDarkMode } = useTheme()
+const config = useRuntimeConfig()
+const API_BASE_URL = config.public.apiBaseUrl
 
-const orders = ref([
-  {
-    id: 'ORD-1042',
-    name: 'Test Order',
-    start: '2025-11-27',
-    end: '2025-11-28',
-    target: 1200,
-    product: 'Ventil platinen',
-    status: 'Running',
-    priority: 'High',
-    comments: 'set-up phase done.',
-    process: [
-      { worker: 'Lena', resource: 'test resource', notes: 'test note' },
-      { worker: 'Max', resource: 'test resource', notes: 'test note2' }
-    ]
+const orders = ref([])
+
+function normalizePriority(value) {
+  if (typeof value === 'number') {
+    if (value === 3) return 'High'
+    if (value === 2) return 'Medium'
+    if (value === 1) return 'Low'
   }
-])
+  if (typeof value === 'string') return value
+  return 'Unknown'
+}
+
+function mapOrder(order) {
+  return {
+    id: order.id,
+    name: order.name,
+    start: order.start_date ?? order.start,
+    end: order.end_date ?? order.end,
+    target: order.target_amount ?? order.target,
+    product: order.product_name ?? order.product,
+    status: order.status,
+    priority: normalizePriority(order.priority),
+    comments: order.comments ?? '',
+    process: order.process ?? []
+  }
+}
 
 function badgeTone(kind, value) {
   const statusTone = {
@@ -47,10 +58,17 @@ function editOrder(orderId) {
   navigateTo(`/order/edit/${orderId}`)
 }
 
-// TODO: Fetch from backend on mount
-onMounted(async () => {
-  // const response = await $fetch('/api/orders')
-  // orders.value = response.data
+async function fetchOrders() {
+  try {
+    const response = await $fetch(`${API_BASE_URL}/orders/get_orders`)
+    orders.value = Array.isArray(response) ? response.map(mapOrder) : []
+  } catch (error) {
+    console.error('API Error:', error)
+  }
+}
+
+onMounted(() => {
+  fetchOrders()
 })
 </script>
 

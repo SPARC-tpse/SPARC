@@ -1,59 +1,44 @@
 <script setup lang="js">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useTheme } from '~/composables/useTheme'
 
-// WICHTIG: Layout definieren, damit die Sidebar erscheint
 definePageMeta({
   layout: 'custom'
 })
 
 const { isDarkMode } = useTheme()
-const { createResource, updateResource } = useApi()
-const route = useRoute()
+const { createResource, fetchResourceTypes } = useApi()
 
-// Prüfen, ob wir im Edit-Modus sind
-const resourceId = route.params.id
-const isEdit = computed(() => !!resourceId)
-
+const typeOptions = ref([])
 const resource = ref({
   name: '',
   type: '',
-  status: ''
+  status: 'available'
 })
 
 const canSubmit = computed(() => !!(resource.value.name && resource.value.type))
 
+onMounted(async () => {
+  try {
+    typeOptions.value = await fetchResourceTypes()
+  } catch (err) {
+    console.error("Fehler beim Laden der Resource-Typen:", err)
+  }
+})
+
 async function submitForm() {
   if (!canSubmit.value) return
-  const payload = { ...resource.value }
-  delete payload.id
-
   try {
-    await createResource(payload)
+    await createResource(resource.value)
     await navigateTo('/resource/overview')
   } catch (err) {
-    console.error("Details:", err.response?._data)
+    console.error("Fehler beim Erstellen:", err.response?._data || err)
   }
 }
 
 function cancel() {
   navigateTo('/resource/overview')
 }
-
-const typeOptions = ref([])
-
-const { fetchResourceTypes } = useApi()
-
-onMounted(async () => {
-  try {
-    const [typeData] = await Promise.all([
-      fetchResourceTypes(),
-    ])
-    typeOptions.value = typeData
-  } catch (err) {
-    console.error("API Error:", err)
-  }
-})
 </script>
 
 <template>
@@ -83,6 +68,7 @@ onMounted(async () => {
         <label class="flex flex-col gap-1 text-sm label-text">
           Status
           <select v-model="resource.status" class="input">
+              <option disabled value="">-- choose type --</option>
             <option value="available">Available / Ready</option>
             <option value="in-use">In Use / Active</option>
             <option value="maintenance">Under Maintenance</option>

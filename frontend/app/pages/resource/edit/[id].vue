@@ -3,18 +3,17 @@ import { ref, computed, onMounted } from 'vue'
 import { useTheme } from '~/composables/useTheme'
 import { useRoute } from 'vue-router'
 
-// Layout für die Sidebar aktivieren
 definePageMeta({
   layout: 'custom'
 })
 
 const { isDarkMode } = useTheme()
 const route = useRoute()
-const { fetchResources, updateResource } = useApi()
+const { fetchResources, updateResource, fetchResourceTypes } = useApi()
 const resourceId = route.params.id
 
+const resourceTypes = ref([])
 const resource = ref({
-  id: resourceId,
   name: '',
   type: '',
   status: ''
@@ -22,30 +21,29 @@ const resource = ref({
 
 const canSubmit = computed(() => !!(resource.value.name && resource.value.type))
 
-const resourceTypes = ref([])
-
 onMounted(async () => {
   try {
-    resourceTypes.value = await $fetch('http://localhost:8000/api/resourceTypes/get_all')
+    resourceTypes.value = await fetchResourceTypes()
     const allResources = await fetchResources()
-    const found = allResources.find(r => String(r.id) === String(resourceId))
+    const found = allResources.find(r => String(r.id) === String(resourceId).replace('()', ''))
+
+
     if (found) {
       resource.value = { ...found }
     }
   } catch (err) {
-    console.error("Fehler beim Laden:", err)
+    console.error("Fehler beim Laden der Resource-Daten:", err)
   }
 })
 
 async function handleUpdate() {
   if (!canSubmit.value) return
   try {
-    console.log('Updating resource:', resource.value)
+    // Nutzt die ID aus der Route und die aktuellen Formular-Daten
     await updateResource(resourceId, resource.value)
     await navigateTo('/resource/overview')
   } catch (err) {
-    console.error("Fehler beim Update:", err)
-    alert("Update fehlgeschlagen.")
+    console.error("Fehler beim Update:", err.response?._data || err)
   }
 }
 
@@ -56,15 +54,8 @@ function cancelEdit() {
 
 <template>
   <div :class="isDarkMode ? 'dark-mode' : 'light-mode'">
-    <Topbar 
-      title="Resources · Edit" 
-      :can-submit="canSubmit" 
-      :show-reset="true" 
-      :show-create="true"
-      create-label="Update" 
-      @reset="cancelEdit" 
-      @submit="handleUpdate" 
-    />
+    <Topbar title="Resources · Edit" :can-submit="canSubmit" :show-reset="true" :show-create="true"
+      create-label="Update" @reset="cancelEdit" @submit="handleUpdate" />
 
     <main class="max-w-5xl mx-auto p-6 space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -72,7 +63,7 @@ function cancelEdit() {
           Resource Name
           <input v-model="resource.name" class="input" placeholder="e.g. Excavator 01" />
         </label>
-        
+
         <label class="flex flex-col gap-1 text-sm label-text">
           ID
           <input :value="resource.id" class="input disabled-input" disabled />
@@ -82,10 +73,9 @@ function cancelEdit() {
           Type
           <select v-model="resource.type" class="input">
             <option disabled value="">-- choose type --</option>
-            <option value="machinery">Machinery</option>
-            <option value="worker">Worker</option>
-            <option value="tool">Tool</option>
-            <option value="vehicle">Vehicle</option>
+            <option v-for="t in resourceTypes" :key="t.id" :value="t.id">
+              {{ t.name }}
+            </option>
           </select>
         </label>
 

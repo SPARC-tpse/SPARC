@@ -4,7 +4,7 @@
     layout: false
     })
 
-    navigateTo('/order/overview', { replace: true })
+    navigateTo('/dashboard', { replace: true })
 </script>
 
 <template>

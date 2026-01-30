@@ -9,8 +9,8 @@ definePageMeta({
 
 const { isDarkMode } = useTheme()
 const route = useRoute()
-
 const resourceId = String(route.params.id).replace('()', '')
+
 const { fetchResources, fetchResourceTypes, saveResource } = useApi()
 
 const resource = ref({
@@ -29,7 +29,7 @@ onMounted(async () => {
       fetchResourceTypes(),
       fetchResources()
     ])
-    
+
     resourceTypes.value = typeData
     const found = allResources.find(r => String(r.id) === String(resourceId))
     
@@ -41,7 +41,7 @@ onMounted(async () => {
   }
 })
 
-async function handleUpdate() {
+async function updateResource() {
   if (!canSubmit.value) return
 
   try {
@@ -60,7 +60,7 @@ function cancelEdit() {
 <template>
   <div :class="isDarkMode ? 'dark-mode' : 'light-mode'">
     <Topbar title="Resources · Edit" :can-submit="canSubmit" :show-reset="true" :show-create="true"
-      create-label="Update" @reset="cancelEdit" @submit="handleUpdate" />
+      create-label="Update" @reset="cancelEdit" @submit="updateResource" />
 
     <main class="max-w-5xl mx-auto p-6 space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -20,8 +20,6 @@ def get_disruptions(request: Request) -> JsonResponse:
         return JsonResponse({'error': 'Failed to retrieve disruptions'}, status=500)
 
 
-
-
 @api_view(['POST'])
 def create_disruption(request: Request) -> JsonResponse:
     serializer = DisruptionSerializer(data=request.data)
@@ -164,6 +162,15 @@ def update_resource(request: Request, resource_id: int) -> JsonResponse:
             serializer.save()
             return JsonResponse({'message': 'Resource updated'})
         return JsonResponse({'error': serializer.errors}, status=400)
+    except Resource.DoesNotExist:
+        return JsonResponse({'error': 'Resource not found'}, status=404)
+    
+@api_view(['DELETE'])
+def delete_resource(request: Request, resource_id: int) -> JsonResponse:
+    try:
+        resource = Resource.objects.get(id=resource_id)
+        resource.delete()
+        return JsonResponse({'message': 'Resource deleted successfully'})
     except Resource.DoesNotExist:
         return JsonResponse({'error': 'Resource not found'}, status=404)
 

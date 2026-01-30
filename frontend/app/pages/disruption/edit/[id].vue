@@ -30,13 +30,11 @@ const canSubmit = computed(() => !!(disruption.value.name && disruption.value.re
 
 function setNow(field) {
   const now = new Date()
-  // ISO-Format für datetime-local Input (YYYY-MM-DDTHH:mm)
   disruption.value[field] = now.toISOString().slice(0, 16)
 }
 
 onMounted(async () => {
   try {
-    // 1. Optionen für Dropdowns laden
     const [resData, typeData, allDisruptions] = await Promise.all([
       fetchResources(),
       fetchDisruptionTypes(),
@@ -64,7 +62,6 @@ async function updateDisruption() {
   if (!canSubmit.value) return
 
   try {
-    // Nutze die saveDisruption Funktion aus deiner useApi
     await saveDisruption(disruption.value, disruptionId)
     await navigateTo('/disruption/overview')
   } catch (err) {

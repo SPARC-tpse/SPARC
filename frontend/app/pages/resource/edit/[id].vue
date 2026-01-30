@@ -9,41 +9,46 @@ definePageMeta({
 
 const { isDarkMode } = useTheme()
 const route = useRoute()
-const { fetchResources, updateResource, fetchResourceTypes } = useApi()
-const resourceId = route.params.id
 
-const resourceTypes = ref([])
+const resourceId = String(route.params.id).replace('()', '')
+const { fetchResources, fetchResourceTypes, saveResource } = useApi()
+
 const resource = ref({
+  id: resourceId,
   name: '',
   type: '',
-  status: ''
+  status: 'Available'
 })
 
+const resourceTypes = ref([])
 const canSubmit = computed(() => !!(resource.value.name && resource.value.type))
 
 onMounted(async () => {
   try {
-    resourceTypes.value = await fetchResourceTypes()
-    const allResources = await fetchResources()
-    const found = allResources.find(r => String(r.id) === String(resourceId).replace('()', ''))
-
-
+    const [typeData, allResources] = await Promise.all([
+      fetchResourceTypes(),
+      fetchResources()
+    ])
+    
+    resourceTypes.value = typeData
+    const found = allResources.find(r => String(r.id) === String(resourceId))
+    
     if (found) {
       resource.value = { ...found }
     }
   } catch (err) {
-    console.error("Fehler beim Laden der Resource-Daten:", err)
+    console.error("API Error beim Laden der Resource:", err)
   }
 })
 
 async function handleUpdate() {
   if (!canSubmit.value) return
+
   try {
-    // Nutzt die ID aus der Route und die aktuellen Formular-Daten
-    await updateResource(resourceId, resource.value)
+    await saveResource(resource.value, resourceId)
     await navigateTo('/resource/overview')
   } catch (err) {
-    console.error("Fehler beim Update:", err.response?._data || err)
+    console.error('Fehler beim Updaten der Resource:', err)
   }
 }
 

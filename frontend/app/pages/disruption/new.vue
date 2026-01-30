@@ -1,5 +1,5 @@
 <script setup lang="js">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useTheme } from '~/composables/useTheme'
 
 definePageMeta({
@@ -7,11 +7,13 @@ definePageMeta({
 })
 
 const { isDarkMode } = useTheme()
+// API-Funktionen extrahieren
+const { fetchResources, fetchDisruptionTypes, saveDisruption } = useApi()
 
 const resourceOptions = ref([])
 const typeOptions = ref([])
 
-
+// Wir brauchen die lokale formId nur zur Anzeige, falls das Backend die ID vergibt
 const formId = ref(`DIS-${Math.floor(Math.random() * 10000)}`)
 
 const newDisruption = ref({
@@ -22,6 +24,7 @@ const newDisruption = ref({
   type: ''
 })
 
+// FIX: Explizit Boolean (!!) für die Topbar Prop
 const canSubmit = computed(() =>
   !!(newDisruption.value.name &&
     newDisruption.value.resource &&
@@ -46,40 +49,16 @@ function resetForm() {
 async function submitDisruption() {
   if (!canSubmit.value) return
 
-  // 1. Prepare the data object properly
-  const disruptionData = {
-    ...newDisruption.value
-  }
-
-  // 2. Access runtime config properly if using Nuxt
-  const config = useRuntimeConfig()
-  const baseURL = config.public?.apiBase || 'http://localhost:8000/api'
-  const endpoint = '/disruptions/create_disruption'
-
-  console.log('Submitting disruption:', disruptionData)
-
   try {
-    await $fetch(`${baseURL}${endpoint}`, {
-      method: 'POST',
-      body: disruptionData,
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    })
-
-    console.log('Success!')
-
+    await saveDisruption(newDisruption.value)
+    
+    console.log('Disruption erfolgreich erstellt')
+    resetForm()
+    await navigateTo('/disruption/overview')
   } catch (error) {
     console.error('API Error:', error)
-    alert('Failed to create disruption. Check console.')
-    return
   }
-
-  resetForm()
-  await navigateTo('/disruption/overview')
 }
-
-const { fetchResources, fetchDisruptionTypes, fetchDisruptions } = useApi()
 
 onMounted(async () => {
   try {
@@ -89,12 +68,10 @@ onMounted(async () => {
     ])
     resourceOptions.value = resData
     typeOptions.value = typeData
-
   } catch (err) {
-    console.error("API Error:", err)
+    console.error("API Error beim Laden der Optionen:", err)
   }
 })
-
 </script>
 
 <template>

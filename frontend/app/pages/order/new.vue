@@ -7,6 +7,8 @@ definePageMeta({
 })
 
 const { isDarkMode } = useTheme()
+const config = useRuntimeConfig()
+const API_BASE_URL = config.public.apiBaseUrl
 
 const newOrder = ref({
   name: '',
@@ -19,7 +21,7 @@ const newOrder = ref({
   comments: ''
 })
 
-const steps = ref([{ worker: '', resource: '', notes: '' }])
+const steps = ref([{ name: '', resource: '', setupTime: '', status: 'Planned' }])
 const formId = ref(makeId())
 
 const canSubmit = computed(() => {
@@ -32,7 +34,7 @@ function makeId() {
 }
 
 function addStep() {
-  steps.value.push({ worker: '', resource: '', notes: '' })
+  steps.value.push({ name: '', resource: '', setupTime: '', status: 'Planned' })
 }
 
 function removeStep(index) {
@@ -50,16 +52,24 @@ function resetForm() {
     priority: 'Medium',
     comments: ''
   }
-  steps.value = [{ worker: '', resource: '', notes: '' }]
+  steps.value = [{ name: '', resource: '', setupTime: '', status: 'Planned' }]
   formId.value = makeId()
 }
 
 async function submitOrder() {
   if (!canSubmit.value) return
 
-  const processSteps = steps.value.filter(step => step.worker || step.resource || step.notes)
+  const processSteps = steps.value
+    .map((step, index) => ({
+      nr: index + 1,
+      name: step.name,
+      resource: step.resource,
+      setup_time: step.setupTime,
+      status: step.status
+    }))
+    .filter((step) => step.name || step.resource || step.setup_time || step.status)
+
   const order = {
-    id: formId.value,
     name: newOrder.value.name,
     start: newOrder.value.start,
     end: newOrder.value.end,
@@ -68,16 +78,19 @@ async function submitOrder() {
     status: newOrder.value.status,
     priority: newOrder.value.priority,
     comments: newOrder.value.comments,
-    process: processSteps
+    process_steps: processSteps
   }
 
-  // TODO: Send to backend
-  console.log('Submitting order:', order)
-
-  resetForm()
-
-  // Navigate to overview
-  await navigateTo('/order/overview')
+  try {
+    await $fetch(`${API_BASE_URL}/orders/create_order`, {
+      method: 'POST',
+      body: order
+    })
+    resetForm()
+    await navigateTo('/order/overview')
+  } catch (error) {
+    console.error('API Error:', error)
+  }
 }
 </script>
 
@@ -157,21 +170,27 @@ async function submitOrder() {
           >+ Add step</button>
         </div>
         <div class="space-y-2">
-          <div class="grid grid-cols-[30px,1fr,1fr,1fr,90px] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-            <span>#</span><span>Worker</span><span>Resource</span><span>Notes</span><span>Action</span>
+          <div class="grid grid-cols-[40px,1.2fr,1.2fr,0.8fr,0.8fr,90px] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
+            <span>Nr</span><span>Name</span><span>Resource</span><span>Setup</span><span>Status</span><span>Action</span>
           </div>
           <div
             v-for="(step, i) in steps"
             :key="i"
-            class="grid grid-cols-[30px,1fr,1fr,1fr,90px] gap-2 items-center rounded-lg border p-2 transition-colors"
+            class="grid grid-cols-[40px,1.2fr,1.2fr,0.8fr,0.8fr,90px] gap-2 items-center rounded-lg border p-2 transition-colors"
             :class="isDarkMode
               ? 'border-gray-700 bg-gray-700'
               : 'border-slate-200 bg-slate-50'"
           >
             <span class="text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">{{ i + 1 }}</span>
-            <input v-model="step.worker" class="input h-10" />
+            <input v-model="step.name" class="input h-10" />
             <input v-model="step.resource" class="input h-10" />
-            <input v-model="step.notes" class="input h-10" />
+            <input v-model="step.setupTime" type="time" class="input h-10" />
+            <select v-model="step.status" class="input h-10">
+              <option>Planned</option>
+              <option>Running</option>
+              <option>Paused</option>
+              <option>Done</option>
+            </select>
             <button
               class="px-2 py-1 text-xs rounded border transition-colors"
               :class="isDarkMode

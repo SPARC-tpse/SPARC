@@ -52,21 +52,23 @@ const { isDarkMode, toggleDarkMode } = useTheme()
 
       <button
         v-if="showReset"
+        type="button"
         class="rounded-lg border px-3 py-2 text-sm transition-colors"
         :class="isDarkMode
           ? 'border-gray-700 bg-gray-900 text-slate-100 hover:border-pink-700'
           : 'border-slate-300 bg-white text-slate-700 hover:border-indigo-500 hover:text-indigo-600'"
-        @click="$emit('reset')"
+        @click="emit('reset')"
       >
         Reset
       </button>
 
       <button
         v-if="showCreate"
+        type="button"
         class="rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-40 transition-all shadow-md"
         :class="canSubmit ? 'bg-gradient-to-r from-indigo-500 to-pink-500' : 'bg-gray-500'"
         :disabled="!canSubmit"
-        @click="$emit('submit')"
+        @click="emit('submit')"
       >
         {{ createLabel }}
       </button>

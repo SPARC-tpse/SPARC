@@ -1,11 +1,4 @@
-Um eine „Reset“-Funktionalität zu bauen, die die ursprünglichen Daten wiederherstellt, müssen wir die vom Server geladenen Daten in einer separaten Variable (einem „Snapshot“) speichern.
 
-Hier ist das angepasste Script und Template:
-
-1. Das Script mit Snapshot-Logik
-Wir fügen eine originalData-Variable hinzu, die wir befüllen, sobald die Daten erfolgreich vom Server geladen wurden.
-
-JavaScript
 <script setup lang="js">
 import { ref, computed, onMounted } from 'vue'
 import { useTheme } from '~/composables/useTheme'

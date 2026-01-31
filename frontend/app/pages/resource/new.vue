@@ -1,13 +1,16 @@
 <script setup lang="js">
 import { ref, computed, onMounted } from 'vue'
 import { useTheme } from '~/composables/useTheme'
+import { useRoute } from 'vue-router'
 
-definePageMeta({
-  layout: 'custom'
-})
+definePageMeta({ layout: 'custom' })
 
 const { isDarkMode } = useTheme()
-const { createResource, fetchResourceTypes } = useApi()
+const route = useRoute()
+const { saveResource, fetchResources, fetchResourceTypes } = useApi()
+
+const resourceId = route.params.id
+const isEdit = computed(() => !!resourceId)
 
 const typeOptions = ref([])
 const resource = ref({
@@ -16,35 +19,49 @@ const resource = ref({
   status: 'available'
 })
 
+const originalData = ref(null)
 const canSubmit = computed(() => !!(resource.value.name && resource.value.type))
 
-onMounted(async () => {
-  try {
-    typeOptions.value = await fetchResourceTypes()
-  } catch (err) {
-    console.error("Fehler beim Laden der Resource-Typen:", err)
+function resetToOriginal() {
+  if (isEdit.value && originalData.value) {
+    resource.value = JSON.parse(JSON.stringify(originalData.value))
+  } else {
+    resource.value = { name: '', type: '', status: 'available' }
   }
-})
+}
 
 async function submitForm() {
   if (!canSubmit.value) return
   try {
-    await createResource(resource.value)
+    await saveResource(resource.value, resourceId)
     await navigateTo('/resource/overview')
   } catch (err) {
-    console.error("Fehler beim Erstellen:", err.response?._data || err)
+    console.error("API Error:", err.response?._data || err)
   }
 }
 
-function cancel() {
-  navigateTo('/resource/overview')
-}
+onMounted(async () => {
+  try {
+    typeOptions.value = await fetchResourceTypes()
+
+    if (isEdit.value) {
+      const allResources = await fetchResources()
+      const found = allResources.find(r => String(r.id) === String(resourceId).replace('()', ''))
+      if (found) {
+        resource.value = { ...found }
+        originalData.value = JSON.parse(JSON.stringify(found))
+      }
+    }
+  } catch (err) {
+    console.error("API Error beim Laden der Resource:", err)
+  }
+})
 </script>
 
 <template>
   <div :class="isDarkMode ? 'dark-mode' : 'light-mode'">
     <Topbar :title="isEdit ? 'Resources · Edit' : 'Resources · New'" :can-submit="canSubmit" :show-reset="true"
-      :show-create="true" :create-label="isEdit ? 'Update' : 'Create'" @reset="cancel" @submit="submitForm" />
+      :show-create="true" :create-label="isEdit ? 'Update' : 'Create'" @reset="resetToOriginal" @submit="submitForm" />
 
     <main class="max-w-5xl mx-auto p-6 space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">

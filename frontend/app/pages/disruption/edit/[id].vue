@@ -1,17 +1,22 @@
+Um eine „Reset“-Funktionalität zu bauen, die die ursprünglichen Daten wiederherstellt, müssen wir die vom Server geladenen Daten in einer separaten Variable (einem „Snapshot“) speichern.
+
+Hier ist das angepasste Script und Template:
+
+1. Das Script mit Snapshot-Logik
+Wir fügen eine originalData-Variable hinzu, die wir befüllen, sobald die Daten erfolgreich vom Server geladen wurden.
+
+JavaScript
 <script setup lang="js">
 import { ref, computed, onMounted } from 'vue'
 import { useTheme } from '~/composables/useTheme'
 import { useRoute } from 'vue-router'
 
-definePageMeta({
-  layout: 'custom'
-})
+definePageMeta({ layout: 'custom' })
 
 const { isDarkMode } = useTheme()
 const route = useRoute()
 const disruptionId = route.params.id
 
-// API Methoden importieren
 const { fetchResources, fetchDisruptionTypes, fetchDisruptions, saveDisruption } = useApi()
 
 const disruption = ref({
@@ -23,14 +28,31 @@ const disruption = ref({
   type: ''
 })
 
+const originalData = ref(null)
+
 const resourceOptions = ref([])
 const typeOptions = ref([])
-
 const canSubmit = computed(() => !!(disruption.value.name && disruption.value.resource))
 
 function setNow(field) {
   const now = new Date()
   disruption.value[field] = now.toISOString().slice(0, 16)
+}
+
+function resetToOriginal() {
+  if (originalData.value) {
+    disruption.value = JSON.parse(JSON.stringify(originalData.value))
+  }
+}
+
+async function submitForm() {
+  if (!canSubmit.value) return
+  try {
+    await saveDisruption(disruption.value, disruptionId)
+    await navigateTo('/disruption/overview')
+  } catch (err) {
+    console.error("API Error:", err.response?._data || err)
+  }
 }
 
 onMounted(async () => {
@@ -43,41 +65,27 @@ onMounted(async () => {
     
     resourceOptions.value = resData
     typeOptions.value = typeData
-
-    const found = allDisruptions.find(d => String(d.id) === String(disruptionId))
     
+    const found = allDisruptions.find(d => String(d.id) === String(disruptionId))
     if (found) {
-      disruption.value = {
+      const formattedData = {
         ...found,
         start: found.start ? found.start.slice(0, 16) : '',
         end: found.end ? found.end.slice(0, 16) : ''
       }
+      disruption.value = { ...formattedData }
+      originalData.value = { ...formattedData }
     }
   } catch (err) {
-    console.error("API Error beim Laden:", err)
+    console.error("API Error beim Laden der Disruption:", err)
   }
 })
-
-async function updateDisruption() {
-  if (!canSubmit.value) return
-
-  try {
-    await saveDisruption(disruption.value, disruptionId)
-    await navigateTo('/disruption/overview')
-  } catch (err) {
-    console.error('Fehler beim Updaten der Disruption:', err)
-  }
-}
-
-function cancelEdit() {
-  navigateTo('/disruption/overview')
-}
 </script>
 
 <template>
   <div :class="isDarkMode ? 'dark-mode' : 'light-mode'">
     <Topbar title="Disruptions · Edit" :can-submit="canSubmit" :show-reset="true" :show-create="true"
-      create-label="Update" @reset="cancelEdit" @submit="updateDisruption" />
+      create-label="Update" @reset="resetToOriginal" @submit="updateDisruption" />
 
     <main class="max-w-5xl mx-auto p-6 space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">

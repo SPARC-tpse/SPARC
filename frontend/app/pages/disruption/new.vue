@@ -7,16 +7,12 @@ definePageMeta({
 })
 
 const { isDarkMode } = useTheme()
-// API-Funktionen extrahieren
 const { fetchResources, fetchDisruptionTypes, saveDisruption } = useApi()
 
 const resourceOptions = ref([])
 const typeOptions = ref([])
 
-// Wir brauchen die lokale formId nur zur Anzeige, falls das Backend die ID vergibt
-const formId = ref(`DIS-${Math.floor(Math.random() * 10000)}`)
-
-const newDisruption = ref({
+const disruption = ref({
   name: '',
   start: '',
   end: '',
@@ -24,20 +20,19 @@ const newDisruption = ref({
   type: ''
 })
 
-// FIX: Explizit Boolean (!!) für die Topbar Prop
 const canSubmit = computed(() =>
-  !!(newDisruption.value.name &&
-    newDisruption.value.resource &&
-    newDisruption.value.type)
+  !!(disruption.value.name &&
+    disruption.value.resource &&
+    disruption.value.type)
 )
 
 function setNow(field) {
   const now = new Date()
-  newDisruption.value[field] = now.toISOString().slice(0, 16)
+  disruption.value[field] = now.toISOString().slice(0, 16)
 }
 
 function resetForm() {
-  newDisruption.value = {
+  disruption.value = {
     name: '',
     start: '',
     end: '',
@@ -48,12 +43,8 @@ function resetForm() {
 
 async function submitDisruption() {
   if (!canSubmit.value) return
-
   try {
-    await saveDisruption(newDisruption.value)
-    
-    console.log('Disruption erfolgreich erstellt')
-    resetForm()
+    await saveDisruption(disruption.value)
     await navigateTo('/disruption/overview')
   } catch (error) {
     console.error('API Error:', error)
@@ -83,7 +74,7 @@ onMounted(async () => {
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label class="flex flex-col gap-1 text-sm label-text">
           Name
-          <input v-model="newDisruption.name" class="input" />
+          <input v-model="disruption.name" class="input" />
         </label>
         <label class="flex flex-col gap-1 text-sm label-text">
           ID (auto)
@@ -93,7 +84,7 @@ onMounted(async () => {
         <div class="flex flex-col gap-1">
           <label class="text-sm label-text">Start</label>
           <div class="flex gap-2">
-            <input v-model="newDisruption.start" type="datetime-local" class="input" />
+            <input v-model="disruption.start" type="datetime-local" class="input" />
             <button type="button" @click="setNow('start')"
               class="px-3 rounded-lg text-sm border transition-colors whitespace-nowrap"
               :class="isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-slate-300 hover:bg-slate-100'">
@@ -105,7 +96,7 @@ onMounted(async () => {
         <div class="flex flex-col gap-1">
           <label class="text-sm label-text">End</label>
           <div class="flex gap-2">
-            <input v-model="newDisruption.end" type="datetime-local" class="input" />
+            <input v-model="disruption.end" type="datetime-local" class="input" />
             <button type="button" @click="setNow('end')"
               class="px-3 rounded-lg text-sm border transition-colors whitespace-nowrap"
               :class="isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-slate-300 hover:bg-slate-100'">
@@ -116,7 +107,7 @@ onMounted(async () => {
 
         <label class="flex flex-col gap-1 text-sm label-text">
           Resource
-          <select v-model="newDisruption.resource" class="input">
+          <select v-model="disruption.resource" class="input">
             <option disabled value="">-- choose --</option>
             <option v-for="opt in resourceOptions" :key="opt.id" :value="opt.id">
               {{ opt.name }}
@@ -126,7 +117,7 @@ onMounted(async () => {
 
         <label class="flex flex-col gap-1 text-sm label-text">
           Type
-          <select v-model="newDisruption.type" class="input">
+          <select v-model="disruption.type" class="input">
             <option disabled value="">-- choose --</option>
             <option v-for="opt in typeOptions" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
           </select>

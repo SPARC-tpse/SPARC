@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useTheme } from '~/composables/useTheme'
 import { useDisruptionTimer } from '~/composables/useDisruptionTimer';
+import {useDisruptionDraft} from "~/composables/useDisruptionDraft.ts";
 
 definePageMeta({
   layout: 'custom'
@@ -21,6 +22,8 @@ const {
   popoutVisible,
 } = useDisruptionTimer()
 
+const { draft: newDisruption, resetDraft } = useDisruptionDraft()
+
 // Label für den Start/Pause/Weiter-Button
 const primaryLabel = computed(() => {
   if (!isRunning.value && !isPaused.value) return 'Start'
@@ -28,7 +31,7 @@ const primaryLabel = computed(() => {
   return 'Pause'
 })
 
-// NEU: Click-Handler für Start/Pause/Weiter
+// Click-Handler für Start/Pause/Weiter
 function onPrimaryClick() {
   if (!isRunning.value && !isPaused.value) {
     timerStart()
@@ -53,6 +56,7 @@ const types = ref([
 
 const formId = ref(`DIS-${Math.floor(Math.random() * 10000)}`)
 
+/**
 const newDisruption = useState('disruption:newForm', () => ({
   name: '',
   start: '',
@@ -60,6 +64,7 @@ const newDisruption = useState('disruption:newForm', () => ({
   resource: '',
   type: ''
 }))
+ */
 
 const canSubmit = computed(() =>
   newDisruption.value.name && newDisruption.value.resource
@@ -134,25 +139,25 @@ async function submitDisruption() {
     const endpoint = '/disruptions/new_disruption'
 
     console.log('Submitting disruption:', disruption)
+
     try {
-      const response = await $fetch(`${baseURL}${endpoint}`, {
-        method: 'POST',
-        body: newDisruption,
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      })
-      return response
-    } catch (error) {
-      console.error('API Error:', error)
-      throw error
-    }
+    const response = await $fetch(`${baseURL}${endpoint}`, {
+      method: 'POST',
+      body: newDisruption.value,
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
+    })
 
-    resetForm()
+    // Nach erfolgreichem Submit Draft löschen, damit er nicht wieder auftaucht
+    resetDraft()
+    timerReset()
 
-    // Navigate to overview
     await navigateTo('/disruption/overview')
+    return response
+    } catch (error) {
+    console.error('API Error:', error)
+    throw error
+    }
 }
 </script>
 

@@ -28,7 +28,7 @@ const isActive = (path) => {
     </NuxtLink>
 
     <!-- Disruptions button - links to /disruption/overview -->
-    <NuxtLink to="/disruption/overview"
+    <NuxtLink to="/disruption"
       class="w-full px-3 py-2 text-left rounded-lg border text-sm font-medium transition-all" :class="[
         isActive('/disruption')
           ? 'bg-gradient-to-r from-indigo-500 to-pink-900 text-white border-pink-700'

@@ -176,6 +176,7 @@ export function useDisruptionTimer() {
     stop,
     stopAndMaybeApply,
     reset,
+    ensureTicking,
 
     // Helpers
     toDateTimeLocal,

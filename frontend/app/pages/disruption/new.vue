@@ -1,12 +1,45 @@
 <script setup lang="js">
 import { ref, computed } from 'vue'
 import { useTheme } from '~/composables/useTheme'
+import { useDisruptionTimer } from '~/composables/useDisruptionTimer';
 
 definePageMeta({
   layout: 'custom'
 })
 
 const { isDarkMode } = useTheme()
+
+const {
+  isRunning,
+  isPaused,
+  formatted,
+  start: timerStart,
+  pause: timerPause,
+  resume: timerResume,
+  stopAndMaybeApply,
+  reset: timerReset,
+  popoutVisible,
+} = useDisruptionTimer()
+
+// Label für den Start/Pause/Weiter-Button
+const primaryLabel = computed(() => {
+  if (!isRunning.value && !isPaused.value) return 'Start'
+  if (isPaused.value) return 'Weiter'
+  return 'Pause'
+})
+
+// NEU: Click-Handler für Start/Pause/Weiter
+function onPrimaryClick() {
+  if (!isRunning.value && !isPaused.value) {
+    timerStart()
+    return
+  }
+  if (isPaused.value) {
+    timerResume()
+    return
+  }
+  timerPause()
+}
 
 const resources = ref([
   { id: 1, name: 'Machine A' },
@@ -20,22 +53,63 @@ const types = ref([
 
 const formId = ref(`DIS-${Math.floor(Math.random() * 10000)}`)
 
-const newDisruption = ref({
+const newDisruption = useState('disruption:newForm', () => ({
   name: '',
   start: '',
   end: '',
   resource: '',
   type: ''
-})
+}))
 
 const canSubmit = computed(() =>
   newDisruption.value.name && newDisruption.value.resource
 )
 
-function setNow(field) {
-  const now = new Date()
-  newDisruption.value[field] = now.toISOString().slice(0, 16)
+/**
+ * Abfrage, ob ein Feld überschrieben werden darf
+ * Nutzt natives Browser-Confirm als einfaches Popup
+ */
+function confirmOverwrite(message) {
+  return window.confirm(message)
 }
+
+function setNow(field) {
+  const current = (newDisruption.value?.[field] ?? '').toString().trim()
+
+  if (current) {
+    const ok = confirmOverwrite(
+      `Das Feld \`${field}\` ist bereits gesetzt.\nMöchtest du den vorhandenen Wert überschreiben\?`
+    )
+    if (!ok) return
+  }
+
+  const now = new Date()
+  newDisruption.value[field] = now.toISOString().slice(0, 16) // yyyy-MM-ddTHH:mm
+}
+
+/**
+ * Timer-Stop mit Overwrite-Confirm, falls Start/Ende bereits befüllt sind
+
+function stopTimerAndMaybeApply() {
+  timerStop()
+
+  // Falls Timer noch keine Zeiten hat, nichts tun
+  if (!startMs.value || !endMs.value) return
+
+  const hasExistingStart = !!newDisruption.value.start?.toString().trim()
+  const hasExistingEnd = !!newDisruption.value.end?.toString().trim()
+
+  if (hasExistingStart || hasExistingEnd) {
+    const ok = confirmOverwrite(
+      `Start und/oder Endzeit sind bereits eingetragen.\nMöchtest du diese durch die Timer-Zeiten überschreiben\?`
+    )
+    if (!ok) return
+  }
+
+  newDisruption.value.start = toDateTimeLocal(startMs.value)
+  newDisruption.value.end = toDateTimeLocal(endMs.value)
+}
+*/
 
 function resetForm() {
   newDisruption.value = {
@@ -45,6 +119,7 @@ function resetForm() {
     resource: '',
     type: ''
   }
+  timerReset()
 }
 
 async function submitDisruption() {
@@ -94,6 +169,43 @@ async function submitDisruption() {
     />
 
     <main class="max-w-5xl mx-auto p-6 space-y-4">
+
+      <div
+        class="rounded-lg border p-4"
+        :class="isDarkMode ? 'border-gray-700' : 'border-slate-300'"
+      >
+        <div class="flex flex-wrap items-center gap-3 justify-between">
+          <div class="text-sm font-semibold">Timer</div>
+
+          <div class="font-mono text-lg">
+            {{ formatted }}
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="px-3 py-2 rounded-lg text-sm border transition-colors"
+              :class="isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-slate-300 hover:bg-slate-100'"
+              @click="onPrimaryClick"
+            >
+              {{ primaryLabel }}
+            </button>
+
+            <button
+              type="button"
+              class="px-3 py-2 rounded-lg text-sm border transition-colors"
+              :class="isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-slate-300 hover:bg-slate-100'"
+              @click="stopAndMaybeApply(newDisruption)"
+              :disabled="!isRunning && !isPaused"
+            >
+              Stopp
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label class="flex flex-col gap-1 text-sm label-text">
           Name
@@ -107,7 +219,7 @@ async function submitDisruption() {
         <div class="flex flex-col gap-1">
           <label class="text-sm label-text">Start</label>
           <div class="flex gap-2">
-            <input v-model="newDisruption.start" type="datetime-local" class="input" />
+            <input v-model="newDisruption.start" type="datetime-local" step="1" class="input" />
             <button
               type="button"
               @click="setNow('start')"
@@ -122,7 +234,7 @@ async function submitDisruption() {
         <div class="flex flex-col gap-1">
           <label class="text-sm label-text">End</label>
           <div class="flex gap-2">
-            <input v-model="newDisruption.end" type="datetime-local" class="input" />
+            <input v-model="newDisruption.end" type="datetime-local" step="1" class="input" />
             <button
               type="button"
               @click="setNow('end')"

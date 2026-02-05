@@ -24,15 +24,6 @@ const {
   ensureTicking,
 } = useDisruptionTimer()
 
-/**
-const newDisruption = useState('disruption:newForm', () => ({
-  name: '',
-  start: '',
-  end: '',
-  resource: '',
-  type: ''
-}))
- */
 
 const { draft: newDisruption } = useDisruptionDraft()
 

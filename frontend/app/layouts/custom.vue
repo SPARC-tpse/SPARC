@@ -1,10 +1,13 @@
 <script setup lang="js">
 import { ref } from 'vue'
 import { useTheme } from '~/composables/useTheme'
+import { useRoute} from "vue-router"
 import { useDisruptionTimer } from '~/composables/useDisruptionTimer'
+import { useDisruptionDraft } from '~/composables/useDisruptionDraft'
 
 // Get theme for background color
 const { isDarkMode } = useTheme()
+const route = useRoute()
 
 
 // Globaler Timer (läuft bei Tabwechsel weiter, weil useState)
@@ -18,8 +21,10 @@ const {
   pause,
   resume,
   stopAndMaybeApply,
+  ensureTicking,
 } = useDisruptionTimer()
 
+/**
 const newDisruption = useState('disruption:newForm', () => ({
   name: '',
   start: '',
@@ -27,6 +32,9 @@ const newDisruption = useState('disruption:newForm', () => ({
   resource: '',
   type: ''
 }))
+ */
+
+const { draft: newDisruption } = useDisruptionDraft()
 
 // Drag&Drop (Pointer Events)
 const dragging = ref(false)
@@ -53,6 +61,28 @@ const handleVisibilityChange = () => {
     popoutVisible.value = true
   }
 }
+
+const isDisruptionRoute = (path) => path === '/disruption' || path.startsWith('/disruption/')
+
+// Popout ein-/ausblenden je nach Route
+watch(
+  () => route.path,
+  (path) => {
+    if (isDisruptionRoute(path)) {
+      popoutVisible.value = false
+      if (isRunning.value || isPaused.value) ensureTicking()
+      return
+    }
+
+    if (isRunning.value || isPaused.value) {
+      popoutVisible.value = true
+      ensureTicking()
+    } else {
+      popoutVisible.value = false
+    }
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
   document.addEventListener('visibilitychange', handleVisibilityChange)

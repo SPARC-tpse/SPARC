@@ -56,10 +56,10 @@ async function handleFileSelect(event) {
 async function uploadFile(file) {
   const formData = new FormData()
   formData.append('file', file)
-  formData.append('type', props.fileType)
+  //formData.append('type', props.fileType)
 
   try {
-    const response = await $fetch(`${API_BASE_URL}/files/upload`, {
+    const response = await $fetch(`${API_BASE_URL}/api/files/upload`, {
       method: 'POST',
       body: formData
     })
@@ -78,7 +78,7 @@ async function deleteFile(file, index) {
   if (!confirm(`Delete ${file.filename}?`)) return
 
   try {
-    await $fetch(`${API_BASE_URL}/files/delete?path=${encodeURIComponent(file.path)}`, {
+    await $fetch(`${API_BASE_URL}/api/files/delete?path=${encodeURIComponent(file.path)}`, {
       method: 'DELETE'
     })
 
@@ -94,7 +94,7 @@ async function deleteFile(file, index) {
 // Load existing files
 async function loadFiles() {
   try {
-    const response = await $fetch(`${API_BASE_URL}/files/list`)
+    const response = await $fetch(`${API_BASE_URL}/api/files/list`)
 
     if (props.fileType === 'bom') {
       uploadedFiles.value = response.bom_files || []

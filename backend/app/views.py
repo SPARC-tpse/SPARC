@@ -1,13 +1,16 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.http import JsonResponse
 from rest_framework.request import Request
 from .models import Order, Process, Worker, Resource
 from .serializers import OrderSerializer
 from datetime import datetime
+from django.core.files.storage import default_storage
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+import os
 
 def broadcast_order_change(action, order_data=None):
     """Helper to broadcast order changes via WebSocket"""
@@ -139,3 +142,111 @@ def delete_order(request: Request, order_id: int) -> JsonResponse:
         return JsonResponse({'message': 'Order deleted successfully'})
     except Order.DoesNotExist:
         return JsonResponse({'error': 'Order not found'}, status=404)
+
+
+# ===
+
+@api_view(['POST'])
+@parser_classes([MultiPartParser, FormParser])
+def upload_order_file(request):
+    """Upload a file for an order"""
+    try:
+        if 'file' not in request.FILES:
+            return JsonResponse({'error': 'No file provided'}, status=400)
+
+        file = request.FILES['file']
+        file_type = request.POST.get('type', 'general')  # 'bom' or 'general'
+
+        # Generate unique filename
+        original_name = file.name
+        file_extension = os.path.splitext(original_name)[1]
+
+        # Save file
+        if file_type == 'bom':
+            file_path = f'orders/bom/{original_name}'
+        else:
+            file_path = f'orders/files/{original_name}'
+
+        # Check if file already exists and generate unique name if needed
+        counter = 1
+        base_path = file_path
+        while default_storage.exists(file_path):
+            name_without_ext = os.path.splitext(base_path)[0]
+            file_path = f"{name_without_ext}_{counter}{file_extension}"
+            counter += 1
+
+        saved_path = default_storage.save(file_path, file)
+        file_url = default_storage.url(saved_path)
+
+        return JsonResponse({
+            'success': True,
+            'filename': original_name,
+            'path': saved_path,
+            'url': file_url,
+            'size': file.size,
+            'type': file_type
+        }, status=201)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@api_view(['DELETE'])
+def delete_order_file(request):
+    """Delete an uploaded file"""
+    try:
+        file_path = request.GET.get('path')
+        if not file_path:
+            return JsonResponse({'error': 'No file path provided'}, status=400)
+
+        if default_storage.exists(file_path):
+            default_storage.delete(file_path)
+            return JsonResponse({'success': True, 'message': 'File deleted'})
+        else:
+            return JsonResponse({'error': 'File not found'}, status=404)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+def list_order_files(request):
+    """List all uploaded files for orders"""
+    try:
+        order_id = request.GET.get('order_id')
+
+        # For now, list all files in the orders directory
+        bom_files = []
+        general_files = []
+
+        if default_storage.exists('orders/bom'):
+            bom_dirs, bom_filenames = default_storage.listdir('orders/bom')
+            for filename in bom_filenames:
+                file_path = f'orders/bom/{filename}'
+                bom_files.append({
+                    'filename': filename,
+                    'path': file_path,
+                    'url': default_storage.url(file_path),
+                    'size': default_storage.size(file_path),
+                    'type': 'bom'
+                })
+
+        if default_storage.exists('orders/files'):
+            file_dirs, filenames = default_storage.listdir('orders/files')
+            for filename in filenames:
+                file_path = f'orders/files/{filename}'
+                general_files.append({
+                    'filename': filename,
+                    'path': file_path,
+                    'url': default_storage.url(file_path),
+                    'size': default_storage.size(file_path),
+                    'type': 'general'
+                })
+
+        return JsonResponse({
+            'bom_files': bom_files,
+            'general_files': general_files
+        })
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

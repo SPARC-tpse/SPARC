@@ -137,9 +137,9 @@ function onDragOver(index, event) {
 
 function onDrop(index) {
   if (!editMode.value || dragIndex.value === null || dragIndex.value === index) return
+  const sourceIndex = dragIndex.value
   const updated = [...widgets.value]
-  const [moved] = updated.splice(dragIndex.value, 1)
-  updated.splice(index, 0, moved)
+  ;[updated[sourceIndex], updated[index]] = [updated[index], updated[sourceIndex]]
   widgets.value = updated
   dragIndex.value = null
   dragOverIndex.value = null
@@ -250,7 +250,7 @@ function formatDate(value) {
         </div>
       </section>
 
-      <section class="dashboard-grid">
+      <TransitionGroup name="panel-swap" tag="section" class="dashboard-grid">
         <article
           v-for="(widget, index) in widgets"
           :key="widget.id"
@@ -443,7 +443,7 @@ function formatDate(value) {
             </div>
           </div>
         </article>
-      </section>
+      </TransitionGroup>
     </main>
   </div>
 </template>
@@ -463,6 +463,18 @@ function formatDate(value) {
 }
 .panel {
   @apply rounded-xl border shadow-lg flex flex-col min-h-[220px] transition-colors;
+}
+.panel-swap-move {
+  transition: transform 320ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+.panel-swap-enter-active,
+.panel-swap-leave-active {
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.panel-swap-enter-from,
+.panel-swap-leave-to {
+  opacity: 0;
+  transform: scale(0.98);
 }
 .panel-header {
   @apply flex items-center justify-between border-b px-4 py-3;

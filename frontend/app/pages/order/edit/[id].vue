@@ -280,7 +280,7 @@ onMounted(() => {
                         @change="updateResource(step, $event.target.value)"
                         class="input h-10"
                         >
-                        <option value="">-- Choose Resource --</option>
+                        <option value="" disabled hidden>-- Choose Resource --</option>
                         <option v-for="res in allResources" :key="res.id" :value="res.name">
                             {{ res.name }}
                         </option>

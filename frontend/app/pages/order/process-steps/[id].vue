@@ -130,7 +130,8 @@ onMounted(() => {
         <label class="flex flex-col gap-1 text-sm label-text">
           Resource
           <select v-model="processStep.resource" class="input">
-            <option value="">-- choose resource --</option>
+            <option value="" disabled hidden>-- Choose Resource --</option>
+
             <option v-for="res in allResources" :key="res.id" :value="res.name">
               {{ res.name }}
             </option>

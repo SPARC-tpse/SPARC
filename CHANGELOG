@@ -1,5 +1,8 @@
 v0.2.0
 ===
+fix/run_server
+- updated the run server script
+
 feature/workersmultiselect
 
 neworder

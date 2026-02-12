@@ -1,11 +1,10 @@
 <script setup lang="js">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from '#app'
-import { useTheme } from '~/composables/useTheme'
 
 definePageMeta({ layout: 'custom' })
 
-const { isDarkMode } = useTheme()
+const { theme } = useAppTheme()
 const route = useRoute()
 const router = useRouter()
 const config = useRuntimeConfig()
@@ -21,7 +20,6 @@ const strToStatus = { 'available': 3, 'in-use': 2, 'maintenance': 4, 'offline': 
 async function load() {
     try {
         const data = await $fetch(`${API_BASE_URL}/api/resource/get/${resId}`)
-
         form.value = {
             name: data.name,
             type: data.type,
@@ -44,31 +42,38 @@ onMounted(load)
 </script>
 
 <template>
-  <div :class="isDarkMode ? 'dark-mode' : 'light-mode'">
+  <div :class="theme.pageWrapper">
     <Topbar title="Resources · Edit" :can-submit="true" :show-create="true" create-label="Update" @submit="update" @reset="() => router.push('/resource/overview')"/>
-    <main class="max-w-5xl mx-auto p-6 grid grid-cols-2 gap-4">
-        <label class="flex flex-col text-sm">Name <input v-model="form.name" class="input"/></label>
-        <label class="flex flex-col text-sm">Type
-          <select v-model="form.type" class="input">
-            <option value="Machinery">Machinery</option>
-            <option value="Worker">Worker</option>
-            <option value="Tool">Tool</option>
-            <option value="Vehicle">Vehicle</option>
-          </select>
-        </label>
-        <label class="flex flex-col text-sm">Status
-          <select v-model="form.status" class="input">
-            <option value="available">Available</option>
-            <option value="in-use">In Use</option>
-            <option value="maintenance">Maintenance</option>
-            <option value="offline">Offline</option>
-          </select>
-        </label>
+
+    <main :class="theme.container">
+      <section :class="theme.card">
+        <div :class="theme.formGrid">
+            <label :class="theme.label">
+              Name
+              <input v-model="form.name" :class="theme.input" placeholder="e.g. CNC Machine 01"/>
+            </label>
+
+            <label :class="theme.label">
+              Type
+              <select v-model="form.type" :class="theme.input">
+                <option value="Machinery">Machinery</option>
+                <option value="Worker">Worker</option>
+                <option value="Tool">Tool</option>
+                <option value="Vehicle">Vehicle</option>
+              </select>
+            </label>
+
+            <label :class="theme.label">
+              Status
+              <select v-model="form.status" :class="theme.input">
+                <option value="available">Available</option>
+                <option value="in-use">In Use</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="offline">Offline</option>
+              </select>
+            </label>
+        </div>
+      </section>
     </main>
   </div>
 </template>
-
-<style scoped>
-.input { @apply border rounded p-2 bg-transparent; }
-.dark-mode .input { @apply border-gray-700 bg-gray-800; }
-</style>

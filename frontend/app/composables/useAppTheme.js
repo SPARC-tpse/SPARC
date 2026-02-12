@@ -1,0 +1,150 @@
+/**
+ * SPARC UI Design System Composable
+ * This central engine manages all CSS classes for the application.
+ * Structure:
+ * 1. Layout: Static structural definitions (Grids, Spacings, Shapes).
+ * 2. Colors: Dynamic color mappings reacting to Dark/Light mode.
+ * 3. Theme: The final computed object used directly in templates.
+ * 4. getBadgeColor: Logic for dynamic status/priority styling.
+ */
+
+import { computed } from 'vue'
+import { useTheme } from '~/composables/useTheme'
+
+export const useAppTheme = () => {
+  const { isDarkMode } = useTheme()
+
+  // --- SECTION 1: STATIC LAYOUT DEFINITIONS ---
+  // These define the structure, typography, and shapes regardless of the color scheme.
+  const layout = {
+    // Global container constraints
+    pageWidth: 'max-w-6xl mx-auto p-6',
+
+    // CSS Grid Column Definitions for various overview pages
+    gridRes:         'grid grid-cols-[1.5fr,1fr,1fr,1fr,100px] gap-3 items-center',
+    gridOrders:      'grid grid-cols-[1.5fr,0.8fr,0.8fr,1fr,1fr,0.8fr,100px] gap-3 items-center',
+    gridDisruptions: 'grid grid-cols-[1.2fr,0.8fr,1fr,1fr,1fr,0.8fr,100px] gap-3 items-center',
+    gridWorkers:     'grid grid-cols-[1.5fr,1fr,120px] gap-3 items-center',
+    gridForm:        'grid grid-cols-1 sm:grid-cols-2 gap-4',
+    gridProcessSteps:'grid grid-cols-[30px_30px_1fr_1fr_1fr] gap-3 items-start',
+
+    // Structural UI Shapes
+    cardShape:     'rounded-xl border p-4 space-y-4 shadow-lg transition-colors',
+    rowShape:      'rounded-lg border p-3 text-sm transition-all',
+    navLinkShape:  'w-full px-3 py-2 text-left rounded-lg border text-sm font-medium transition-all duration-200 shadow-sm',
+    badgeShape:    'px-2 py-1 rounded-full text-xs font-semibold inline-block shadow-sm',
+    inputShape:    'w-full mt-1 px-3 py-2 rounded-lg border text-sm transition-all outline-none focus:ring-1',
+
+    // Typography & Button Logic
+    headerFont:     'px-3 py-2 text-xs font-medium uppercase tracking-wider border-b',
+    headerLink:     'w-full flex items-center gap-1 hover:text-pink-500 transition-colors',
+    labelFont:      'text-xs font-bold uppercase tracking-widest',
+    actionBtnShape: 'px-2 py-1.5 text-xs font-medium rounded border transition-colors w-full text-center'
+  }
+
+  // --- SECTION 2: DYNAMIC COLOR PALETTE ---
+  // Reactive mappings that switch classes based on the Dark Mode state.
+  const colors = computed(() => ({
+    // Base backgrounds & cards
+    wrapper:    isDarkMode.value ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900',
+    card:       isDarkMode.value ? 'border-gray-700 bg-slate-900 shadow-black' : 'border-slate-200 bg-white shadow-slate-200',
+
+    // Tables & Lists
+    headerText: isDarkMode.value ? 'text-slate-400 border-gray-700' : 'text-slate-500 border-slate-100',
+    row:        isDarkMode.value ? 'border-gray-700 bg-slate-800/50 hover:bg-slate-800' : 'border-slate-200 bg-slate-50 hover:bg-white hover:shadow-sm',
+    totalBadge: isDarkMode.value ? 'border-slate-700 text-slate-400 bg-slate-800' : 'border-slate-200 text-slate-500 bg-slate-50',
+
+    // Form Inputs & Labels
+    input:         isDarkMode.value ? 'bg-slate-800 border-gray-700 text-slate-100 focus:border-pink-500 focus:ring-pink-500' : 'bg-white border-slate-300 text-slate-900 focus:border-indigo-500 focus:ring-indigo-500',
+    inputDisabled: isDarkMode.value ? 'bg-slate-900/50 text-slate-500 border-gray-800' : 'bg-slate-100 text-slate-500 border-slate-200',
+    label:         isDarkMode.value ? 'text-slate-400' : 'text-slate-500',
+
+    // Navigation specific colors
+    navActive:   'bg-gradient-to-r from-indigo-600 to-pink-600 text-white border-transparent shadow-indigo-500/20',
+    navInactive: isDarkMode.value ? 'border-gray-700 bg-gray-800/40 text-slate-300 hover:bg-gray-700 hover:text-white' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-white hover:text-indigo-600',
+
+    // Generic Buttons
+    btnDeleteMode: isDarkMode.value ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50',
+    btnAction:     isDarkMode.value ? 'border-gray-600 text-slate-300 hover:bg-indigo-900/30 hover:text-indigo-300 hover:border-indigo-800' : 'border-slate-300 text-slate-600 hover:bg-white hover:text-indigo-600 hover:border-indigo-300'
+  }))
+
+  // --- SECTION 3: UNIFIED THEME OBJECT ---
+  // This combines Layout and Colors into final class strings for templates.
+  const theme = computed(() => ({
+    // Global Wrappers
+    pageWrapper: `min-h-screen transition-colors duration-300 ${colors.value.wrapper}`,
+    container:   layout.pageWidth,
+    card:        `${layout.cardShape} ${colors.value.card}`,
+
+    // Sidebar & Navigation Component
+    sidebar:         `w-64 border-l p-4 flex flex-col gap-2 transition-colors duration-300 ${colors.value.card}`,
+    navLabel:        `${layout.labelFont} mb-2 ${colors.value.label}`,
+    navLinkActive:   `${layout.navLinkShape} ${colors.value.navActive}`,
+    navLinkInactive: `${layout.navLinkShape} ${colors.value.navInactive}`,
+    navFooter:       `mt-auto pt-4 border-t text-[10px] uppercase tracking-widest ${isDarkMode.value ? 'border-gray-700 text-slate-500' : 'border-slate-200 text-slate-400'}`,
+
+    // Dynamic Table Grids (Header & Row variants)
+    tableHeaderRes:         `${layout.gridRes} ${layout.headerFont} ${colors.value.headerText}`,
+    tableRowRes:            `${layout.gridRes} ${layout.rowShape} ${colors.value.row}`,
+    tableHeaderOrders:      `${layout.gridOrders} ${layout.headerFont} ${colors.value.headerText}`,
+    tableRowOrders:         `${layout.gridOrders} ${layout.rowShape} ${colors.value.row}`,
+    tableHeaderDisruptions: `${layout.gridDisruptions} ${layout.headerFont} ${colors.value.headerText}`,
+    tableRowDisruptions:    `${layout.gridDisruptions} ${layout.rowShape} ${colors.value.row}`,
+    tableHeaderWorkers:     `${layout.gridWorkers} ${layout.headerFont} ${colors.value.headerText}`,
+    tableRowWorkers:        `${layout.gridWorkers} ${layout.rowShape} ${colors.value.row}`,
+
+    // Form & Input Elements
+    formGrid:        layout.gridForm,
+    processStepGrid: layout.gridProcessSteps,
+    input:           `${layout.inputShape} ${colors.value.input}`,
+    inputDisabled:   `${layout.inputShape} ${colors.value.inputDisabled}`,
+    label:           `${layout.labelFont} ${colors.value.label}`,
+    headerBtn:       layout.headerLink,
+
+    // Buttons & Badges
+    badge:         layout.badgeShape,
+    totalBadge:    `${layout.totalBadgeShape} ${colors.value.totalBadge}`,
+    btnDeleteMode: `${layout.actionBtnShape.replace('w-full', '')} px-4 ${colors.value.btnDeleteMode}`,
+    btnAction:     `${layout.actionBtnShape} ${colors.value.btnAction}`,
+    btnWarning:    'px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-amber-500 to-red-600 shadow-md hover:brightness-110 transition-all',
+    linkAction:    `text-sm font-semibold hover:underline ${isDarkMode.value ? 'text-pink-300' : 'text-pink-600'}`
+  }))
+
+  // --- SECTION 4: HELPER FUNCTIONS ---
+  /**
+   * Returns specific Tailwind color classes for badges based on status or type.
+   * @param {string} kind - The category of the badge (status, priority, disruption).
+   * @param {string} valueStr - The text value to map.
+   */
+  const getBadgeColor = (kind, valueStr) => {
+    const tones = {
+      // Order & Process Status
+      Running: 'bg-emerald-600 text-emerald-100',
+      Planned: 'bg-blue-600 text-blue-100',
+      Paused:  'bg-amber-600 text-amber-100',
+      Done:    'bg-slate-600 text-slate-100',
+
+      // Priorities
+      High:   'bg-pink-600 text-pink-100',
+      Medium: 'bg-indigo-600 text-indigo-100',
+      Low:    'bg-slate-600 text-slate-100',
+
+      // Resource Status
+      Offline:     'bg-red-600 text-red-100',
+      'In Use':    'bg-indigo-600 text-indigo-100',
+      Available:   'bg-emerald-600 text-emerald-100',
+      Maintenance: 'bg-amber-600 text-amber-100',
+
+      // Disruption Types
+      Breakdown:   'bg-red-600 text-red-100',
+      Warning:     'bg-amber-600 text-amber-100',
+      Information: 'bg-blue-600 text-blue-100'
+    }
+    return tones[valueStr] || 'bg-slate-600 text-slate-100'
+  }
+
+  return {
+    theme,
+    getBadgeColor
+  }
+}

@@ -1,13 +1,11 @@
 <script setup lang="js">
 import { ref, computed, onMounted } from 'vue'
-import { useTheme } from '~/composables/useTheme'
 
-definePageMeta({
-  layout: 'custom'
-})
+definePageMeta({ layout: 'custom' })
 
-const { isDarkMode } = useTheme()
+const { theme } = useAppTheme()
 const route = useRoute()
+const router = useRouter()
 const config = useRuntimeConfig()
 const API_BASE_URL = config.public.apiBaseUrl
 const disruptionId = route.params.id
@@ -41,10 +39,7 @@ async function loadData() {
     resources.value = resData
     types.value = typeData
 
-    const toInputFormat = (dateStr) => {
-      if (!dateStr) return ''
-      return dateStr.slice(0, 16)
-    }
+    const toInputFormat = (dateStr) => dateStr ? dateStr.slice(0, 16) : ''
 
     disruption.value = {
       ...dispData,
@@ -53,9 +48,7 @@ async function loadData() {
       resource: dispData.resource,
       type: dispData.type
     }
-  } catch (e) {
-    console.error('Fehler beim Laden:', e)
-  }
+  } catch (e) { console.error('Fehler beim Laden:', e) }
 }
 
 async function updateDisruption() {
@@ -66,67 +59,72 @@ async function updateDisruption() {
       body: disruption.value
     })
     await navigateTo('/disruption/overview')
-  } catch (e) {
-    console.error('Update failed:', e)
-  }
+  } catch (e) { console.error('Update failed:', e) }
 }
 
-function cancelEdit() { navigateTo('/disruption/overview') }
-
-onMounted(() => {
-  loadData()
-})
+onMounted(loadData)
 </script>
 
 <template>
-  <div :class="isDarkMode ? 'dark-mode' : 'light-mode'">
+  <div :class="theme.pageWrapper">
     <Topbar
       title="Disruptions · Edit"
       :can-submit="canSubmit"
       :show-reset="true"
       :show-create="true"
       create-label="Update"
-      @reset="cancelEdit"
+      @reset="() => navigateTo('/disruption/overview')"
       @submit="updateDisruption"
     />
 
-    <main class="max-w-5xl mx-auto p-6 space-y-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <label class="flex flex-col gap-1 text-sm label-text">
-          Name <input v-model="disruption.name" class="input" />
-        </label>
-        <label class="flex flex-col gap-1 text-sm label-text">
-          ID <input :value="disruption.id" class="input disabled-input" disabled />
-        </label>
-        <div class="flex flex-col gap-1">
-          <label class="text-sm label-text">Start</label>
-          <div class="flex gap-2">
-            <input v-model="disruption.start" type="datetime-local" class="input" />
-            <button type="button" @click="setNow('start')" class="px-3 rounded-lg text-sm border transition-colors whitespace-nowrap" :class="isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-slate-300 hover:bg-slate-100'">Now</button>
+    <main :class="theme.container">
+      <section :class="theme.card">
+        <h3 class="font-semibold text-lg mb-2">Edit Disruption Details</h3>
+
+        <div :class="theme.formGrid">
+          <label :class="theme.label">
+            Name
+            <input v-model="disruption.name" :class="theme.input" placeholder="e.g. Belt Jam" />
+          </label>
+
+          <label :class="theme.label">
+            Internal ID
+            <input :value="disruption.id" :class="[theme.input, 'opacity-50 cursor-not-allowed']" disabled />
+          </label>
+
+          <div class="flex flex-col">
+            <label :class="theme.label">Start</label>
+            <div class="flex gap-2 items-end">
+              <input v-model="disruption.start" type="datetime-local" :class="theme.input" />
+              <button type="button" @click="setNow('start')" :class="theme.btnDeleteMode" class="h-[42px] px-4">Now</button>
+            </div>
           </div>
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-sm label-text">End</label>
-          <div class="flex gap-2">
-            <input v-model="disruption.end" type="datetime-local" class="input" />
-            <button type="button" @click="setNow('end')" class="px-3 rounded-lg text-sm border transition-colors whitespace-nowrap" :class="isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-slate-300 hover:bg-slate-100'">Now</button>
+
+          <div class="flex flex-col">
+            <label :class="theme.label">End</label>
+            <div class="flex gap-2 items-end">
+              <input v-model="disruption.end" type="datetime-local" :class="theme.input" />
+              <button type="button" @click="setNow('end')" :class="theme.btnDeleteMode" class="h-[42px] px-4">Now</button>
+            </div>
           </div>
+
+          <label :class="theme.label">
+            Affected Resource
+            <select v-model="disruption.resource" :class="theme.input">
+              <option disabled value="">-- choose --</option>
+              <option v-for="r in resources" :key="r.id" :value="r.id">{{ r.name }}</option>
+            </select>
+          </label>
+
+          <label :class="theme.label">
+            Disruption Type
+            <select v-model="disruption.type" :class="theme.input">
+              <option disabled value="">-- choose --</option>
+              <option v-for="t in types" :key="t.id" :value="t.id">{{ t.name }}</option>
+            </select>
+          </label>
         </div>
-        <label class="flex flex-col gap-1 text-sm label-text">
-          Resource
-          <select v-model="disruption.resource" class="input">
-            <option disabled value="">-- choose --</option>
-            <option v-for="r in resources" :key="r.id" :value="r.id">{{ r.name }}</option>
-          </select>
-        </label>
-        <label class="flex flex-col gap-1 text-sm label-text">
-          Type
-          <select v-model="disruption.type" class="input">
-            <option disabled value="">-- choose --</option>
-            <option v-for="t in types" :key="t.id" :value="t.id">{{ t.name }}</option>
-          </select>
-        </label>
-      </div>
+      </section>
     </main>
   </div>
 </template>

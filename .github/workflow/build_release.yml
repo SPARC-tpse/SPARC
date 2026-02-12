@@ -284,3 +284,4 @@ jobs:
           echo "- docker-compose-server.yml" >> $GITHUB_STEP_SUMMARY
           echo "- run_server.sh" >> $GITHUB_STEP_SUMMARY
           echo "- README.md" >> $GITHUB_STEP_SUMMARY
+# some small change for github ;) also if you read this I am proud of you!

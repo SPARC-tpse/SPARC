@@ -224,13 +224,13 @@ async function submitOrder() {
           <div
             v-for="(step, i) in steps"
             :key="i"
-            class="grid grid-cols-[30px,1fr,1fr,1fr] gap-2 items-center rounded-lg border p-2 transition-colors"
+            class="grid grid-cols-[40px,1.2fr,1.2fr,0.8fr,0.8fr,90px] gap-2 items-center rounded-lg border p-2 transition-colors"
             :class="isDarkMode
               ? 'border-gray-700 bg-gray-700'
               : 'border-slate-200 bg-slate-50'"
           >
             <span class="text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">{{ i + 1 }}</span>
-            <input v-model="step.worker" class="input h-10" />
+            <input v-model="step.name" class="input h-10" />
             <input v-model="step.resource" class="input h-10" />
             <input v-model="step.name" class="input h-10" />
           </div>

@@ -2,7 +2,10 @@ from django.urls import path
 from .views import (
     get_orders, create_order, update_order, delete_order, get_order,
     upload_order_file, delete_order_file, list_order_files,
-    update_process_timing, get_workers, create_worker, delete_worker, get_worker, update_worker
+    update_process_timing, get_workers, create_worker, delete_worker,
+    get_worker, update_worker, get_resources, create_resource, update_resource,
+    delete_resource, get_resource, get_disruptions, get_disruption_types,
+    create_disruption, delete_disruption, get_disruption, update_disruption
 )
 
 urlpatterns = [
@@ -27,4 +30,19 @@ urlpatterns = [
     path("worker/delete/<int:worker_id>", delete_worker, name="delete_worker"),
     path("worker/get/<int:worker_id>", get_worker, name="get_worker"),
     path("worker/put/<int:worker_id>", update_worker, name="update_worker"),
+
+    # Resources
+    path("resource/list", get_resources, name="get_resources"),
+    path("resource/get/<int:resource_id>", get_resource, name="get_resource"),
+    path("resource/post", create_resource, name="create_resource"),
+    path("resource/put/<int:resource_id>", update_resource, name="update_resource"),
+    path("resource/delete/<int:resource_id>", delete_resource, name="delete_resource"),
+
+    # DISRUPTIONS
+    path("disruption/list", get_disruptions, name="get_disruptions"),
+    path("disruption/get/<int:disruption_id>", get_disruption, name="get_disruption"),
+    path("disruption/put/<int:disruption_id>", update_disruption, name="update_disruption"),
+    path("disruption/post", create_disruption, name="create_disruption"),
+    path("disruption/delete/<int:disruption_id>", delete_disruption, name="delete_disruption"),
+    path("disruption-type/list", get_disruption_types, name="get_disruption_types"),
 ]

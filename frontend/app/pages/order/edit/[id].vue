@@ -63,7 +63,7 @@ function addStep() {
 }
 
 function updateResource(step, value) {
-    step.resource_name = value; 
+    step.resource_name = value;
 }
 
 async function updateOrder() {

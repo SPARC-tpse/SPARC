@@ -1,136 +1,74 @@
 <script setup lang="js">
 import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from '#app'
 import { useTheme } from '~/composables/useTheme'
-import { useRoute } from 'vue-router'
 
-definePageMeta({
-  layout: 'custom'
-})
+definePageMeta({ layout: 'custom' })
 
 const { isDarkMode } = useTheme()
 const route = useRoute()
-const resourceId = route.params.id
+const router = useRouter()
+const config = useRuntimeConfig()
+const API_BASE_URL = config.public.apiBaseUrl
+const resId = route.params.id
 
-// Form Object
-const resource = ref({
-  id: resourceId,
-  name: '',
-  type: '',
-  status: ''
-})
+const form = ref({ name: '', type: '', status: '' })
 
-// Validation: Require name, type, and status to enable update
-const canSubmit = computed(() =>
-  resource.value.name && resource.value.type && resource.value.status
-)
+// Mappings
+const statusToStr = { 3: 'available', 2: 'in-use', 4: 'maintenance', 1: 'offline' }
+const strToStatus = { 'available': 3, 'in-use': 2, 'maintenance': 4, 'offline': 1 }
 
-async function loadResource() {
-  // TODO: Fetch from backend
-  // const response = await $fetch(`/api/resources/${resourceId}`)
-  // resource.value = response.data
+async function load() {
+    try {
+        const data = await $fetch(`${API_BASE_URL}/api/resource/get/${resId}`)
 
-  // Mock data for initial load
-  resource.value = {
-    id: resourceId,
-    name: 'Excavator 01',
-    type: 'machinery',
-    status: 'available'
-  }
+        form.value = {
+            name: data.name,
+            type: data.type,
+            status: statusToStr[data.status] || 'available'
+        }
+    } catch (e) { console.error(e) }
 }
 
-async function updateResource() {
-  if (!canSubmit.value) return
-
-  // TODO: Send update to backend
-  console.log('Updating resource:', resource.value)
-
-  // Navigate back to overview
-  await navigateTo('/resource/overview')
+async function update() {
+    try {
+        await $fetch(`${API_BASE_URL}/api/resource/put/${resId}`, {
+            method: 'PUT',
+            body: { ...form.value, status: strToStatus[form.value.status] }
+        })
+        router.push('/resource/overview')
+    } catch (e) { alert('Update failed') }
 }
 
-function cancelEdit() {
-  navigateTo('/resource/overview')
-}
-
-onMounted(() => {
-  loadResource()
-})
+onMounted(load)
 </script>
 
 <template>
   <div :class="isDarkMode ? 'dark-mode' : 'light-mode'">
-    <Topbar
-      title="Resources · Edit"
-      :can-submit="canSubmit"
-      :show-reset="true"
-      :show-create="true"
-      create-label="Update"
-      @reset="cancelEdit"
-      @submit="updateResource"
-    />
-
-    <main class="max-w-5xl mx-auto p-6 space-y-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <label class="flex flex-col gap-1 text-sm label-text">
-          Resource Name
-          <input v-model="resource.name" class="input" />
-        </label>
-
-        <label class="flex flex-col gap-1 text-sm label-text">
-          ID
-          <input :value="resource.id" class="input disabled-input" disabled />
-        </label>
-
-        <label class="flex flex-col gap-1 text-sm label-text">
-          Type
-          <select v-model="resource.type" class="input">
-            <option disabled value="">-- choose type --</option>
-            <option value="machinery">Machinery</option>
-            <option value="worker">Worker</option>
-            <option value="tool">Tool</option>
-            <option value="vehicle">Vehicle</option>
+    <Topbar title="Resources · Edit" :can-submit="true" :show-create="true" create-label="Update" @submit="update" @reset="() => router.push('/resource/overview')"/>
+    <main class="max-w-5xl mx-auto p-6 grid grid-cols-2 gap-4">
+        <label class="flex flex-col text-sm">Name <input v-model="form.name" class="input"/></label>
+        <label class="flex flex-col text-sm">Type
+          <select v-model="form.type" class="input">
+            <option value="Machinery">Machinery</option>
+            <option value="Worker">Worker</option>
+            <option value="Tool">Tool</option>
+            <option value="Vehicle">Vehicle</option>
           </select>
         </label>
-
-        <label class="flex flex-col gap-1 text-sm label-text">
-          Status
-          <select v-model="resource.status" class="input">
-            <option disabled value="">-- choose status --</option>
-            <option value="available">Available / Ready</option>
-            <option value="in-use">In Use / Active</option>
-            <option value="maintenance">Under Maintenance</option>
-            <option value="offline">Offline / Unavailable</option>
+        <label class="flex flex-col text-sm">Status
+          <select v-model="form.status" class="input">
+            <option value="available">Available</option>
+            <option value="in-use">In Use</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="offline">Offline</option>
           </select>
         </label>
-      </div>
     </main>
   </div>
 </template>
 
 <style scoped>
-.input {
-  @apply w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors;
-}
-
-.dark-mode .input {
-  @apply border-gray-700 bg-gray-800 text-slate-100 placeholder-slate-500 focus:border-pink-500 focus:ring-1 focus:ring-pink-500;
-}
-
-.light-mode .input {
-  @apply border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500;
-}
-
-.dark-mode .disabled-input {
-  @apply bg-gray-900 text-slate-500;
-}
-.light-mode .disabled-input {
-  @apply bg-slate-100 text-slate-500;
-}
-
-.dark-mode .label-text {
-  @apply text-slate-300;
-}
-.light-mode .label-text {
-  @apply text-slate-600;
-}
+.input { @apply border rounded p-2 bg-transparent; }
+.dark-mode .input { @apply border-gray-700 bg-gray-800; }
 </style>

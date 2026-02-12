@@ -80,7 +80,7 @@ async function submitOrder() {
       body: order
     })
     resetForm()
-    alert('Order created successfully')
+    //alert('Order created successfully')
   } catch (error) {
     console.error('API Error:', error);
     alert('Error creating order')

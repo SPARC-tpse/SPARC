@@ -14,11 +14,13 @@ const API_BASE_URL = config.public.apiBaseUrl;
 
 const order = ref({
     id: orderId, name: null, target_amount: null, start_date: null,
-    end_date: null, product_name: null, priority: null, status: null, comments: '',
+    end_date: null, product_name: null, priority: 'Medium', status: 'Planned', comments: '',
 });
 
 const selectedProcessStep = ref(null);
 const processSteps = ref([]);
+const bomFiles = ref([]);
+const generalFiles = ref([]);
 const allWorkers = ref([]);
 
 const canSubmit = computed(() => {
@@ -26,13 +28,25 @@ const canSubmit = computed(() => {
     return Boolean(o.name && o.start_date && o.end_date && o.target_amount && o.product_name)
 })
 
-const hasWarning = (field) => !order.value[field]
+const hasWarning = (field) => {
+    const value = order.value[field]
+    return value === null || value === undefined || value === ''
+}
 
 const hasProcessWarning = (step) => {
     const hasWorkers = step.workers && step.workers.length > 0;
     const hasResource = step.resource || step.resource_name;
     return !hasWorkers || !hasResource;
 }
+
+const priorityMap = { 1: 'Low', 2: 'Medium', 3: 'High' };
+const statusMap = { 1: 'Planned', 2: 'Running', 3: 'Paused', 4: 'Done' };
+const priorityMapReverse = { 'Low': 1, 'Medium': 2, 'High': 3 };
+const statusMapReverse = { 'Planned': 1, 'Running': 2, 'Paused': 3, 'Done': 4 };
+
+watch(selectedProcessStep, (newStep) => {
+    if (newStep) console.log('Selected process step:', newStep)
+})
 
 function deleteStep(index) {
     if (selectedProcessStep.value === processSteps.value[index]) {
@@ -41,30 +55,30 @@ function deleteStep(index) {
     processSteps.value.splice(index, 1);
 }
 
+function handleBomFilesUploaded(files) { bomFiles.value = files }
+function handleGeneralFilesUploaded(files) { generalFiles.value = files }
+
 function addStep() {
-    processSteps.value.push({ workers: [], resource: '', name: '' })
+    processSteps.value.push({ _id: Date.now() + Math.random(), workers: [], resource: '', name: '' })
 }
 
 function updateResource(step, value) {
-    step.resource_name = value; // Update String reference
+    step.resource_name = value; 
 }
 
 async function updateOrder() {
     if (!canSubmit.value) return
 
     const processPayload = processSteps.value.map(step => {
-
         let resourceName = '';
         if (step.resource && typeof step.resource === 'object') {
             resourceName = step.resource.name;
         } else {
             resourceName = step.resource_name || step.resource || '';
         }
-
         return {
             name: step.name,
             resource: resourceName,
-
             workers: step.workers.map(w => w.name)
         };
     });
@@ -72,26 +86,20 @@ async function updateOrder() {
     const updatedOrder = {
         ...order.value,
         target_amount: Number(order.value.target_amount),
-
+        priority: priorityMapReverse[order.value.priority] || 1,
+        status: statusMapReverse[order.value.status] || 1,
         process: processPayload
     }
 
-    console.log('Updating order:', updatedOrder)
-
     try {
-        const response = await $fetch(`${API_BASE_URL}/api/order/put/${orderId}`, {
+        await $fetch(`${API_BASE_URL}/api/order/put/${orderId}`, {
             method: 'PUT',
             body: updatedOrder
         })
-
-
         await navigateTo('/order/overview')
-
     } catch (error) {
         console.error('API Error:', error)
-
-        const msg = error.data?.error || 'Failed to update order';
-        alert(msg)
+        alert('Update failed')
     }
 }
 
@@ -110,13 +118,18 @@ async function loadAllWorkers() {
     try {
         const response = await $fetch(`${API_BASE_URL}/api/worker/list`, { method: 'GET' })
         allWorkers.value = response || []
-    } catch (e) { console.error(e) }
+    } catch (e) { console.error("Error loading workers", e) }
 }
 
 async function loadOrder() {
     try {
         const response = await $fetch(`${API_BASE_URL}/api/order/get/${orderId}`, { method: 'GET' })
-        order.value = response;
+
+        order.value = {
+            ...response,
+            priority: priorityMap[response.priority] || 'Low',
+            status: statusMap[response.status] || 'Planned'
+        };
 
         if (!response.processes || !Array.isArray(response.processes)) {
             processSteps.value = [];
@@ -124,14 +137,13 @@ async function loadOrder() {
         }
 
         processSteps.value = response.processes.map(item => ({
+            _id: item.id,
             id: item.id,
             name: item.name,
             setup_time_seconds: item.setup_time_seconds || 0,
             waiting_time_seconds: item.waiting_time_seconds || 0,
             process_time_seconds: item.process_time_seconds || 0,
-
             workers: item.workers.map(w => ({ id: w.id, name: w.name })),
-
             resource: item.resource,
             resource_name: item.resource ? item.resource.name : ''
         }));
@@ -172,18 +184,32 @@ onMounted(() => {
                 <label class="flex flex-col gap-1 text-sm label-text">
                     Status
                     <select v-model="order.status" class="input">
-                        <option>Planned</option><option>Running</option><option>Paused</option><option>Done</option>
+                        <option value="Planned">Planned</option>
+                        <option value="Running">Running</option>
+                        <option value="Paused">Paused</option>
+                        <option value="Done">Done</option>
                     </select>
                 </label>
                 <label class="flex flex-col gap-1 text-sm label-text">
                     Priority
                     <select v-model="order.priority" class="input">
-                        <option>High</option><option>Medium</option><option>Low</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
                     </select>
                 </label>
                 <label class="flex flex-col gap-1 text-sm label-text sm:col-span-2">
                     Comments <textarea v-model="order.comments" rows="3" class="input" />
                 </label>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="rounded-xl border p-4 shadow-lg transition-colors" :class="isDarkMode ? 'border-gray-900 bg-slate-900' : 'border-slate-200 bg-white'">
+                    <FileUpload file-type="bom" label="Bill of Materials" :order-id="orderId" @files-uploaded="handleBomFilesUploaded" />
+                </div>
+                <div class="rounded-xl border p-4 shadow-lg transition-colors" :class="isDarkMode ? 'border-gray-900 bg-slate-900' : 'border-slate-200 bg-white'">
+                    <FileUpload file-type="general" label="Additional Files" :order-id="orderId" @files-uploaded="handleGeneralFilesUploaded" />
+                </div>
             </div>
 
             <div v-if="processSteps.length > 0" class="rounded-xl border p-4 space-y-4 shadow-lg transition-colors" :class="isDarkMode ? 'border-gray-900 bg-slate-900' : 'border-slate-200 bg-white'">
@@ -193,7 +219,7 @@ onMounted(() => {
                         Select Process Step
                         <select v-model="selectedProcessStep" class="input">
                             <option :value="null" disabled>-- Select a process step --</option>
-                            <option v-for="(step, index) in processSteps" :key="step.id || index" :value="step">
+                            <option v-for="(step, index) in processSteps" :key="step._id || index" :value="step">
                                 <span v-if="hasProcessWarning(step)">⚠️ </span>
                                 Step {{ index + 1 }}: {{ step.name || 'Unnamed' }}
                             </option>
@@ -202,7 +228,7 @@ onMounted(() => {
                 </div>
 
                 <div v-if="selectedProcessStep" class="space-y-4 pt-4 border-t" :class="isDarkMode ? 'border-gray-700' : 'border-slate-200'">
-                    <div v-if="selectedProcessStep.workers?.length > 0">
+                    <div v-if="selectedProcessStep.workers && selectedProcessStep.workers.length > 0">
                         <span class="text-sm label-text">Assigned:</span>
                         <span class="ml-2 font-semibold" :class="isDarkMode ? 'text-slate-200' : 'text-slate-700'">
                             {{ selectedProcessStep.workers.map(w => w.name).join(', ') }}
@@ -230,7 +256,7 @@ onMounted(() => {
                         <span></span><span>#</span><span>Worker</span><span>Resource</span><span>Name</span>
                     </div>
 
-                    <div v-for="(step, i) in processSteps" :key="step.id || i" class="grid grid-cols-[30px_30px_1fr_1fr_1fr] gap-2 items-start rounded-lg border p-2 transition-colors" :class="[isDarkMode ? 'border-gray-700 bg-gray-700' : 'border-slate-200 bg-slate-50', hasProcessWarning(step) ? 'border-amber-500' : '']">
+                    <div v-for="(step, i) in processSteps" :key="step._id" class="grid grid-cols-[30px_30px_1fr_1fr_1fr] gap-2 items-start rounded-lg border p-2 transition-colors" :class="[isDarkMode ? 'border-gray-700 bg-gray-700' : 'border-slate-200 bg-slate-50', hasProcessWarning(step) ? 'border-amber-500' : '']">
                         <button @click="deleteStep(i)" class="flex items-center justify-center w-6 h-6 mt-1.5 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-500" title="Delete step">✕</button>
 
                         <span class="text-xs text-center mt-2" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">{{ i + 1 }}</span>

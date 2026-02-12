@@ -1,26 +1,26 @@
 services:
   backend:
-    build: ./backend
+    image: sparc-backend:latest
     container_name: django-backend
     ports:
-      - "8000:8000"
-    volumes:
-      - ./backend:/app
+      - "0.0.0.0:8000:8000"
+    #volumes:
+    #  - ./backend:/app
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings
     depends_on:
       - db
 
   frontend:
-    build: ./frontend
+    image: sparc-frontend:latest
     container_name: nuxt-frontend
     ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - "0.0.0.0:3000:3000"
+    #volumes:
+    #  - ./frontend:/app
+    #  - /app/node_modules
     environment:
-      - NUXT_PUBLIC_API_BASE=http://localhost:8000
+      - NUXT_PUBLIC_API_BASE=http://192.168.178.59:8000
     depends_on:
       - backend
 

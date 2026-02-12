@@ -1,0 +1,63 @@
+v0.1.0
+===
+feature/order_backend_integration
+- added error handling
+- implement update_order
+- implement delete_order
+- change urls of api
+- added delete button in order/overview
+- call the apis from the frontend
+- added order/measure/[id]
+- update OrderSerializer, ProcessSerializer and ResourceSerializer
+- added WorkerSerializer
+- added get_order as GET api
+- update Process model
+- added run_server.sh for easier deployment on server
+- update config/settings.py and config/urls.py to include MEDIA_URL for uploaded media by the user
+- added automatic update of order/overview if something changes in the data base
+- added FileUpload as component
+- added foreign key in models.Disruption for process
+- added sorting for table elements
+- added OrderFile module
+- added warning when some thing is missing in  order
+- added "delete" button for processsteps
+
+fix/workflow
+- automatically generate tags from CHANGELOG
+- automatically adds description from CHANGELOG
+- release container as one file
+
+fix/restructure_backend
+- split into config and app folder
+- update model
+- call backend from disruption and order frontend
+- admin view
+- part of Order backend integration
+- check if the dates make sense
+- check if generated id already exists
+- include staticfiles folder
+- minor changes in README
+
+fix/restructure_frontend
+- added resource page
+
+fix/postgresql_version_issue
+- update path in docker-compose.yaml to postgresql v18
+
+fix/restructure_frontend
+- updated gitignore
+- frontend in nuxt best practice design
+- update changelog
+- added edit view for order and disruption
+
+feature/frontend_disruptions
+- added disruption view
+
+feature/backend_models
+- implement ER-diagram
+
+feature/frontend
+- draft for order view
+
+feature/hello-world
+- basic structure of the website

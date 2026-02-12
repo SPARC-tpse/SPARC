@@ -19,6 +19,12 @@ editorders
 
 - various backend fixes
 
+workers
+- added overview page
+- added creation tool
+- added delete mode
+- added backend compability
+
 v0.1.0
 ===
 feature/worker_view

@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     get_orders, create_order, update_order, delete_order, get_order,
     upload_order_file, delete_order_file, list_order_files,
-    update_process_timing, get_workers
+    update_process_timing, get_workers, create_worker, delete_worker, get_worker, update_worker
 )
 
 urlpatterns = [
@@ -23,9 +23,8 @@ urlpatterns = [
 #    path("process/delete/<int:process_id>", delete_process, name="delete_process"),
     # Worker
     path("worker/list", get_workers, name="get_workers"),
-
-    # Worker
-    #path("worker/get", get_workers, name="get_workers"),
-    #path("worker/post", create_worker, name="create_worker"),
-    #path("worker/delete/<int:order_id>", delete_worker, name="delete_worker"),
+    path("worker/post", create_worker, name="create_worker"),
+    path("worker/delete/<int:worker_id>", delete_worker, name="delete_worker"),
+    path("worker/get/<int:worker_id>", get_worker, name="get_worker"),
+    path("worker/put/<int:worker_id>", update_worker, name="update_worker"),
 ]

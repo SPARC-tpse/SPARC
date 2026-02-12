@@ -1,7 +1,5 @@
 v0.1.0
 ===
-feature/worker_view
-
 feature/order_backend_integration
 - added error handling
 - implement update_order

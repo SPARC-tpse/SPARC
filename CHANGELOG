@@ -22,6 +22,10 @@ feature/order_backend_integration
 - added warning when some thing is missing in  order
 - added "delete" button for processsteps
 
+fix/workflow
+- automatically generate tags from CHANGELOG
+- automatically adds description from CHANGELOG
+- release container as one file
 
 fix/restructure_backend
 - split into config and app folder

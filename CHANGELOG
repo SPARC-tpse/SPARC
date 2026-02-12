@@ -1,3 +1,24 @@
+v0.2.0
+===
+feature/workersmultiselect
+
+neworder
+- process steps alignment fix
+- process steps deletion fix
+- worker multi select
+- individual workers deletion
+- Backend integration workers
+
+editorders
+- process steps alignment fix
+- process steps deletion fix
+- worker multi select
+- individual workers deletion
+- Backend integration workers
+- added update order function
+
+- various backend fixes
+
 v0.1.0
 ===
 feature/worker_view

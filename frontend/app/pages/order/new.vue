@@ -22,8 +22,7 @@ const newOrder = ref({
   comments: ''
 })
 
-//worker must be an array!
-const steps = ref([{ workers: [], resource: '', name: '' }])
+const steps = ref([{ _id: Date.now(), workers: [], resource: '', name: '' }])
 const allWorkers = ref([])
 
 const canSubmit = computed(() => {
@@ -32,7 +31,7 @@ const canSubmit = computed(() => {
 })
 
 function addStep() {
-  steps.value.push({ workers: [], resource: '', name: '' })
+  steps.value.push({ _id: Date.now() + Math.random(), workers: [], resource: '', name: '' })
 }
 
 function removeStep(index) {
@@ -44,48 +43,36 @@ function resetForm() {
     name: '', start: '', end: '', target: '', product: '',
     status: 'Planned', priority: 'Medium', comments: ''
   }
-  steps.value = [{ workers: [], resource: '', name: '' }]
+  steps.value = [{ _id: Date.now(), workers: [], resource: '', name: '' }]
 }
-
 
 async function loadAllWorkers() {
     try {
         const response = await $fetch(`${API_BASE_URL}/api/worker/list`, { method: 'GET' })
         allWorkers.value = response || []
     } catch (e) {
-        console.error("Could not load workers list", e)
+        console.error(e)
     }
 }
 
 async function submitOrder() {
   if (!canSubmit.value) return
 
-  // no steps provided
   const activeSteps = steps.value.filter(step =>
     (step.workers && step.workers.length > 0) || step.resource || step.name
   )
 
-
   const processPayload = activeSteps.map(step => ({
       name: step.name,
       resource: step.resource,
-
       workers: step.workers.map(w => w.name)
   }))
 
   const order = {
-    name: newOrder.value.name,
-    start: newOrder.value.start,
-    end: newOrder.value.end,
+    ...newOrder.value,
     target: Number(newOrder.value.target),
-    product: newOrder.value.product,
-    status: newOrder.value.status,
-    priority: newOrder.value.priority,
-    comments: newOrder.value.comments,
     process: processPayload
   }
-
-  console.log('Submitting order:', order)
 
   try {
     await $fetch(`${API_BASE_URL}/api/order/post`, {
@@ -93,7 +80,7 @@ async function submitOrder() {
       body: order
     })
     resetForm()
-    //alert("Order created!")
+    alert('Order created successfully')
   } catch (error) {
     console.error('API Error:', error);
     alert('Error creating order')
@@ -129,21 +116,26 @@ onMounted(() => {
           Product name <input v-model="newOrder.product" class="input" />
         </label>
         <label class="flex flex-col gap-1 text-sm label-text">
-          Start date <input v-model="newOrder.start" type="date" class="input" />
+          Start date <input v-model="newOrder.start" type="date" inputmode="numeric" class="input" />
         </label>
         <label class="flex flex-col gap-1 text-sm label-text">
-          End date <input v-model="newOrder.end" type="date" class="input" />
+          End date <input v-model="newOrder.end" type="date" inputmode="numeric" class="input" />
         </label>
         <label class="flex flex-col gap-1 text-sm label-text">
           Status
           <select v-model="newOrder.status" class="input">
-            <option>Planned</option><option>Running</option><option>Paused</option><option>Done</option>
+            <option value="Planned">Planned</option>
+            <option value="Running">Running</option>
+            <option value="Paused">Paused</option>
+            <option value="Done">Done</option>
           </select>
         </label>
         <label class="flex flex-col gap-1 text-sm label-text">
           Priority
           <select v-model="newOrder.priority" class="input">
-            <option>High</option><option>Medium</option><option>Low</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
           </select>
         </label>
         <label class="flex flex-col gap-1 text-sm label-text sm:col-span-2">
@@ -178,7 +170,7 @@ onMounted(() => {
 
           <div
             v-for="(step, i) in steps"
-            :key="i"
+            :key="step._id"
             class="grid grid-cols-[30px_30px_1fr_1fr_1fr] gap-2 items-start rounded-lg border p-2 transition-colors"
             :class="isDarkMode ? 'border-gray-700 bg-gray-700' : 'border-slate-200 bg-slate-50'"
           >
@@ -213,6 +205,8 @@ onMounted(() => {
 .input { @apply w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors; }
 .dark-mode .input { @apply border-gray-700 bg-gray-800 text-slate-100 placeholder-slate-500 focus:border-pink-500 focus:ring-1 focus:ring-pink-500; }
 .light-mode .input { @apply border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500; }
+.dark-mode .disabled-input { @apply bg-gray-900 text-slate-500; }
+.light-mode .disabled-input { @apply bg-slate-100 text-slate-500; }
 .dark-mode .label-text { @apply text-slate-300; }
 .light-mode .label-text { @apply text-slate-600; }
 </style>

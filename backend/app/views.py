@@ -14,7 +14,7 @@ def broadcast_order_change(action, order_data=None):
     """Helper to broadcast order changes via WebSocket"""
     channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(
-        'order_order',
+        'orders_orders',
         {
             'type': 'order_message',
             'action': action,

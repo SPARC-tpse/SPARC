@@ -120,6 +120,15 @@ async function loadAllWorkers() {
         allWorkers.value = response || []
     } catch (e) { console.error("Error loading workers", e) }
 }
+const allResources = ref([]);
+
+async function loadResources() {
+    try {
+        const response = await $fetch(`${API_BASE_URL}/api/resource/list`, { method: 'GET' });
+        allResources.value = response || [];
+    } catch (e) { console.error("Error loading resources", e); }
+}
+
 
 async function loadOrder() {
     try {
@@ -153,6 +162,7 @@ async function loadOrder() {
 onMounted(() => {
     loadOrder()
     loadAllWorkers()
+    loadResources();
 })
 </script>
 
@@ -265,7 +275,16 @@ onMounted(() => {
                             <WorkerMultiSelect v-model="step.workers" :all-workers="allWorkers" />
                         </div>
 
-                        <input :value="step.resource?.name || step.resource_name || ''" @input="updateResource(step, $event.target.value)" class="input h-10" placeholder="Resource" />
+                        <select
+                        :value="step.resource?.name || step.resource_name || ''"
+                        @change="updateResource(step, $event.target.value)"
+                        class="input h-10"
+                        >
+                        <option value="">-- Choose Resource --</option>
+                        <option v-for="res in allResources" :key="res.id" :value="res.name">
+                            {{ res.name }}
+                        </option>
+                        </select>
                         <input v-model="step.name" class="input h-10" placeholder="Name" />
                     </div>
 

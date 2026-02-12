@@ -45,6 +45,17 @@ function loadProcessStep() {
   }
 }
 
+const config = useRuntimeConfig();
+const API_BASE_URL = config.public.apiBaseUrl;
+const allResources = ref([]);
+
+async function loadResources() {
+    try {
+        const response = await $fetch(`${API_BASE_URL}/api/resource/list`);
+        allResources.value = response || [];
+    } catch (e) { console.error(e); }
+}
+
 async function updateProcessStep() {
   if (!canSubmit.value) return
 
@@ -60,6 +71,7 @@ function cancelEdit() {
 
 onMounted(() => {
   loadProcessStep()
+  loadResources();
 })
 </script>
 
@@ -117,7 +129,12 @@ onMounted(() => {
         </label>
         <label class="flex flex-col gap-1 text-sm label-text">
           Resource
-          <input v-model="processStep.resource" class="input" />
+          <select v-model="processStep.resource" class="input">
+            <option value="">-- choose resource --</option>
+            <option v-for="res in allResources" :key="res.id" :value="res.name">
+              {{ res.name }}
+            </option>
+          </select>
         </label>
         <label class="flex flex-col gap-1 text-sm label-text">
           Status

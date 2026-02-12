@@ -258,6 +258,51 @@ def get_workers(request: Request) -> JsonResponse:
         return JsonResponse(serializer.data, safe=False)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+#worker view logic
+@api_view(['DELETE'])
+def delete_worker(request: Request, worker_id: int) -> JsonResponse:
+    try:
+        worker = Worker.objects.get(id=worker_id)
+        worker.delete()
+        return JsonResponse({'success': True, 'message': 'Worker deleted'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['POST'])
+def create_worker(request: Request) -> JsonResponse:
+    """Create a new worker"""
+    try:
+        serializer = WorkerSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=201)
+        return JsonResponse(serializer.errors, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+def get_worker(request: Request, worker_id: int) -> JsonResponse:
+    """Get a single worker by ID"""
+    try:
+        worker = Worker.objects.get(id=worker_id)
+        serializer = WorkerSerializer(worker, many=False)
+        return JsonResponse(serializer.data, safe=False)
+    except Worker.DoesNotExist:
+        return JsonResponse({'error': 'Worker not found'}, status=404)
+
+@api_view(['PUT'])
+def update_worker(request: Request, worker_id: int) -> JsonResponse:
+    """Update an existing worker"""
+    try:
+        worker = Worker.objects.get(id=worker_id)
+        worker.name = request.data.get('name', worker.name)
+        worker.save()
+        return JsonResponse({'message': 'Worker updated successfully', 'id': worker.id, 'name': worker.name})
+    except Worker.DoesNotExist:
+        return JsonResponse({'error': 'Worker not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 """
 @api_view(['DELETE'])
 def delete_process(request: Request, process_id: int) -> JsonResponse:

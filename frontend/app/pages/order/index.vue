@@ -1,7 +1,7 @@
 <script setup>
     // Redirect /order to /order/overview
     definePageMeta({
-    layout: false
+        layout: false
     })
 
     navigateTo('/order/overview', { replace: true })

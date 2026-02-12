@@ -1,21 +1,27 @@
 v0.1.0
 ===
 feature/order_backend_integration
-- add error handling
+- added error handling
 - implement update_order
 - implement delete_order
 - change urls of api
-- add delete button in order/overview
+- added delete button in order/overview
 - call the apis from the frontend
-- add order/measure/[id]
+- added order/measure/[id]
 - update OrderSerializer, ProcessSerializer and ResourceSerializer
 - added WorkerSerializer
-- add get_order as GET api
+- added get_order as GET api
 - update Process model
-- add run_server.sh for easier deployment on server
+- added run_server.sh for easier deployment on server
 - update config/settings.py and config/urls.py to include MEDIA_URL for uploaded media by the user
-- add automatic update of order/overview if something changes in the data base
-- add FileUpload as component
+- added automatic update of order/overview if something changes in the data base
+- added FileUpload as component
+- added foreign key in models.Disruption for process
+- added sorting for table elements
+- added OrderFile module
+- added warning when some thing is missing in  order
+- added "delete" button for processsteps
+
 
 fix/restructure_backend
 - split into config and app folder

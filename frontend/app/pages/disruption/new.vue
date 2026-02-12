@@ -7,6 +7,12 @@ definePageMeta({
 })
 
 const { isDarkMode } = useTheme()
+const route = useRoute()
+const config = useRuntimeConfig()
+const API_BASE_URL = config.public.apiBaseUrl
+
+// Get process ID from URL parameter
+const processIdParam = route.query.process
 
 const resources = ref([
   { id: 1, name: 'Machine A' },

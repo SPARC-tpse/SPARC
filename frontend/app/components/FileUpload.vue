@@ -1,114 +1,123 @@
 <script setup lang="js">
-import { ref } from 'vue'
-import { useTheme } from '~/composables/useTheme'
+    import { ref } from 'vue'
+    import { useTheme } from '~/composables/useTheme'
 
-const props = defineProps({
-  fileType: {
-    type: String,
-    default: 'general' // 'bom' or 'general'
-  },
-  label: {
-    type: String,
-    default: 'Upload Files'
-  }
-})
-
-const emit = defineEmits(['filesUploaded', 'fileDeleted'])
-
-const { isDarkMode } = useTheme()
-const config = useRuntimeConfig()
-const API_BASE_URL = config.public.apiBaseUrl
-
-const uploadedFiles = ref([])
-const uploading = ref(false)
-const fileInput = ref(null)
-
-// Format file size
-function formatFileSize(bytes) {
-  if (bytes === 0) return '0 Bytes'
-  const k = 1024
-  const sizes = ['Bytes', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
-}
-
-// Open file picker
-function openFilePicker() {
-  fileInput.value?.click()
-}
-
-// Handle file selection
-async function handleFileSelect(event) {
-  const files = event.target.files
-  if (!files || files.length === 0) return
-
-  uploading.value = true
-
-  for (let file of files) {
-    await uploadFile(file)
-  }
-
-  uploading.value = false
-  event.target.value = '' // Reset input
-}
-
-// Upload a single file
-async function uploadFile(file) {
-  const formData = new FormData()
-  formData.append('file', file)
-  //formData.append('type', props.fileType)
-
-  try {
-    const response = await $fetch(`${API_BASE_URL}/api/files/upload`, {
-      method: 'POST',
-      body: formData
+    const props = defineProps({
+        fileType: {
+            type: String,
+            default: 'general' // 'bom' or 'general'
+        },
+        label: {
+            type: String,
+            default: 'Upload Files'
+        },
+        orderId: {
+            type: Number,
+            required: false
+        }
     })
 
-    uploadedFiles.value.push(response)
-    emit('filesUploaded', uploadedFiles.value)
-    console.log('File uploaded:', response)
-  } catch (error) {
-    console.error('Upload failed:', error)
-    alert(`Failed to upload ${file.name}`)
-  }
-}
+    const emit = defineEmits(['filesUpdated','filesUploaded', 'fileDeleted'])
 
-// Delete a file
-async function deleteFile(file, index) {
-  if (!confirm(`Delete ${file.filename}?`)) return
+    const { isDarkMode } = useTheme()
+    const config = useRuntimeConfig()
+    const API_BASE_URL = config.public.apiBaseUrl
 
-  try {
-    await $fetch(`${API_BASE_URL}/api/files/delete?path=${encodeURIComponent(file.path)}`, {
-      method: 'DELETE'
-    })
+    const uploadedFiles = ref([])
+    const uploading = ref(false)
+    const fileInput = ref(null)
 
-    uploadedFiles.value.splice(index, 1)
-    emit('fileDeleted', uploadedFiles.value)
-    console.log('File deleted:', file.filename)
-  } catch (error) {
-    console.error('Delete failed:', error)
-    alert(`Failed to delete ${file.filename}`)
-  }
-}
-
-// Load existing files
-async function loadFiles() {
-  try {
-    const response = await $fetch(`${API_BASE_URL}/api/files/list`)
-
-    if (props.fileType === 'bom') {
-      uploadedFiles.value = response.bom_files || []
-    } else {
-      uploadedFiles.value = response.general_files || []
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes'
+        const k = 1024
+        const sizes = ['Bytes', 'KB', 'MB', 'GB']
+        const i = Math.floor(Math.log(bytes) / Math.log(k))
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
     }
-  } catch (error) {
-    console.error('Failed to load files:', error)
-  }
-}
 
-onMounted(() => {
-  loadFiles()
-})
+    // Open file picker
+    function openFilePicker() {
+        fileInput.value?.click()
+    }
+
+    // Handle file selection
+    async function handleFileSelect(event) {
+        // can not be called without orderId because the uploaded file needs to know who its owner is
+        if (props.orderId === undefined) return
+
+        const files = event.target.files
+        if (!files || files.length === 0) return
+
+        uploading.value = true
+
+        for (let file of files) {
+            await uploadFile(file)
+        }
+
+        uploading.value = false
+        event.target.value = '' // Reset input
+    }
+
+    // Upload a single file
+    async function uploadFile(file) {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('type', props.fileType)
+        formData.append('order_id', props.orderId)
+
+        try {
+            const response = await $fetch(`${API_BASE_URL}/api/order/file/post`, {
+                method: 'POST',
+                body: formData
+            })
+
+            uploadedFiles.value.push(response)
+            emit('filesUpdated', uploadedFiles.value)
+            console.log('File uploaded:', response)
+        } catch (error) {
+            console.error('Upload failed:', error)
+            alert(`Failed to upload ${file.name}`)
+        }
+    }
+
+    // Delete a file
+    async function deleteFile(file, index) {
+        if (!confirm(`Delete ${file.file_name}?`)) return
+
+        try {
+            await $fetch(`${API_BASE_URL}/api/order/file/delete/${file.id}`, {
+                method: 'DELETE'
+            })
+
+            uploadedFiles.value.splice(index, 1)
+            emit('filesUpdated', uploadedFiles.value)
+            console.log('File deleted:', file.file_name)
+        } catch (error) {
+            console.error('Delete failed:', error)
+            alert(`Failed to delete ${file.file_name}`)
+        }
+    }
+
+    // Load existing files for this order
+    async function loadFiles() {
+        if (props.orderId === undefined) return
+
+        try {
+            const response = await $fetch(`${API_BASE_URL}/api/order/${props.orderId}/file/get`, {
+                method: 'GET'
+            })
+
+            // Filter by file type
+            uploadedFiles.value = response.files.filter(f => f.file_type === props.fileType)
+            emit('filesUpdated', uploadedFiles.value)
+        } catch (error) {
+            console.error('Failed to load files:', error)
+        }
+    }
+
+    onMounted(() => {
+        loadFiles()
+    })
 </script>
 
 <template>

@@ -8,8 +8,14 @@
     })
 
     const { isDarkMode } = useTheme()
+    const config = useRuntimeConfig();
+    const API_BASE_URL = config.public.apiBaseUrl;
 
-    //STATE LOGIC
+    // Sorting state
+    const sortColumn = ref('id') // Default sort by ID
+    const sortDirection = ref('asc') // 'asc' or 'desc'
+
+    // Delete state
     const isDeleteMode = ref(false) // Default is false (so Edit Mode is default)
     const deleteConfirmId = ref(null)
 
@@ -31,6 +37,58 @@
       }
     ])
 
+    // Computed sorted orders
+    const sortedOrders = computed(() => {
+        const ordersCopy = [...orders.value]
+
+        return ordersCopy.sort((a, b) => {
+            let aValue = a[sortColumn.value]
+            let bValue = b[sortColumn.value]
+
+            // Handle different data types
+            if (sortColumn.value === 'priority') {
+                // Convert priority to number for sorting
+                const priorityMap = { 'High': 3, 'Medium': 2, 'Low': 1 }
+                aValue = priorityMap[aValue] || 0
+                bValue = priorityMap[bValue] || 0
+            } else if (sortColumn.value === 'start_date' || sortColumn.value === 'end_date') {
+                // Convert dates for comparison
+                aValue = new Date(aValue)
+                bValue = new Date(bValue)
+            } else if (typeof aValue === 'string') {
+                // Case-insensitive string comparison
+                aValue = aValue.toLowerCase()
+                bValue = bValue.toLowerCase()
+            }
+
+            // Compare values
+            if (aValue < bValue) {
+                return sortDirection.value === 'asc' ? -1 : 1
+            }
+            if (aValue > bValue) {
+                return sortDirection.value === 'asc' ? 1 : -1
+            }
+            return 0
+        })
+    })
+
+    function sortBy(column) {
+        if (sortColumn.value === column) {
+            // Toggle direction if same column
+            sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+        } else {
+            // New column, default to ascending
+            sortColumn.value = column
+            sortDirection.value = 'asc'
+        }
+    }
+
+    // Get sort indicator icon
+    function getSortIcon(column) {
+        if (sortColumn.value !== column) return '↕'
+        return sortDirection.value === 'asc' ? '↑' : '↓'
+    }
+
     // Handle real-time updates
     const handleOrderUpdate = async (data) => {
       console.log('Order update received:', data)
@@ -49,6 +107,7 @@
         orders.value = orders.value.filter(o => o.id !== data.data.id)
       }
     }
+
     // Connect to WebSocket
     const { connected } = useOrderWebSocket(handleOrderUpdate)
 
@@ -97,13 +156,8 @@
     // 3. Actual deletion (Confirm button next to name)
     async function executeDelete(id) {
         console.log(`Deleting Order ${id}`)
-
-        const config = useRuntimeConfig();
-        const API_BASE_URL = config.public.apiBaseUrl;
-        const ENDPOINT = '/api/orders/delete/'
-
         try {
-            const response = await $fetch(`${API_BASE_URL}${ENDPOINT}${id}`, {
+            const response = await $fetch(`${API_BASE_URL}/api/order/delete/${id}`, {
                 method: 'DELETE'
             })
             return response
@@ -118,24 +172,23 @@
     }
 
     async function fetchOrders() {
-        const config = useRuntimeConfig();
-        const API_BASE_URL = config.public.apiBaseUrl;
-        const ENDPOINT = '/api/orders/get';
-
+        console.log("Test fetch order");
         try {
-            const response = await $fetch(`${API_BASE_URL}${ENDPOINT}`, {
+            const response = await $fetch(`${API_BASE_URL}/api/order/get`, {
                 method: 'GET'
-            })
-            console.log("response data:" + response)
-            orders.value = response
+            });
+            console.log("response data:");
+            console.log(response);
+            orders.value = response;
         } catch (error) {
-            console.error('API Error:', error)
-            throw error
+            console.error('API Error:', error);
+            alert('Error: Failed to load Orders.');
+            throw error;
         }
     }
 
-    onMounted(async () => {
-      await fetchOrders();
+    onMounted(() => {
+      fetchOrders();
     })
 </script>
 
@@ -188,12 +241,55 @@
         </div>
 
         <div class="grid gap-2">
+          <div class="grid grid-cols-[1.5fr,1fr,1fr,1fr,1fr,0.8fr,120px] gap-2 text-xs"
+               :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
+            <button
+              @click="sortBy('name')"
+              class="text-left hover:text-pink-500 transition-colors flex items-center gap-1"
+            >
+              Name {{ getSortIcon('name') }}
+            </button>
+            <button
+              @click="sortBy('id')"
+              class="text-left hover:text-pink-500 transition-colors flex items-center gap-1"
+            >
+              ID {{ getSortIcon('id') }}
+            </button>
+            <button
+              @click="sortBy('status')"
+              class="text-left hover:text-pink-500 transition-colors flex items-center gap-1"
+            >
+              Status {{ getSortIcon('status') }}
+            </button>
+            <button
+              @click="sortBy('start_date')"
+              class="text-left hover:text-pink-500 transition-colors flex items-center gap-1"
+            >
+              Start {{ getSortIcon('start_date') }}
+            </button>
+            <button
+              @click="sortBy('end_date')"
+              class="text-left hover:text-pink-500 transition-colors flex items-center gap-1"
+            >
+              End {{ getSortIcon('end_date') }}
+            </button>
+            <button
+              @click="sortBy('priority')"
+              class="text-left hover:text-pink-500 transition-colors flex items-center gap-1"
+            >
+              Priority {{ getSortIcon('priority') }}
+            </button>
+            <span>Action</span>
+          </div>
+
+          <!--
           <div class="grid grid-cols-[1.5fr,1fr,1fr,1fr,1fr,0.8fr,120px] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
             <span>Name</span><span>ID</span><span>Status</span><span>Start</span><span>End</span><span>Priority</span><span>Action</span>
           </div>
+          -->
 
           <div
-            v-for="order in orders"
+            v-for="order in sortedOrders"
             :key="order.id"
             class="grid grid-cols-[1.5fr,1fr,1fr,1fr,1fr,0.8fr,120px] gap-2 items-center rounded-lg border p-3 text-sm transition-colors"
             :class="[

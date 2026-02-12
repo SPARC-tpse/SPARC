@@ -9,7 +9,7 @@ export const useOrderWebSocket = (onOrderUpdate) => {
   const connect = () => {
     const config = useRuntimeConfig()
     const wsBaseUrl = config.public.apiBaseUrl.replace('http://', 'ws://').replace('https://', 'wss://')
-    const wsUrl = `${wsBaseUrl}/ws/orders/`
+    const wsUrl = `${wsBaseUrl}/ws/order/`
 
     console.log('Connecting to WebSocket:', wsUrl)
 

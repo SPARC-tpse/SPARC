@@ -27,20 +27,35 @@
 
 ### on ubuntu server
 In this repo (if manually else just take from repo release):
-1. `docker compose build`
-2. `docker save sparc-backend sparc-frontend postgres:18 -o sparc-images.tar`
+1. `sudo docker compose build`
+2. `sudo docker save sparc-backend sparc-frontend postgres:18 -o sparc-images.tar`
 
 install docker on server:
 https://docs.docker.com/engine/install/ubuntu/
 
 on server: (make sure that the docker-compose.yml does not use build instead of image or uses volumes)
-1. `docker load -i sparc-images.tar`
-2. `docker compose down` (when updating)
-3. `docker compose up -d`
-4. `docker stop django-backend nuxt-frontend postgres-db`
+1. `sudo docker load -i sparc-images.tar`
+2. `sudo docker compose down` (when updating)
+3. `sudo docker compose up -d`
+4. `sudo docker stop django-backend nuxt-frontend postgres-db`
+
+## make migrations
+`sudo docker compose exec backend python manage.py makemigrations`\
+`1`\
+`None`\
+`sudo docker compose exec backend python manage.py migrate`
 
 ## run tests
 `sudo docker compose exec backend python manage.py test`
+
+## create super user
+`sudo docker compose exec backend python manage.py collectstatic --noinput`\
+`sudo docker compose exec backend python manage.py createsuperuser`
+
+## reset all data
+`sudo docker volume rm sparc_pgdata`\
+`sudo docker compose up -d`\
+`sudo docker compose exec backend python manage.py createsuperuser`
 
 ## project structure
 

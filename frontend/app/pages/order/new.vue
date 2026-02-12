@@ -7,6 +7,8 @@ definePageMeta({
 })
 
 const { isDarkMode } = useTheme()
+const config = useRuntimeConfig();
+const API_BASE_URL = config.public.apiBaseUrl;
 
 const newOrder = ref({
   name: '',
@@ -19,7 +21,7 @@ const newOrder = ref({
   comments: ''
 })
 
-const steps = ref([{ worker: '', resource: '', notes: '' }])
+const steps = ref([{ worker: '', resource: '', name: '' }])
 const bomFiles = ref([])
 const generalFiles = ref([])
 
@@ -29,7 +31,7 @@ const canSubmit = computed(() => {
 })
 
 function addStep() {
-  steps.value.push({ worker: '', resource: '', notes: '' })
+  steps.value.push({ worker: '', resource: '', name: '' })
 }
 
 function resetForm() {
@@ -43,7 +45,7 @@ function resetForm() {
     priority: 'Medium',
     comments: ''
   }
-  steps.value = [{ worker: '', resource: '', notes: '' }]
+  steps.value = [{ worker: '', resource: '', name: '' }]
   bomFiles.value = []
   generalFiles.value = []
 }
@@ -61,7 +63,7 @@ function handleGeneralFilesUploaded(files) {
 async function submitOrder() {
     if (!canSubmit.value) return
 
-    const processSteps = steps.value.filter(step => step.worker || step.resource || step.notes)
+    const processSteps = steps.value.filter(step => step.worker || step.resource || step.name)
     const order = {
         name: newOrder.value.name,
         start: newOrder.value.start,
@@ -76,12 +78,8 @@ async function submitOrder() {
 
     console.log('Submitting order:', order)
 
-    const config = useRuntimeConfig();
-    const API_BASE_URL = config.public.apiBaseUrl;
-    const ENDPOINT = '/api/orders/post'
-
     try {
-        const response = await $fetch(`${API_BASE_URL}${ENDPOINT}`, {
+        const response = await $fetch(`${API_BASE_URL}/api/order/post`, {
             method: 'POST',
             body: order
         })
@@ -123,22 +121,27 @@ async function submitOrder() {
           Name
           <input v-model="newOrder.name" class="input" />
         </label>
+
         <label class="flex flex-col gap-1 text-sm label-text">
           Target amount
           <input v-model="newOrder.target" type="number" class="input" />
         </label>
+
         <label class="flex flex-col gap-1 text-sm label-text">
           Product name
           <input v-model="newOrder.product" class="input" />
         </label>
+
         <label class="flex flex-col gap-1 text-sm label-text">
           Start date
           <input v-model="newOrder.start" type="date" inputmode="numeric" class="input" />
         </label>
+
         <label class="flex flex-col gap-1 text-sm label-text">
           End date
           <input v-model="newOrder.end" type="date" inputmode="numeric" class="input" />
         </label>
+
         <label class="flex flex-col gap-1 text-sm label-text">
           Status
           <select v-model="newOrder.status" class="input">
@@ -148,6 +151,7 @@ async function submitOrder() {
             <option>Done</option>
           </select>
         </label>
+
         <label class="flex flex-col gap-1 text-sm label-text">
           Priority
           <select v-model="newOrder.priority" class="input">
@@ -164,9 +168,9 @@ async function submitOrder() {
         </label>
       </div>
 
-      <!-- file uploads -->
+      <!-- file uploads
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- bom upload -->
+        <!-- bom upload
         <div
           class="rounded-xl border p-4 shadow-lg transition-colors"
           :class="isDarkMode
@@ -181,7 +185,7 @@ async function submitOrder() {
           />
         </div>
 
-        <!-- general files upload -->
+        <!-- general files upload
         <div
           class="rounded-xl border p-4 shadow-lg transition-colors"
           :class="isDarkMode
@@ -196,6 +200,7 @@ async function submitOrder() {
           />
         </div>
       </div>
+      -->
 
       <!-- process steps -->
       <div
@@ -214,7 +219,7 @@ async function submitOrder() {
         </div>
         <div class="space-y-2">
           <div class="grid grid-cols-[30px,1fr,1fr,1fr] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-            <span>#</span><span>Worker</span><span>Resource</span><span>Notes</span>
+            <span>#</span><span>Worker</span><span>Resource</span><span>Process-step Name</span>
           </div>
           <div
             v-for="(step, i) in steps"
@@ -227,7 +232,7 @@ async function submitOrder() {
             <span class="text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">{{ i + 1 }}</span>
             <input v-model="step.worker" class="input h-10" />
             <input v-model="step.resource" class="input h-10" />
-            <input v-model="step.notes" class="input h-10" />
+            <input v-model="step.name" class="input h-10" />
           </div>
         </div>
       </div>

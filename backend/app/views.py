@@ -2,19 +2,21 @@ from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.http import JsonResponse
 from rest_framework.request import Request
-from .models import Order, Process, Worker, Resource, OrderFile
-from .serializers import OrderSerializer, WorkerSerializer, OrderFileSerializer
+from .models import Order, Process, Worker, Resource, OrderFile, ResourceType, Disruption, DisruptionType
+from .serializers import OrderSerializer, WorkerSerializer, OrderFileSerializer, ResourceSerializer, DisruptionSerializer
 from django.core.files.storage import default_storage
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from datetime import datetime, timedelta
+from django.utils.dateparse import parse_datetime
 
 def broadcast_order_change(action, order_data=None):
     """Helper to broadcast order changes via WebSocket"""
     channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(
-        'orders_orders',
+        'order_order',
         {
             'type': 'order_message',
             'action': action,
@@ -303,47 +305,214 @@ def update_worker(request: Request, worker_id: int) -> JsonResponse:
         return JsonResponse({'error': 'Worker not found'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-"""
-@api_view(['DELETE'])
-def delete_process(request: Request, process_id: int) -> JsonResponse:
+
+# --- RESOURCES ---
+
+@api_view(['GET'])
+def get_resources(request: Request) -> JsonResponse:
     try:
-        process = Process.objects.get(id=process_id)
-        process.delete()
-        return JsonResponse({'success': True, 'message': 'Process deleted'})
+        resources = Resource.objects.all()
+        data = []
+        for r in resources:
+            data.append({
+                'id': r.id,
+                'name': r.name,
+                'type': r.type.name if r.type else "Unknown",
+                'status': r.status
+            })
+        return JsonResponse(data, safe=False)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-"""
-# Worker
-
-"""@api_view(['GET'])
-def get_workers(request: Request) -> JsonResponse:
-    ""Get all workers""
+@api_view(['GET'])
+def get_resource(request: Request, resource_id: int) -> JsonResponse:
     try:
-        workers = Worker.objects.all()
-        serializer = WorkerSerializer(workers, many=True)
-        return JsonResponse(serializer.data, safe=False)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
-@api_view(['DELETE'])
-def delete_worker(request: Request, worker_id: int) -> JsonResponse:
-    try:
-        worker = Worker.objects.get(id=worker_id)
-        worker.delete()
-        return JsonResponse({'success': True, 'message': 'Worker deleted'})
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        r = Resource.objects.get(id=resource_id)
+        return JsonResponse({
+            'id': r.id,
+            'name': r.name,
+            'type': r.type.name if r.type else "",
+            'status': r.status
+        })
+    except Resource.DoesNotExist:
+        return JsonResponse({'error': 'Resource not found'}, status=404)
 
 @api_view(['POST'])
-def create_worker(request: Request) -> JsonResponse:
-    ""Create a new worker""
+def create_resource(request: Request) -> JsonResponse:
     try:
-        serializer = WorkerSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.errors, status=400)
+        name = request.data.get('name')
+        type_name = request.data.get('type')
+        status = request.data.get('status')
+
+        # ResourceType handling
+        r_type_obj, _ = ResourceType.objects.get_or_create(
+            name__iexact=type_name,
+            defaults={'name': type_name}
+        )
+
+        Resource.objects.create(
+            name=name,
+            type=r_type_obj,
+            status=int(status)
+        )
+        return JsonResponse({'message': 'Resource created'}, status=201)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-"""
+
+@api_view(['PUT'])
+def update_resource(request: Request, resource_id: int) -> JsonResponse:
+    try:
+        r = Resource.objects.get(id=resource_id)
+        r.name = request.data.get('name', r.name)
+        r.status = int(request.data.get('status', r.status))
+
+        if 'type' in request.data:
+            type_name = request.data['type']
+            r_type_obj, _ = ResourceType.objects.get_or_create(
+                name__iexact=type_name,
+                defaults={'name': type_name}
+            )
+            r.type = r_type_obj
+
+        r.save()
+        return JsonResponse({'message': 'Resource updated'})
+    except Resource.DoesNotExist:
+        return JsonResponse({'error': 'Resource not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['DELETE'])
+def delete_resource(request: Request, resource_id: int) -> JsonResponse:
+    try:
+        Resource.objects.get(id=resource_id).delete()
+        return JsonResponse({'message': 'Resource deleted'})
+    except Resource.DoesNotExist:
+        return JsonResponse({'error': 'Resource not found'}, status=404)
+
+# --- DISRUPTIONS ---
+def format_dt(dt):
+    """Hilfsfunktion: Macht aus einem Datum einen sauberen String für das Frontend"""
+    if not dt: return None
+
+    return dt.strftime('%Y-%m-%dT%H:%M:%S')
+
+@api_view(['GET'])
+def get_disruptions(request: Request) -> JsonResponse:
+    try:
+        disruptions = Disruption.objects.all().order_by('-created_at')
+        data = []
+        for d in disruptions:
+            start_dt = d.created_at
+            end_dt = start_dt + timedelta(seconds=d.duration)
+
+            data.append({
+                'id': d.id,
+                'name': d.name,
+                'start': format_dt(start_dt),
+                'end': format_dt(end_dt),
+                'resource': d.resource.name if d.resource else "N/A",
+                'type': d.type.name if d.type else "General",
+            })
+        return JsonResponse(data, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+def get_disruption(request: Request, disruption_id: int) -> JsonResponse:
+    try:
+        d = Disruption.objects.get(id=disruption_id)
+
+        start_time = d.created_at
+        end_time = start_time + timedelta(seconds=d.duration)
+
+        return JsonResponse({
+            'id': d.id,
+            'name': d.name,
+            'start': start_time.strftime('%Y-%m-%dT%H:%M:%S'),
+            'end': end_time.strftime('%Y-%m-%dT%H:%M:%S'),
+            'resource': d.resource.id if d.resource else None,
+            'type': d.type.id if d.type else None,
+        })
+    except Disruption.DoesNotExist:
+        return JsonResponse({'error': 'Not found'}, status=404)
+
+@api_view(['GET'])
+def get_disruption_types(request: Request) -> JsonResponse:
+    """Liefert Typen und erstellt 'Error' & 'Maintenance', falls sie fehlen"""
+    try:
+        default_types = ['Error', 'Maintenance']
+
+        for t_name in default_types:
+            DisruptionType.objects.get_or_create(name=t_name)
+
+
+        types = DisruptionType.objects.all()
+        data = [{'id': t.id, 'name': t.name} for t in types]
+
+        return JsonResponse(data, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+def get_duration_from_strings(start_str, end_str):
+    """Hilfsfunktion zur Berechnung der Dauer in Sekunden"""
+    try:
+        if not start_str or not end_str:
+            return 0
+
+        s_dt = datetime.fromisoformat(start_str.split('.')[0].replace('Z', ''))
+        e_dt = datetime.fromisoformat(end_str.split('.')[0].replace('Z', ''))
+        return int((e_dt - s_dt).total_seconds())
+    except Exception as e:
+        print(f"Calculation Error: {e}")
+        return 0
+
+@api_view(['POST'])
+def create_disruption(request: Request) -> JsonResponse:
+    try:
+        data = request.data
+
+        duration = get_duration_from_strings(data.get('start'), data.get('end'))
+
+        type_obj = DisruptionType.objects.get(id=data.get('type'))
+        resource_obj = Resource.objects.get(id=data.get('resource'))
+
+        new_dis = Disruption.objects.create(
+            name=data.get('name'),
+            type=type_obj,
+            resource=resource_obj,
+            duration=max(0, duration)
+        )
+        return JsonResponse({'id': new_dis.id, 'message': 'Created'}, status=201)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['PUT'])
+def update_disruption(request: Request, disruption_id: int) -> JsonResponse:
+    try:
+        d = Disruption.objects.get(id=disruption_id)
+        data = request.data
+
+        d.name = data.get('name', d.name)
+
+
+        if 'start' in data and 'end' in data:
+            d.duration = get_duration_from_strings(data.get('start'), data.get('end'))
+
+        if 'resource' in data:
+            d.resource = Resource.objects.get(id=data['resource'])
+        if 'type' in data:
+            d.type = DisruptionType.objects.get(id=data['type'])
+
+        d.save()
+        return JsonResponse({'message': 'Updated'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['DELETE'])
+def delete_disruption(request: Request, disruption_id: int) -> JsonResponse:
+    """Störung löschen"""
+    try:
+        Disruption.objects.get(id=disruption_id).delete()
+        return JsonResponse({'message': 'Disruption deleted'})
+    except Disruption.DoesNotExist:
+        return JsonResponse({'error': 'Disruption not found'}, status=404)

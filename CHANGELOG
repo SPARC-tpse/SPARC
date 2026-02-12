@@ -1,3 +1,22 @@
+v0.3.0
+===
+disruptions
+- backend intergration
+- time save fix
+- fixed edit mode
+- added delete mode
+
+Resources
+- backend intergration
+- added delete mode
+- fixed edit mode
+
+various backend fixes
+
+style changes
+- added useAppTheme composable for better theme management
+- updated badge colors for better visibility
+
 v0.2.0
 ===
 fix/run_server

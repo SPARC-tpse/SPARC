@@ -1,13 +1,12 @@
 <script setup lang="js">
 import { ref, onMounted, computed } from 'vue'
-import { useTheme } from '~/composables/useTheme'
 import { useRoute, useRouter } from '#app'
 
-definePageMeta({
-    layout: 'custom'
-})
+definePageMeta({ layout: 'custom' })
 
-const { isDarkMode } = useTheme()
+// Theme-Zentrale laden
+const { theme } = useAppTheme()
+
 const route = useRoute()
 const router = useRouter()
 const config = useRuntimeConfig()
@@ -15,16 +14,14 @@ const API_BASE_URL = config.public.apiBaseUrl
 const workerId = route.params.id
 
 const worker = ref({ name: '' })
-
 const canSubmit = computed(() => worker.value.name.length > 1)
 
 async function loadWorker() {
     try {
-        const response = await $fetch(`${API_BASE_URL}/api/worker/get/${workerId}`, { method: 'GET' })
+        const response = await $fetch(`${API_BASE_URL}/api/worker/get/${workerId}`)
         worker.value = response
     } catch (error) {
         console.error(error)
-        alert('Failed to load worker')
         router.push('/worker/overview')
     }
 }
@@ -37,57 +34,45 @@ async function updateWorker() {
             body: { name: worker.value.name }
         })
         router.push('/worker/overview')
-    } catch (error) {
-        console.error(error)
-        alert('Failed to update worker')
-    }
+    } catch (error) { alert('Failed to update worker') }
 }
 
-function cancel() {
-    router.push('/worker/overview')
-}
-
-onMounted(() => {
-    loadWorker()
-})
+onMounted(loadWorker)
 </script>
 
 <template>
-    <div :class="isDarkMode ? 'dark-mode' : 'light-mode'">
-        <Topbar
-          title="Workers · Edit"
-          :can-submit="canSubmit"
-          :show-reset="true"
-          :show-create="true"
-          create-label="Update"
-          @reset="cancel"
-          @submit="updateWorker"
-        />
+  <div :class="theme.pageWrapper">
+    <Topbar
+      title="Workers · Edit"
+      :can-submit="canSubmit"
+      :show-reset="true"
+      :show-create="true"
+      create-label="Update"
+      @reset="() => router.push('/worker/overview')"
+      @submit="updateWorker"
+    />
 
-        <main class="max-w-xl mx-auto p-6 space-y-4">
-            <div class="rounded-xl border p-6 space-y-4 shadow-lg transition-colors"
-                 :class="isDarkMode ? 'border-gray-700 bg-slate-900' : 'border-slate-200 bg-white'">
+    <main :class="theme.container">
+      <section :class="theme.card" class="max-w-2xl mx-auto">
+        <h3 class="font-semibold text-lg mb-4">Edit Worker Details</h3>
 
-                <h3 class="font-semibold text-lg">Edit Worker</h3>
+        <div class="space-y-4">
+          <label :class="theme.label">
+            Worker Name
+            <input
+              v-model="worker.name"
+              :class="theme.input"
+              placeholder="e.g. John Doe"
+              autofocus
+              @keyup.enter="updateWorker"
+            />
+          </label>
 
-                <label class="flex flex-col gap-1 text-sm label-text">
-                    Worker Name
-                    <input
-                        v-model="worker.name"
-                        class="input"
-                        autofocus
-                        @keyup.enter="updateWorker"
-                    />
-                </label>
-            </div>
-        </main>
-    </div>
+          <div class="text-xs opacity-50 italic">
+            ID: #{{ workerId }}
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
 </template>
-
-<style scoped>
-    .input { @apply w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors; }
-    .dark-mode .input { @apply border-gray-700 bg-gray-800 text-slate-100 placeholder-slate-500 focus:border-pink-500; }
-    .light-mode .input { @apply border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-indigo-500; }
-    .dark-mode .label-text { @apply text-slate-300; }
-    .light-mode .label-text { @apply text-slate-600; }
-</style>

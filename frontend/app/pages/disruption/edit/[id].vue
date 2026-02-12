@@ -1,24 +1,17 @@
 <script setup lang="js">
-import { ref, computed } from 'vue'
-import { useTheme } from '~/composables/useTheme'
+import { ref, computed, onMounted } from 'vue'
 
-definePageMeta({
-  layout: 'custom'
-})
+definePageMeta({ layout: 'custom' })
 
-const { isDarkMode } = useTheme()
+const { theme } = useAppTheme()
 const route = useRoute()
+const router = useRouter()
+const config = useRuntimeConfig()
+const API_BASE_URL = config.public.apiBaseUrl
 const disruptionId = route.params.id
 
-const resources = ref([
-  { id: 1, name: 'Machine A' },
-  { id: 2, name: 'Conveyor' }
-])
-
-const types = ref([
-  { id: 1, name: 'Error' },
-  { id: 2, name: 'Maintenance' }
-])
+const resources = ref([])
+const types = ref([])
 
 const disruption = ref({
   id: disruptionId,
@@ -29,147 +22,109 @@ const disruption = ref({
   type: ''
 })
 
-const canSubmit = computed(() =>
-  disruption.value.name && disruption.value.resource
-)
+const canSubmit = computed(() => disruption.value.name && disruption.value.resource)
 
 function setNow(field) {
-  const now = new Date()
-  disruption.value[field] = now.toISOString().slice(0, 16)
+  disruption.value[field] = new Date().toISOString().slice(0, 16)
 }
 
-async function loadDisruption() {
-  // TODO: Fetch from backend
-  // const response = await $fetch(`/api/disruptions/${disruptionId}`)
-  // disruption.value = response.data
+async function loadData() {
+  try {
+    const [resData, typeData, dispData] = await Promise.all([
+      $fetch(`${API_BASE_URL}/api/resource/list`),
+      $fetch(`${API_BASE_URL}/api/disruption-type/list`),
+      $fetch(`${API_BASE_URL}/api/disruption/get/${disruptionId}`)
+    ])
 
-  // Mock data for now
-  disruption.value = {
-    id: disruptionId,
-    name: 'Machine Malfunction',
-    start: '2025-12-27T10:00',
-    end: '2025-12-27T12:30',
-    resource: 1,
-    type: 1
-  }
+    resources.value = resData
+    types.value = typeData
+
+    const toInputFormat = (dateStr) => dateStr ? dateStr.slice(0, 16) : ''
+
+    disruption.value = {
+      ...dispData,
+      start: toInputFormat(dispData.start),
+      end: toInputFormat(dispData.end),
+      resource: dispData.resource,
+      type: dispData.type
+    }
+  } catch (e) { console.error('Fehler beim Laden:', e) }
 }
 
 async function updateDisruption() {
   if (!canSubmit.value) return
-
-  // TODO: Send to backend
-  console.log('Updating disruption:', disruption.value)
-
-  // Navigate back to overview
-  await navigateTo('/disruption/overview')
+  try {
+    await $fetch(`${API_BASE_URL}/api/disruption/put/${disruptionId}`, {
+      method: 'PUT',
+      body: disruption.value
+    })
+    await navigateTo('/disruption/overview')
+  } catch (e) { console.error('Update failed:', e) }
 }
 
-function cancelEdit() {
-  navigateTo('/disruption/overview')
-}
-
-onMounted(() => {
-  loadDisruption()
-})
+onMounted(loadData)
 </script>
 
 <template>
-  <div :class="isDarkMode ? 'dark-mode' : 'light-mode'">
+  <div :class="theme.pageWrapper">
     <Topbar
       title="Disruptions · Edit"
       :can-submit="canSubmit"
       :show-reset="true"
       :show-create="true"
       create-label="Update"
-      @reset="cancelEdit"
+      @reset="() => navigateTo('/disruption/overview')"
       @submit="updateDisruption"
     />
 
-    <main class="max-w-5xl mx-auto p-6 space-y-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <label class="flex flex-col gap-1 text-sm label-text">
-          Name
-          <input v-model="disruption.name" class="input" />
-        </label>
-        <label class="flex flex-col gap-1 text-sm label-text">
-          ID
-          <input :value="disruption.id" class="input disabled-input" disabled />
-        </label>
+    <main :class="theme.container">
+      <section :class="theme.card">
+        <h3 class="font-semibold text-lg mb-2">Edit Disruption Details</h3>
 
-        <div class="flex flex-col gap-1">
-          <label class="text-sm label-text">Start</label>
-          <div class="flex gap-2">
-            <input v-model="disruption.start" type="datetime-local" class="input" />
-            <button
-              type="button"
-              @click="setNow('start')"
-              class="px-3 rounded-lg text-sm border transition-colors whitespace-nowrap"
-              :class="isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-slate-300 hover:bg-slate-100'"
-            >
-              Now
-            </button>
+        <div :class="theme.formGrid">
+          <label :class="theme.label">
+            Name
+            <input v-model="disruption.name" :class="theme.input" placeholder="e.g. Belt Jam" />
+          </label>
+
+          <label :class="theme.label">
+            Internal ID
+            <input :value="disruption.id" :class="[theme.input, 'opacity-50 cursor-not-allowed']" disabled />
+          </label>
+
+          <div class="flex flex-col">
+            <label :class="theme.label">Start</label>
+            <div class="flex gap-2 items-end">
+              <input v-model="disruption.start" type="datetime-local" :class="theme.input" />
+              <button type="button" @click="setNow('start')" :class="theme.btnDeleteMode" class="h-[42px] px-4">Now</button>
+            </div>
           </div>
-        </div>
 
-        <div class="flex flex-col gap-1">
-          <label class="text-sm label-text">End</label>
-          <div class="flex gap-2">
-            <input v-model="disruption.end" type="datetime-local" class="input" />
-            <button
-              type="button"
-              @click="setNow('end')"
-              class="px-3 rounded-lg text-sm border transition-colors whitespace-nowrap"
-              :class="isDarkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-slate-300 hover:bg-slate-100'"
-            >
-              Now
-            </button>
+          <div class="flex flex-col">
+            <label :class="theme.label">End</label>
+            <div class="flex gap-2 items-end">
+              <input v-model="disruption.end" type="datetime-local" :class="theme.input" />
+              <button type="button" @click="setNow('end')" :class="theme.btnDeleteMode" class="h-[42px] px-4">Now</button>
+            </div>
           </div>
+
+          <label :class="theme.label">
+            Affected Resource
+            <select v-model="disruption.resource" :class="theme.input">
+              <option disabled value="">-- choose --</option>
+              <option v-for="r in resources" :key="r.id" :value="r.id">{{ r.name }}</option>
+            </select>
+          </label>
+
+          <label :class="theme.label">
+            Disruption Type
+            <select v-model="disruption.type" :class="theme.input">
+              <option disabled value="">-- choose --</option>
+              <option v-for="t in types" :key="t.id" :value="t.id">{{ t.name }}</option>
+            </select>
+          </label>
         </div>
-
-        <label class="flex flex-col gap-1 text-sm label-text">
-          Resource
-          <select v-model="disruption.resource" class="input">
-            <option disabled value="">-- choose --</option>
-            <option v-for="r in resources" :key="r.id" :value="r.id">{{ r.name }}</option>
-          </select>
-        </label>
-
-        <label class="flex flex-col gap-1 text-sm label-text">
-          Type
-          <select v-model="disruption.type" class="input">
-            <option disabled value="">-- choose --</option>
-            <option v-for="t in types" :key="t.id" :value="t.id">{{ t.name }}</option>
-          </select>
-        </label>
-      </div>
+      </section>
     </main>
   </div>
 </template>
-
-<style scoped>
-.input {
-  @apply w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors;
-}
-
-.dark-mode .input {
-  @apply border-gray-700 bg-gray-800 text-slate-100 placeholder-slate-500 focus:border-pink-500 focus:ring-1 focus:ring-pink-500;
-}
-
-.light-mode .input {
-  @apply border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500;
-}
-
-.dark-mode .disabled-input {
-  @apply bg-gray-900 text-slate-500;
-}
-.light-mode .disabled-input {
-  @apply bg-slate-100 text-slate-500;
-}
-
-.dark-mode .label-text {
-  @apply text-slate-300;
-}
-.light-mode .label-text {
-  @apply text-slate-600;
-}
-</style>

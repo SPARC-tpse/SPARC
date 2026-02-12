@@ -7,8 +7,8 @@ definePageMeta({
 })
 
 const { isDarkMode } = useTheme()
-const config = useRuntimeConfig()
-const API_BASE_URL = config.public.apiBaseUrl
+const config = useRuntimeConfig();
+const API_BASE_URL = config.public.apiBaseUrl;
 
 const newOrder = ref({
   name: '',
@@ -21,24 +21,17 @@ const newOrder = ref({
   comments: ''
 })
 
-const steps = ref([{ name: '', resource: '', setupTime: '', status: 'Planned' }])
-const formId = ref(makeId())
+const steps = ref([{ worker: '', resource: '', name: '' }])
+const bomFiles = ref([])
+const generalFiles = ref([])
 
 const canSubmit = computed(() => {
   const o = newOrder.value
   return Boolean(o.name && o.start && o.end && o.target && o.product)
 })
 
-function makeId() {
-  return `ORD-${Math.floor(Math.random() * 100000)}`
-}
-
 function addStep() {
-  steps.value.push({ name: '', resource: '', setupTime: '', status: 'Planned' })
-}
-
-function removeStep(index) {
-  steps.value.splice(index, 1)
+  steps.value.push({ worker: '', resource: '', name: '' })
 }
 
 function resetForm() {
@@ -52,45 +45,61 @@ function resetForm() {
     priority: 'Medium',
     comments: ''
   }
-  steps.value = [{ name: '', resource: '', setupTime: '', status: 'Planned' }]
-  formId.value = makeId()
+  steps.value = [{ worker: '', resource: '', name: '' }]
+  bomFiles.value = []
+  generalFiles.value = []
+}
+
+function handleBomFilesUploaded(files) {
+  bomFiles.value = files
+  console.log('BOM files updated:', files)
+}
+
+function handleGeneralFilesUploaded(files) {
+  generalFiles.value = files
+  console.log('General files updated:', files)
 }
 
 async function submitOrder() {
-  if (!canSubmit.value) return
+    if (!canSubmit.value) return
 
-  const processSteps = steps.value
-    .map((step, index) => ({
-      nr: index + 1,
-      name: step.name,
-      resource: step.resource,
-      setup_time: step.setupTime,
-      status: step.status
-    }))
-    .filter((step) => step.name || step.resource || step.setup_time || step.status)
+    const processSteps = steps.value.filter(step => step.worker || step.resource || step.name)
+    const order = {
+        name: newOrder.value.name,
+        start: newOrder.value.start,
+        end: newOrder.value.end,
+        target: Number(newOrder.value.target),
+        product: newOrder.value.product,
+        status: newOrder.value.status,
+        priority: newOrder.value.priority,
+        comments: newOrder.value.comments,
+        process: processSteps
+    }
 
-  const order = {
-    name: newOrder.value.name,
-    start: newOrder.value.start,
-    end: newOrder.value.end,
-    target: Number(newOrder.value.target),
-    product: newOrder.value.product,
-    status: newOrder.value.status,
-    priority: newOrder.value.priority,
-    comments: newOrder.value.comments,
-    process_steps: processSteps
-  }
+    console.log('Submitting order:', order)
 
-  try {
-    await $fetch(`${API_BASE_URL}/orders/create_order`, {
-      method: 'POST',
-      body: order
-    })
-    resetForm()
-    await navigateTo('/order/overview')
-  } catch (error) {
-    console.error('API Error:', error)
-  }
+    try {
+        const response = await $fetch(`${API_BASE_URL}/api/order/post`, {
+            method: 'POST',
+            body: order
+        })
+        resetForm()
+        // alternatively:
+        // await navigateTo('/order/overview')
+    } catch (error) {
+      console.error('API Error:', error);
+      const backendMessage =
+        error?.data?.error ||
+        error?.response?._data?.error ||
+        error?.cause?.data?.error
+
+      if (backendMessage) {
+        alert(backendMessage)
+      } else {
+        alert('Unexpected error occurred')
+      }
+      //throw error
+    }
 }
 </script>
 
@@ -112,26 +121,27 @@ async function submitOrder() {
           Name
           <input v-model="newOrder.name" class="input" />
         </label>
-        <label class="flex flex-col gap-1 text-sm label-text">
-          ID (auto)
-          <input :value="formId" class="input disabled-input" disabled />
-        </label>
+
         <label class="flex flex-col gap-1 text-sm label-text">
           Target amount
           <input v-model="newOrder.target" type="number" class="input" />
         </label>
+
         <label class="flex flex-col gap-1 text-sm label-text">
           Product name
           <input v-model="newOrder.product" class="input" />
         </label>
+
         <label class="flex flex-col gap-1 text-sm label-text">
           Start date
           <input v-model="newOrder.start" type="date" inputmode="numeric" class="input" />
         </label>
+
         <label class="flex flex-col gap-1 text-sm label-text">
           End date
           <input v-model="newOrder.end" type="date" inputmode="numeric" class="input" />
         </label>
+
         <label class="flex flex-col gap-1 text-sm label-text">
           Status
           <select v-model="newOrder.status" class="input">
@@ -141,6 +151,7 @@ async function submitOrder() {
             <option>Done</option>
           </select>
         </label>
+
         <label class="flex flex-col gap-1 text-sm label-text">
           Priority
           <select v-model="newOrder.priority" class="input">
@@ -149,12 +160,49 @@ async function submitOrder() {
             <option>Low</option>
           </select>
         </label>
+
+        <!-- comments -->
         <label class="flex flex-col gap-1 text-sm label-text sm:col-span-2">
           Comments
           <textarea v-model="newOrder.comments" rows="3" class="input" />
         </label>
       </div>
 
+      <!-- file uploads
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- bom upload
+        <div
+          class="rounded-xl border p-4 shadow-lg transition-colors"
+          :class="isDarkMode
+            ? 'border-gray-900 bg-slate-900 shadow-black'
+            : 'border-slate-200 bg-white shadow-slate-200'"
+        >
+          <FileUpload
+            file-type="bom"
+            label="Bill of Materials"
+            @files-uploaded="handleBomFilesUploaded"
+            @file-deleted="handleBomFilesUploaded"
+          />
+        </div>
+
+        <!-- general files upload
+        <div
+          class="rounded-xl border p-4 shadow-lg transition-colors"
+          :class="isDarkMode
+            ? 'border-gray-900 bg-slate-900 shadow-black'
+            : 'border-slate-200 bg-white shadow-slate-200'"
+        >
+          <FileUpload
+            file-type="general"
+            label="Additional Files"
+            @files-uploaded="handleGeneralFilesUploaded"
+            @file-deleted="handleGeneralFilesUploaded"
+          />
+        </div>
+      </div>
+      -->
+
+      <!-- process steps -->
       <div
         class="rounded-xl border p-4 space-y-3 shadow-lg transition-colors"
         :class="isDarkMode
@@ -170,8 +218,8 @@ async function submitOrder() {
           >+ Add step</button>
         </div>
         <div class="space-y-2">
-          <div class="grid grid-cols-[40px,1.2fr,1.2fr,0.8fr,0.8fr,90px] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-            <span>Nr</span><span>Name</span><span>Resource</span><span>Setup</span><span>Status</span><span>Action</span>
+          <div class="grid grid-cols-[30px,1fr,1fr,1fr] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
+            <span>#</span><span>Worker</span><span>Resource</span><span>Process-step Name</span>
           </div>
           <div
             v-for="(step, i) in steps"
@@ -184,22 +232,7 @@ async function submitOrder() {
             <span class="text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">{{ i + 1 }}</span>
             <input v-model="step.name" class="input h-10" />
             <input v-model="step.resource" class="input h-10" />
-            <input v-model="step.setupTime" type="time" class="input h-10" />
-            <select v-model="step.status" class="input h-10">
-              <option>Planned</option>
-              <option>Running</option>
-              <option>Paused</option>
-              <option>Done</option>
-            </select>
-            <button
-              class="px-2 py-1 text-xs rounded border transition-colors"
-              :class="isDarkMode
-                ? 'border-rose-500/70 text-rose-200 hover:bg-rose-500/10'
-                : 'border-rose-200 text-rose-600 hover:bg-rose-50'"
-              @click="removeStep(i)"
-            >
-              Delete
-            </button>
+            <input v-model="step.name" class="input h-10" />
           </div>
         </div>
       </div>

@@ -1,4 +1,3 @@
-// composables/useTheme.js
 import { ref } from 'vue'
 
 const isDarkMode = ref(true)

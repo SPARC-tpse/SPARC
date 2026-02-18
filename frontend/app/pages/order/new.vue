@@ -1,16 +1,30 @@
 <script setup lang="js">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, inject } from 'vue'
+import { useOrderDraft} from "~/composables/useOrderDraft.ts";
 
-definePageMeta({ layout: 'custom' })
+definePageMeta({
+  layout: 'custom',
+  layoutProps: {
+    title: 'Orders · New',
+    showReset: true,
+    showCreate: true,
+    createLabel: 'Create',
+  },
+})
+
+const registerTopbarActions = inject('registerTopbarActions')
 
 const { theme } = useAppTheme()
 const config = useRuntimeConfig();
 const API_BASE_URL = config.public.apiBaseUrl;
 
+const { draft: newOrder, resetDraft } = useOrderDraft()
+/*
 const newOrder = ref({
   name: '', start: '', end: '', target: '', product: '',
   status: 'Planned', priority: 'Medium', comments: ''
 })
+*/
 
 const steps = ref([{ _id: Date.now(), workers: [], resource: '', name: '' }])
 const allWorkers = ref([]), allResources = ref([])
@@ -24,7 +38,7 @@ function addStep() { steps.value.push({ _id: Date.now() + Math.random(), workers
 function removeStep(index) { steps.value.splice(index, 1) }
 
 function resetForm() {
-  newOrder.value = { name: '', start: '', end: '', target: '', product: '', status: 'Planned', priority: 'Medium', comments: '' }
+  resetDraft()
   steps.value = [{ _id: Date.now(), workers: [], resource: '', name: '' }]
 }
 
@@ -43,16 +57,27 @@ async function submitOrder() {
   const processPayload = steps.value.map(s => ({ name: s.name, resource: s.resource, workers: s.workers.map(w => w.name) }))
   try {
     await $fetch(`${API_BASE_URL}/api/order/post`, { method: 'POST', body: { ...newOrder.value, target: Number(newOrder.value.target), process: processPayload } })
+    resetDraft()
     navigateTo('/order/overview')
   } catch (error) { alert('Error creating order') }
 }
 
-onMounted(loadData)
+onMounted(() => {
+  loadData()
+
+  if (registerTopbarActions) {
+    registerTopbarActions({
+      reset: resetForm,
+      submit: submitOrder,
+      canSubmit,
+    })
+  }
+})
 </script>
 
 <template>
   <div :class="theme.pageWrapper">
-    <Topbar title="Orders · New" :can-submit="canSubmit" :show-reset="true" create-label="Create" @reset="resetForm" @submit="submitOrder" />
+    <!-- <Topbar title="Orders · New" :can-submit="canSubmit" :show-reset="true" create-label="Create" @reset="resetForm" @submit="submitOrder" /> -->
 
     <main :class="theme.container" class="space-y-6">
       <section :class="theme.card">

@@ -3,7 +3,12 @@ import { ref, computed } from 'vue'
 import { useTheme } from '~/composables/useTheme'
 
 definePageMeta({
-  layout: 'custom'
+  layout: 'custom',
+  layoutProps: {
+    title: 'Dashboard · Overview',
+    showReset: false,
+    showCreate: false,
+  },
 })
 
 const { isDarkMode } = useTheme()
@@ -196,11 +201,13 @@ function formatDate(value) {
 
 <template>
   <div :class="isDarkMode ? 'dark-mode' : 'light-mode'">
+    <!--
     <Topbar
       title="Overview"
       :show-reset="false"
       :show-create="false"
     />
+    -->
 
     <main class="max-w-6xl mx-auto p-6 space-y-4">
       <section

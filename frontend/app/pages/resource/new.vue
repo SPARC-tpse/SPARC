@@ -1,15 +1,28 @@
 <script setup lang="js">
-import { ref, computed } from 'vue'
+import { ref, computed, inject, watchEffect } from 'vue'
 import { useRouter } from '#app'
+import { useResourceDraft} from "~/composables/useResourceDraft.ts";
 
-definePageMeta({ layout: 'custom' })
+definePageMeta({
+  layout: 'custom',
+  layoutProps: {
+    title: 'Resources · New',
+    showReset: true,
+    showCreate: true,
+    createLabel: 'Create',
+  },
+})
+
+const registerTopbarActions = inject('registerTopbarActions')
+
 
 const { theme } = useAppTheme()
 const router = useRouter()
 const config = useRuntimeConfig()
 const API_BASE_URL = config.public.apiBaseUrl
 
-const form = ref({ name: "", type: "Machinery", status: "available" })
+const {draft: form, resetDraft } = useResourceDraft()
+
 const canSubmit = computed(() => form.value.name && form.value.type && form.value.status)
 
 async function submit() {
@@ -19,14 +32,27 @@ async function submit() {
             method: 'POST',
             body: { ...form.value, status: mapping[form.value.status] }
         })
-        router.push('/resource/overview')
+        resetDraft()
+        await router.push('/resource/overview') // TODO: await notwendig?
     } catch (e) { alert('Error during creation') }
 }
+
+function resetForm() {
+    resetDraft()
+}
+
+watchEffect(() => {
+    registerTopbarActions({
+        reset: resetForm,
+        submit,
+        canSubmit
+    })
+})
 </script>
 
 <template>
   <div :class="theme.pageWrapper">
-    <Topbar title="Resources · New" :can-submit="canSubmit" :show-create="true" @submit="submit" @reset="() => router.push('/resource/overview')" />
+    <!-- <Topbar title="Resources · New" :can-submit="canSubmit" :show-create="true" @submit="submit" @reset="() => router.push('/resource/overview')" /> -->
 
     <main :class="theme.container">
       <section :class="theme.card">

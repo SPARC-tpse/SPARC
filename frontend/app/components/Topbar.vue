@@ -8,7 +8,7 @@ const props = defineProps({
   },
   canSubmit: {
     type: Boolean,
-    default: false
+    default: true
   },
   showReset: {
     type: Boolean,

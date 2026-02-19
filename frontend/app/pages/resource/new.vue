@@ -23,7 +23,7 @@ const API_BASE_URL = config.public.apiBaseUrl
 
 const {draft: form, resetDraft } = useResourceDraft()
 
-const canSubmit = computed(() => form.value.name && form.value.type && form.value.status)
+const canSubmit = computed(() => form.value.name.length > 0 && form.value.type.length > 0 && form.value.status.length > 0)
 
 async function submit() {
     const mapping = { 'available': 3, 'in-use': 2, 'maintenance': 4, 'offline': 1 }

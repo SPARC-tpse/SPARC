@@ -30,7 +30,7 @@ const showCreate = computed(() => layoutProps.value.showCreate ?? true)
 const createLabel = computed(() => layoutProps.value.createLabel ?? 'Create')
 
 // Registry: page registriert Reset/Submit + reaktives canSubmit
-const actionsRef = ref<Required<TopbarActions>>({
+const actionsRef = shallowRef<Required<TopbarActions>>({
   reset: undefined,
   submit: undefined,
   canSubmit: undefined,

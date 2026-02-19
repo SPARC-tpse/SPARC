@@ -50,7 +50,7 @@ async function loadFormData() {
   } catch (e) { console.error(e) }
 }
 
-const canSubmit = computed(() => newDisruption.value.name && newDisruption.value.resource)
+const canSubmit = computed(() => newDisruption.value.name.length > 0 && newDisruption.value.resource.length > 0 && newDisruption.value.type.length > 0 && newDisruption.value.start && newDisruption.value.end)
 
 function setNow(field) {
   newDisruption.value[field] = new Date().toISOString().slice(0, 19)

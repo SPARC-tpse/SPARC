@@ -19,19 +19,59 @@ const config = useRuntimeConfig();
 const API_BASE_URL = config.public.apiBaseUrl;
 
 const { draft: newOrder, resetDraft } = useOrderDraft()
-/*
-const newOrder = ref({
-  name: '', start: '', end: '', target: '', product: '',
-  status: 'Planned', priority: 'Medium', comments: ''
-})
-*/
+
+const targetError = ref('')
+
+function onTargetInput(e) {
+  const raw = e.target.value
+  // Prüfe ob nicht-numerische Zeichen enthalten sind (außer leer)
+  if (raw !== '' && !/^\d+$/.test(raw)) {
+    targetError.value = 'Only digits (0–9) are allowed.'
+    // Alle Nicht-Ziffern entfernen
+    const cleaned = raw.replace(/\D/g, '')
+    newOrder.value.target = cleaned
+    e.target.value = cleaned
+    return
+  }
+  targetError.value = ''
+  // Negativwerte abfangen (z. B. durch Pfeiltasten)
+  const num = Number(raw)
+  if (num < 0) {
+    newOrder.value.target = '0'
+    e.target.value = '0'
+    return
+  }
+  newOrder.value.target = raw
+}
+
+function onTargetKeydown(e) {
+  // Erlaube: Backspace, Delete, Tab, Escape, Enter, Pfeiltasten, Home, End
+  const allowed = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+    'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End']
+  if (allowed.includes(e.key)) return
+  // Verbiete Ctrl/Cmd+C/V/X/A
+  if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) {
+    e.preventDefault()
+    targetError.value = 'Shortcuts Ctrl/Cmd + A/C/V/X are disabled for this field.'
+    return
+  }
+  // Nur Ziffern erlauben
+  if (!/^\d$/.test(e.key)) {
+    e.preventDefault()
+    targetError.value = 'Only digits (0–9) are allowed.'
+  }
+}
 
 const steps = ref([{ _id: Date.now(), workers: [], resource: '', name: '' }])
 const allWorkers = ref([]), allResources = ref([])
 
 const canSubmit = computed(() => {
   const o = newOrder.value
-  return Boolean(o.name && o.start && o.end && o.target && o.product)
+  const targetNum = Number(o.target)
+  return Boolean(
+    o.name && o.start && o.end && o.target
+    && o.product && targetNum >= 0 && !targetError.value
+  )
 })
 
 function addStep() { steps.value.push({ _id: Date.now() + Math.random(), workers: [], resource: '', name: '' }) }
@@ -84,7 +124,18 @@ onMounted(() => {
         <h3 class="font-semibold text-lg mb-2">Order Information</h3>
         <div :class="theme.formGrid">
           <label :class="theme.label">Name <input v-model="newOrder.name" :class="theme.input" /></label>
-          <label :class="theme.label">Target amount <input v-model="newOrder.target" type="number" :class="theme.input" /></label>
+          <label :class="theme.label">
+            Target amount
+            <input
+              :value="newOrder.target"
+              type="number"
+              min="0"
+              :class="[theme.input, targetError ? 'border-red-500 ring-1 ring-red-500' : '']"
+              @input="onTargetInput"
+              @keydown="onTargetKeydown"
+            />
+            <span v-if="targetError" class="text-red-500 text-xs mt-1">{{ targetError }}</span>
+          </label>
           <label :class="theme.label">Product name <input v-model="newOrder.product" :class="theme.input" /></label>
           <label :class="theme.label">Start date <input v-model="newOrder.start" type="date" :class="theme.input" /></label>
           <label :class="theme.label">End date <input v-model="newOrder.end" type="date" :class="theme.input" /></label>

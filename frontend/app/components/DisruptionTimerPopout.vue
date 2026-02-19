@@ -1,5 +1,7 @@
 <!-- frontend/app/components/DisruptionTimerPopout.vue -->
 <script setup lang="ts">
+import { computed } from 'vue'
+
 type Pos = { x: number; y: number }
 
 const props = defineProps<{
@@ -16,6 +18,24 @@ const props = defineProps<{
   onResume: () => void
   onStop: () => void
 }>()
+
+const primaryLabel = computed(() => {
+  if (!props.isRunning && !props.isPaused) return 'Start'
+  if (props.isPaused) return 'Weiter'
+  return 'Pause'
+})
+
+function onPrimaryClick() {
+  if (!props.isRunning && !props.isPaused) {
+    props.onStart()
+    return
+  }
+  if (props.isPaused) {
+    props.onResume()
+    return
+  }
+  props.onPause()
+}
 </script>
 
 <template>
@@ -38,17 +58,15 @@ const props = defineProps<{
       <div class="text-2xl font-mono text-center">{{ props.formatted }}</div>
 
       <div class="flex gap-2 justify-center">
-        <button class="px-3 py-2 rounded border" @click="props.onStart" :disabled="props.isRunning">Start</button>
+        <button class="px-3 py-2 rounded border" @click="onPrimaryClick">
+          {{ primaryLabel }}
+        </button>
 
         <button
           class="px-3 py-2 rounded border"
-          @click="props.isPaused ? props.onResume() : props.onPause()"
-          :disabled="!props.isRunning"
+          @click="props.onStop"
+          :disabled="!props.isRunning && !props.isPaused"
         >
-          {{ props.isPaused ? 'Weiter' : 'Pause' }}
-        </button>
-
-        <button class="px-3 py-2 rounded border" @click="props.onStop" :disabled="!props.isRunning && !props.isPaused">
           Stopp
         </button>
       </div>

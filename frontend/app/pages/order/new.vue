@@ -25,7 +25,7 @@ const targetError = ref('')
 const processSteps = ref([]);
 const workerList = ref([]);
 const resourceList = ref([]);
-  
+
 const canSubmit = computed(() => {
   const o = newOrder.value
   // const targetNum = Number(o.target_amount)
@@ -97,7 +97,7 @@ function onTargetKeydown(e) {
 function addStep() {
   processSteps.value.push({ _id: Date.now() + Math.random(), name: '', workers: [], resource: null, approximated_time: { h: 0, m: 0, s: 0 } })
 }
-  
+
 /**
  * Removes a process from the processSteps list
  * @param {int} index - the index of the element that should be removed

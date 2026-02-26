@@ -31,11 +31,48 @@ const canSubmit = computed(() => {
   return Boolean(o.name && o.start_date && o.end_date && o.target_amount && o.product_name)
 })
 
+// parts tracking
+const partsProduced = ref(0)
+const partsList = ref([])
+
 const hasWarning = (field) => !order.value[field]
 const hasProcessWarning = (step) => {
   const hasWorkers = step.workers && step.workers.length > 0
   const hasResource = step.resource && (step.resource.status === 2 || step.resource.status === 3)
   return !hasWorkers || !hasResource
+}
+
+const priorityMap = { 1: 'Low', 2: 'Medium', 3: 'High' }
+const statusMap = { 1: 'Planned', 2: 'Running', 3: 'Paused', 4: 'Done' }
+const priorityMapReverse = { 'Low': 1, 'Medium': 2, 'High': 3 }
+const statusMapReverse = { 'Planned': 1, 'Running': 2, 'Paused': 3, 'Done': 4 }
+
+async function addPart() {
+  if (!selectedProcessStep.value || !selectedProcessStep.value.id) {
+    alert('Please select a process step')
+    return
+  }
+
+  const currentProcessTime = selectedProcessStep.value.process_time_seconds || 0
+
+  try {
+    const response = await $fetch(`${API_BASE_URL}/api/process/add_part/${selectedProcessStep.value.id}`, {
+      method: 'POST',
+      body: { process_time_seconds: currentProcessTime },
+      headers: { 'Content-Type': 'application/json' }
+    })
+
+    partsProduced.value++
+    partsList.value.push({
+      process_time_seconds: currentProcessTime,
+      created_at: new Date()
+    })
+
+    //console.log('Part added:', response)
+  } catch (error) {
+    console.error('Failed to add part:', error)
+    alert('Failed to add part')
+  }
 }
 
 /**
@@ -207,23 +244,85 @@ onMounted(() => {
           </select>
         </label>
 
-        <div v-if="selectedProcessStep" class="pt-4 border-t border-slate-700/30 space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <ProcessTimer label="Setup" :initial-seconds="selectedProcessStep.setup_time_seconds" :process-id="selectedProcessStep.id" timer-type="setup_time" />
-            <ProcessTimer label="Waiting" :initial-seconds="selectedProcessStep.waiting_time_seconds" :process-id="selectedProcessStep.id" timer-type="waiting_time" />
-            <ProcessTimer label="Process" :initial-seconds="selectedProcessStep.process_time_seconds" :process-id="selectedProcessStep.id" timer-type="process_time" />
-          </div>
-          <button @click="navigateTo(`/disruption/new?process=${selectedProcessStep.id}`)" :class="theme.btnWarning">⚠️ Create Disruption</button>
-        </div>
-      </section>
+              <div v-if="selectedProcessStep" class="space-y-4 pt-4 border-t" :class="isDarkMode ? 'border-gray-700' : 'border-slate-200'">
+                <div>
+                  <span class="text-sm label-text">Process Step ID:</span>
+                  <span class="ml-2 font-mono font-semibold" :class="isDarkMode ? 'text-slate-200' : 'text-slate-700'">
+                    {{ selectedProcessStep.id || 'N/A' }}
+                  </span>
+                </div>
 
-      <!-- process editor -->
-      <section :class="theme.card">
-        <!-- title and add button -->
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="font-semibold text-lg">Process Steps Editor</h3>
-          <button :class="theme.linkAction" @click="addStep">+ Add step</button>
-        </div>
+                <!-- setup time -->
+                <ProcessTimer label="Setup Time" :initial-seconds="selectedProcessStep.setup_time_seconds || 0"
+                              :process-id="selectedProcessStep.id" timer-type="setup_time" @time-saved="handleTimeSaved" />
+
+                <!-- create disruption button -->
+                <div>
+                  <button @click="createDisruption" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md bg-gradient-to-r from-amber-500 to-red-500 hover:shadow-lg">
+                    ⚠️ Create Disruption
+                  </button>
+                </div>
+
+                <!-- waiting time -->
+                <ProcessTimer label="Waiting Time" :initial-seconds="selectedProcessStep.waiting_time_seconds || 0"
+                              :process-id="selectedProcessStep.id" timer-type="waiting_time" @time-saved="handleTimeSaved" />
+
+                <!-- horizontal separator -->
+                <hr :class="isDarkMode ? 'border-gray-700' : 'border-slate-300'" />
+
+                <!-- process time -->
+                <ProcessTimer label="Process Time" :initial-seconds="selectedProcessStep.process_time_seconds || 0"
+                              :process-id="selectedProcessStep.id" timer-type="process_time" @time-saved="handleTimeSaved" />
+
+                <!-- add part -->
+                <div class="space-y-3 pt-2">
+                  <div class="flex items-center gap-3">
+                    <span class="text-sm label-text">Part</span>
+                    <span class="px-3 py-1 rounded-lg font-mono font-bold" :class="isDarkMode ? 'bg-gray-800 text-green-400' : 'bg-green-50 text-green-600'">
+                      {{ partsProduced }}
+                    </span>
+                    <button @click="addPart" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg">
+                      + Add Part
+                    </button>
+                  </div>
+
+                  <!-- parts list -->
+                  <div v-if="partsList.length > 0" class="space-y-2">
+                    <div class="text-xs font-semibold" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
+                      Produced Parts:
+                    </div>
+                    <div class="max-h-40 overflow-y-auto space-y-1">
+                      <div v-for="(part, index) in partsList" :key="index" class="flex items-center justify-between p-2 rounded border text-sm"
+                           :class="isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-slate-200 bg-slate-50'">
+                        <span class="font-medium">Part {{ index + 1 }}</span>
+                        <span class="font-mono text-xs" :class="isDarkMode ? 'text-slate-300' : 'text-slate-600'">
+                          {{ formatTime(part.process_time_seconds) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else class="p-4 rounded-lg border-2 border-dashed text-center"
+                   :class="isDarkMode ? 'border-gray-700 text-slate-400' : 'border-slate-300 text-slate-500'">
+                <p class="text-sm">Please select a process step to manage timing</p>
+              </div>
+            </div>
+
+            <div v-else class="rounded-xl border p-4 text-center transition-colors"
+                 :class="isDarkMode ? 'border-gray-900 bg-slate-900' : 'border-slate-200 bg-white'">
+              <p class="text-sm" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
+                No process steps defined for this order. Add process steps below to enable timing management.
+              </p>
+            </div>
+
+            <!-- process editor -->
+            <section :class="theme.card">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-semibold text-lg">Process Steps Editor</h3>
+                    <button :class="theme.linkAction" @click="addStep">+ Add step</button>
+                </div>
 
         <!-- table -->
         <div class="space-y-3">

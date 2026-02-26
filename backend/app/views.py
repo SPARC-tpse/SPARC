@@ -385,6 +385,56 @@ def update_process_timing(request: Request, process_id: int) -> JsonResponse:
     except Process.DoesNotExist: return JsonResponse({'error': 'Process not found'}, status=404)
     except Exception as e: return JsonResponse({'error': str(e)}, status=500)
 
+@api_view(['POST'])
+def add_part(request: Request, process_id: int) -> JsonResponse:
+    """Add a part to a process with the current process time"""
+    try:
+        process = Process.objects.get(id=process_id)
+
+        process_time = request.data.get('process_time', 0)
+
+        # Create Part instance
+        part = Part.objects.create(
+            process=process,
+            process_time=process_time
+        )
+
+        return JsonResponse({
+            'success': True,
+            'part_id': part.id,
+            'process_time_seconds': part.process_time,
+            'created_at': part.created_at.isoformat()
+        }, status=201)
+
+    except Process.DoesNotExist:
+        return JsonResponse({'error': 'Process not found'}, status=404)
+    except Exception as e:
+        print(f"Add part error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+def get_parts(request: Request, process_id: int) -> JsonResponse:
+    """Get all parts for a process"""
+    try:
+        process = Process.objects.get(id=process_id)
+        parts = process.parts.all().order_by('-created_at')
+
+        parts_data = [{
+            'id': part.id,
+            'process_time_seconds': part.process_time_seconds,
+            'created_at': part.created_at.isoformat()
+        } for part in parts]
+
+        return JsonResponse({
+            'process_id': process_id,
+            'parts_count': parts.count(),
+            'parts': parts_data
+        })
+
+    except Process.DoesNotExist:
+        return JsonResponse({'error': 'Process not found'}, status=404)
+
 @api_view(['DELETE'])
 def delete_process(request: Request, process_id: int) -> JsonResponse:
     try:

@@ -1,5 +1,8 @@
 v0.3.0
 ===
+feature/gnatt_chart
+- added gnatt view
+
 fix/merge_bugs
 - fixed order edit and Part creation
 - fixed Resource overview type display

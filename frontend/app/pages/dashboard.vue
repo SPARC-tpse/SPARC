@@ -1,12 +1,14 @@
 ﻿<script setup lang="js">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useTheme } from '~/composables/useTheme'
+import { buildTimelineWindow, normalizeTimelineRange, TIMELINE_RANGE_OPTIONS } from '~/composables/useTimelineRange'
 
 definePageMeta({
   layout: 'custom'
 })
 
 const { isDarkMode } = useTheme()
+const route = useRoute()
 const config = useRuntimeConfig()
 const API_BASE_URL = config.public.apiBaseUrl
 
@@ -27,8 +29,44 @@ const disruptions = ref([])
 const loadError = ref('')
 const isLoading = ref(false)
 const nowMs = ref(Date.now())
+const timelineRangeOptions = TIMELINE_RANGE_OPTIONS
 let nowTicker = null
 let refreshTicker = null
+
+const activeTimelineRange = computed(() => normalizeTimelineRange(route.query.range))
+const timelineWindow = computed(() => buildTimelineWindow(activeTimelineRange.value, nowMs.value))
+const tickStepLabel = computed(() => {
+  const hours = timelineWindow.value.tickStepHours
+  if (hours === 48) return '2 Tage'
+  if (hours === 24) return '1 Tag'
+  if (hours === 12) return '12 Stunden'
+  if (hours === 2) return '2 Stunden'
+  return `${hours} Stunden`
+})
+
+function setTimelineRange(value) {
+  const normalized = normalizeTimelineRange(value)
+  if (normalized === activeTimelineRange.value) return
+
+  navigateTo({
+    path: '/dashboard',
+    query: {
+      ...route.query,
+      range: normalized
+    }
+  }, { replace: true })
+}
+
+function ganttLink(focus) {
+  return `/dashboard/gantt?focus=${focus}&range=${activeTimelineRange.value}`
+}
+
+function panelLink(widget) {
+  if (widget.type === 'order-gantt') return ganttLink('orders')
+  if (widget.type === 'process-gantt') return ganttLink('process')
+  if (widget.type === 'resource-gantt') return ganttLink('resources')
+  return widget.link || ''
+}
 
 const kpis = ref([
   { id: 'kpi-01', name: 'On-time delivery', value: 96, unit: '%', delta: '+2.4%' },
@@ -649,6 +687,23 @@ onUnmounted(() => {
             <p v-else-if="loadError" class="text-xs mt-1 text-amber-500">
               {{ loadError }}
             </p>
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+              <label class="text-xs font-semibold uppercase tracking-wider" :class="isDarkMode ? 'text-slate-300' : 'text-slate-600'">
+                Zeitachse
+              </label>
+              <select
+                :value="activeTimelineRange"
+                class="input h-10 w-auto min-w-[170px]"
+                @change="setTimelineRange($event.target?.value)"
+              >
+                <option v-for="option in timelineRangeOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+              <span class="text-[11px]" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
+                Tick: {{ tickStepLabel }}
+              </span>
+            </div>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button
@@ -708,8 +763,8 @@ onUnmounted(() => {
             </div>
             <div class="flex items-center gap-2">
               <NuxtLink
-                v-if="widget.link"
-                :to="widget.link"
+                v-if="panelLink(widget)"
+                :to="panelLink(widget)"
                 class="text-xs font-medium"
                 :class="isDarkMode ? 'text-pink-200 hover:text-pink-100' : 'text-pink-600 hover:text-pink-800'"
               >
@@ -786,11 +841,14 @@ onUnmounted(() => {
                 <span class="inline-flex items-center gap-1"><i class="legend-swatch actual" :class="isDarkMode ? 'actual-dark' : 'actual-light'" />Actual</span>
                 <span class="inline-flex items-center gap-1"><i class="legend-line" :class="isDarkMode ? 'bg-pink-400/80' : 'bg-indigo-500/80'" />Now</span>
               </div>
-              <div class="timeline-preview" @click="navigateTo('/dashboard/gantt?focus=orders')">
+              <div class="timeline-preview" @click="navigateTo(ganttLink('orders'))">
                 <GanttTimeline
                   :rows="orderTimelineRows"
                   :is-dark-mode="isDarkMode"
                   :now-ms="nowMs"
+                  :axis-start-ms="timelineWindow.startMs"
+                  :axis-end-ms="timelineWindow.endMs"
+                  :tick-step-hours="timelineWindow.tickStepHours"
                   empty-text="No orders with a valid time range."
                 />
               </div>
@@ -801,11 +859,14 @@ onUnmounted(() => {
                 <span>Step schedule derived from order windows and measured step times.</span>
                 <span>{{ processTimelineRows.length }} process steps in current horizon</span>
               </div>
-              <div class="timeline-preview" @click="navigateTo('/dashboard/gantt?focus=process')">
+              <div class="timeline-preview" @click="navigateTo(ganttLink('process'))">
                 <GanttTimeline
                   :rows="processTimelineRows"
                   :is-dark-mode="isDarkMode"
                   :now-ms="nowMs"
+                  :axis-start-ms="timelineWindow.startMs"
+                  :axis-end-ms="timelineWindow.endMs"
+                  :tick-step-hours="timelineWindow.tickStepHours"
                   empty-text="No process steps linked to current orders."
                 />
               </div>
@@ -816,11 +877,14 @@ onUnmounted(() => {
                 <span>Machine allocation timeline based on assigned process steps.</span>
                 <span>Peak overlap: {{ resourceLoadSummary.peakConcurrency }} · Conflict machines: {{ resourceLoadSummary.resourcesWithConflict }}</span>
               </div>
-              <div class="timeline-preview" @click="navigateTo('/dashboard/gantt?focus=resources')">
+              <div class="timeline-preview" @click="navigateTo(ganttLink('resources'))">
                 <GanttTimeline
                   :rows="resourceTimelineRows"
                   :is-dark-mode="isDarkMode"
                   :now-ms="nowMs"
+                  :axis-start-ms="timelineWindow.startMs"
+                  :axis-end-ms="timelineWindow.endMs"
+                  :tick-step-hours="timelineWindow.tickStepHours"
                   empty-text="No resource assignments available for timeline rendering."
                 />
               </div>
@@ -979,4 +1043,5 @@ onUnmounted(() => {
   }
 }
 </style>
+
 

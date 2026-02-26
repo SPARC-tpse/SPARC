@@ -1,6 +1,7 @@
 <script setup lang="js">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useTheme } from '~/composables/useTheme'
+import { buildTimelineWindow, normalizeTimelineRange, TIMELINE_RANGE_OPTIONS } from '~/composables/useTimelineRange'
 
 definePageMeta({
   layout: 'custom'
@@ -22,6 +23,7 @@ const resources = ref([])
 const loadError = ref('')
 const isLoading = ref(false)
 const nowMs = ref(Date.now())
+const timelineRangeOptions = TIMELINE_RANGE_OPTIONS
 let nowTicker = null
 let refreshTicker = null
 
@@ -29,6 +31,37 @@ const activeFocus = computed(() => {
   const raw = String(route.query.focus || 'orders')
   return ['orders', 'process', 'resources'].includes(raw) ? raw : 'orders'
 })
+
+const activeTimelineRange = computed(() => normalizeTimelineRange(route.query.range))
+const timelineWindow = computed(() => buildTimelineWindow(activeTimelineRange.value, nowMs.value))
+const tickStepLabel = computed(() => {
+  const hours = timelineWindow.value.tickStepHours
+  if (hours === 48) return '2 Tage'
+  if (hours === 24) return '1 Tag'
+  if (hours === 12) return '12 Stunden'
+  if (hours === 2) return '2 Stunden'
+  return `${hours} Stunden`
+})
+
+function setTimelineRange(value) {
+  const normalized = normalizeTimelineRange(value)
+  if (normalized === activeTimelineRange.value) return
+
+  navigateTo({
+    path: '/dashboard/gantt',
+    query: {
+      ...route.query,
+      focus: activeFocus.value,
+      range: normalized
+    }
+  }, { replace: true })
+}
+
+function focusLink(focus) {
+  return `/dashboard/gantt?focus=${focus}&range=${activeTimelineRange.value}`
+}
+
+const backToDashboardLink = computed(() => `/dashboard?range=${activeTimelineRange.value}`)
 
 function parseDateBoundary(value, endOfDay = false) {
   if (!value) return null
@@ -423,7 +456,7 @@ onUnmounted(() => {
             </p>
           </div>
           <NuxtLink
-            to="/dashboard"
+            :to="backToDashboardLink"
             class="px-3 py-2 text-sm rounded-lg border transition-colors"
             :class="isDarkMode
               ? 'border-gray-600 hover:bg-gray-700 text-slate-200'
@@ -433,9 +466,27 @@ onUnmounted(() => {
           </NuxtLink>
         </div>
 
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+          <label class="text-xs font-semibold uppercase tracking-wider" :class="isDarkMode ? 'text-slate-300' : 'text-slate-600'">
+            Zeitachse
+          </label>
+          <select
+            :value="activeTimelineRange"
+            class="tab-btn min-w-[170px]"
+            @change="setTimelineRange($event.target?.value)"
+          >
+            <option v-for="option in timelineRangeOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+          <span class="text-[11px]" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
+            Tick: {{ tickStepLabel }}
+          </span>
+        </div>
+
         <div class="mt-4 flex flex-wrap gap-2">
           <NuxtLink
-            to="/dashboard/gantt?focus=orders"
+            :to="focusLink('orders')"
             class="tab-btn"
             :class="activeFocus === 'orders'
               ? (isDarkMode ? 'tab-active-dark' : 'tab-active-light')
@@ -444,7 +495,7 @@ onUnmounted(() => {
             Orders
           </NuxtLink>
           <NuxtLink
-            to="/dashboard/gantt?focus=process"
+            :to="focusLink('process')"
             class="tab-btn"
             :class="activeFocus === 'process'
               ? (isDarkMode ? 'tab-active-dark' : 'tab-active-light')
@@ -453,7 +504,7 @@ onUnmounted(() => {
             Process Steps
           </NuxtLink>
           <NuxtLink
-            to="/dashboard/gantt?focus=resources"
+            :to="focusLink('resources')"
             class="tab-btn"
             :class="activeFocus === 'resources'
               ? (isDarkMode ? 'tab-active-dark' : 'tab-active-light')
@@ -490,6 +541,9 @@ onUnmounted(() => {
             :rows="focusConfig.rows"
             :is-dark-mode="isDarkMode"
             :now-ms="nowMs"
+            :axis-start-ms="timelineWindow.startMs"
+            :axis-end-ms="timelineWindow.endMs"
+            :tick-step-hours="timelineWindow.tickStepHours"
             empty-text="No timeline data available for this view."
           />
         </div>

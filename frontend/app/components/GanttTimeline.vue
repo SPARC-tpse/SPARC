@@ -1,5 +1,5 @@
-<script setup lang="js">
-import { computed } from 'vue'
+﻿<script setup lang="js">
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 const props = defineProps({
   rows: {
@@ -17,6 +17,18 @@ const props = defineProps({
   emptyText: {
     type: String,
     default: 'No timeline data available.'
+  },
+  axisStartMs: {
+    type: Number,
+    default: null
+  },
+  axisEndMs: {
+    type: Number,
+    default: null
+  },
+  tickStepHours: {
+    type: Number,
+    default: null
   }
 })
 
@@ -25,6 +37,10 @@ const LANE_GAP = 5
 const ROW_PADDING = 4
 const ONE_HOUR_MS = 60 * 60 * 1000
 const MIN_BAR_WIDTH_PERCENT = 0.8
+
+const containerRef = ref(null)
+const containerWidth = ref(0)
+let resizeObserver = null
 
 function toMs(value) {
   if (value === null || value === undefined || value === '') return null
@@ -96,6 +112,16 @@ const normalizedRows = computed(() =>
 )
 
 const axisRange = computed(() => {
+  const customStart = Number(props.axisStartMs)
+  const customEnd = Number(props.axisEndMs)
+
+  if (Number.isFinite(customStart) && Number.isFinite(customEnd) && customEnd > customStart) {
+    return {
+      min: customStart,
+      max: customEnd
+    }
+  }
+
   const points = [props.nowMs]
   normalizedRows.value.forEach(row => {
     row.segments.forEach(segment => {
@@ -114,6 +140,25 @@ const axisRange = computed(() => {
     min: min - pad,
     max: max + pad
   }
+})
+
+const visibleRows = computed(() => {
+  const min = axisRange.value.min
+  const max = axisRange.value.max
+
+  return normalizedRows.value
+    .map(row => {
+      const visibleSegments = row.segments.filter(segment =>
+        segment.plannedEnd >= min && segment.plannedStart <= max
+      )
+
+      if (!visibleSegments.length) return null
+      return {
+        ...row,
+        segments: visibleSegments
+      }
+    })
+    .filter(Boolean)
 })
 
 function toPercent(ms) {
@@ -138,7 +183,7 @@ function buildBarStyle(startMs, endMs, lane) {
 }
 
 const chartRows = computed(() =>
-  normalizedRows.value.map(row => ({
+  visibleRows.value.map(row => ({
     ...row,
     segments: row.segments.map(segment => ({
       ...segment,
@@ -154,29 +199,86 @@ const nowLineStyle = computed(() => ({
   left: `${toPercent(props.nowMs)}%`
 }))
 
+function formatTickLabel(ms, fixedStepMs = null) {
+  if (fixedStepMs !== null) {
+    const diffMs = ms - props.nowMs
+    if (Math.abs(diffMs) < Math.max(ONE_HOUR_MS, fixedStepMs / 2)) return 'Jetzt'
+
+    if (fixedStepMs >= 24 * ONE_HOUR_MS) {
+      const dayDiff = Math.round(diffMs / (24 * ONE_HOUR_MS))
+      return String(dayDiff)
+    }
+
+    const hourDiff = Math.round(diffMs / ONE_HOUR_MS)
+    return String(hourDiff)
+  }
+
+  return new Date(ms).toLocaleTimeString('de-DE', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 const axisTicks = computed(() => {
-  const tickCount = 5
-  const range = axisRange.value.max - axisRange.value.min
+  const range = axisRange.value.max - axisRange.value.min || ONE_HOUR_MS
+  const fixedHours = Number(props.tickStepHours)
+  const fixedStepMs = Number.isFinite(fixedHours) && fixedHours > 0 ? fixedHours * ONE_HOUR_MS : null
+
+  if (fixedStepMs !== null) {
+    const halfSpanMs = range / 2
+    const maxSteps = Math.floor(halfSpanMs / fixedStepMs)
+    const ticks = []
+
+    for (let step = -maxSteps; step <= maxSteps; step += 1) {
+      const tickMs = props.nowMs + step * fixedStepMs
+      const ratio = (tickMs - axisRange.value.min) / range
+      ticks.push({
+        id: `tick-fixed-${step}`,
+        left: `${Math.min(Math.max(ratio, 0), 1) * 100}%`,
+        label: formatTickLabel(tickMs, fixedStepMs)
+      })
+    }
+
+    return ticks
+  }
+
+  const tickCount = containerWidth.value < 520 ? 3 : (containerWidth.value < 860 ? 4 : 5)
 
   return Array.from({ length: tickCount }, (_, index) => {
     const ratio = tickCount === 1 ? 0 : index / (tickCount - 1)
     const ms = axisRange.value.min + range * ratio
     return {
-      id: `tick-${index}`,
+      id: `tick-auto-${index}`,
       left: `${ratio * 100}%`,
-      label: new Date(ms).toLocaleString('de-DE', {
-        day: '2-digit',
-        month: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      label: formatTickLabel(ms)
     }
   })
+})
+
+function updateContainerWidth() {
+  if (!containerRef.value) return
+  const width = containerRef.value.clientWidth
+  if (Number.isFinite(width) && width > 0) {
+    containerWidth.value = width
+  }
+}
+
+onMounted(() => {
+  updateContainerWidth()
+
+  if (typeof window === 'undefined' || typeof ResizeObserver === 'undefined') return
+
+  resizeObserver = new ResizeObserver(() => updateContainerWidth())
+  if (containerRef.value) resizeObserver.observe(containerRef.value)
+})
+
+onBeforeUnmount(() => {
+  if (resizeObserver) resizeObserver.disconnect()
 })
 </script>
 
 <template>
-  <div class="gantt-container">
+  <div ref="containerRef" class="gantt-container">
     <div
       v-if="!chartRows.length"
       class="gantt-empty"
@@ -205,6 +307,13 @@ const axisTicks = computed(() => {
           :class="isDarkMode ? 'gantt-track-dark' : 'gantt-track-light'"
           :style="{ height: `${row.trackHeight}px` }"
         >
+          <span
+            v-for="tick in axisTicks"
+            :key="`${row.id}-${tick.id}`"
+            class="gantt-slot-line"
+            :style="{ left: tick.left }"
+          />
+
           <div
             class="gantt-now"
             :class="isDarkMode ? 'bg-pink-400/80' : 'bg-indigo-500/80'"
@@ -311,6 +420,9 @@ const axisTicks = computed(() => {
 .gantt-now {
   @apply absolute top-0 bottom-0 w-[2px] z-10;
 }
+.gantt-slot-line {
+  @apply absolute top-0 bottom-0 w-px bg-black/60 pointer-events-none;
+}
 .gantt-axis {
   @apply grid gap-3;
   grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
@@ -324,6 +436,14 @@ const axisTicks = computed(() => {
 }
 .gantt-empty {
   @apply text-xs py-6 text-center;
+}
+@media (max-width: 1024px) {
+  .gantt-row {
+    grid-template-columns: minmax(130px, 170px) minmax(0, 1fr);
+  }
+  .gantt-axis {
+    grid-template-columns: minmax(130px, 170px) minmax(0, 1fr);
+  }
 }
 @media (max-width: 768px) {
   .gantt-row {

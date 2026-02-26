@@ -1,5 +1,8 @@
 v0.3.0
 ===
+feature/web_sockets
+- web sockets for all pages
+
 disruptions
 - backend intergration
 - time save fix

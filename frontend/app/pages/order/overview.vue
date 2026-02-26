@@ -1,6 +1,6 @@
 <script setup lang="js">
 import { ref, computed, onMounted } from 'vue'
-import { useOrderWebSocket } from '~/composables/useOrderWebSocket'
+import { useWebSocket } from '~/composables/useWebSocket.js'
 
 definePageMeta({ layout: 'custom' })
 
@@ -66,7 +66,7 @@ const handleOrderUpdate = async (data) => {
   }
 }
 
-const { connected } = useOrderWebSocket(handleOrderUpdate)
+const { connected } = useWebSocket(handleOrderUpdate, "order")
 
 function toggleDeleteMode() {
   isDeleteMode.value = !isDeleteMode.value

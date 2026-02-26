@@ -1,6 +1,6 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 
-export const useOrderWebSocket = (onOrderUpdate) => {
+export const useWebSocket = (onUpdate, model) => {
   let ws = null
   const connected = ref(false)
   const reconnectAttempts = ref(0)
@@ -9,7 +9,7 @@ export const useOrderWebSocket = (onOrderUpdate) => {
   const connect = () => {
     const config = useRuntimeConfig()
     const wsBaseUrl = config.public.apiBaseUrl.replace('http://', 'ws://').replace('https://', 'wss://')
-    const wsUrl = `${wsBaseUrl}/ws/order/`
+    const wsUrl = `${wsBaseUrl}/ws/${model}/`
 
     console.log('Connecting to WebSocket:', wsUrl)
 
@@ -26,8 +26,8 @@ export const useOrderWebSocket = (onOrderUpdate) => {
         const data = JSON.parse(event.data)
         console.log('WebSocket message:', data)
 
-        if (onOrderUpdate) {
-          onOrderUpdate(data)
+        if (onUpdate) {
+          onUpdate(data)
         }
       } catch (error) {
         console.error('Failed to parse WebSocket message:', error)

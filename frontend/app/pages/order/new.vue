@@ -40,11 +40,24 @@ async function loadData() {
 
 async function submitOrder() {
   if (!canSubmit.value) return
-  const processPayload = steps.value.map(s => ({ name: s.name, resource: s.resource, workers: s.workers.map(w => w.name) }))
+  const invalidSteps = steps.value.filter(step => !step.name || !step.resource)
+  if (invalidSteps.length > 0) {
+    alert('Please complete all process steps (name + resource) before creating the order.')
+    return
+  }
+
+  const processPayload = steps.value.map(s => ({
+    name: s.name,
+    resource: s.resource,
+    workers: s.workers.map(w => w.name)
+  }))
   try {
     await $fetch(`${API_BASE_URL}/api/order/post`, { method: 'POST', body: { ...newOrder.value, target: Number(newOrder.value.target), process: processPayload } })
     navigateTo('/order/overview')
-  } catch (error) { alert('Error creating order') }
+  } catch (error) {
+    const backendMessage = error?.data?.error
+    alert(backendMessage || 'Error creating order')
+  }
 }
 
 onMounted(loadData)

@@ -12,7 +12,10 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8000/api'
+      // Keep base host only; frontend pages already append `/api/...`.
+      apiBaseUrl: (process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8000')
+        .replace(/\/api\/?$/, '')
+        .replace(/\/$/, '')
     }
   }
 })

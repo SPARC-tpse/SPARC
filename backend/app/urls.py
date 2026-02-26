@@ -5,7 +5,8 @@ from .views import (
     update_process_timing, get_workers, create_worker, delete_worker,
     get_worker, update_worker, get_resources, create_resource, update_resource,
     delete_resource, get_resource, get_disruptions, get_disruption_types,
-    create_disruption, delete_disruption, get_disruption, update_disruption
+    create_disruption, delete_disruption, get_disruption, update_disruption,
+    delete_process
 )
 
 urlpatterns = [
@@ -23,7 +24,8 @@ urlpatterns = [
 
     # Process
     path("process/timing/<int:process_id>", update_process_timing, name="update_process_timing"),
-#    path("process/delete/<int:process_id>", delete_process, name="delete_process"),
+    path("process/delete/<int:process_id>", delete_process, name="delete_process"),
+
     # Worker
     path("worker/list", get_workers, name="get_workers"),
     path("worker/post", create_worker, name="create_worker"),

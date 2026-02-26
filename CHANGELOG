@@ -1,13 +1,25 @@
 v0.3.0
 ===
+testing
+- renamed duration disruption_time in disruption model
+- added Part model
+- added order_number to Order model
+- deleted process in Order model
+- added order in Process model
+- added approximated_time to Process model
+- change create_order view to accommodate model changes
+- added unit tests for every api function
+- fixed minor bugs in api
+- added generate data script for better
+
 disruptions
-- backend intergration
+- backend integration
 - time save fix
 - fixed edit mode
 - added delete mode
 
 Resources
-- backend intergration
+- backend integration
 - added delete mode
 - fixed edit mode
 

@@ -4,8 +4,11 @@
 
 set -e  # Exit on error
 
+VERSION="${1:-latest}"
+
 echo "==================================="
 echo "SPARC MES Deployment Script"
+echo "Version: $VERSION"
 echo "==================================="
 
 # Check if Docker is installed
@@ -26,17 +29,29 @@ fi
 echo "Stopping existing containers..."
 sudo docker compose -f docker-compose-server.yml down 2>/dev/null || true
 
-# Clean up old Docker resources (optional - uncomment if you want full cleanup)
+# Clean up old Docker resources
 echo "Cleaning up old Docker resources..."
 sudo docker container prune -f
 sudo docker image prune -a -f
-# sudo docker volume prune -f
 
 # Load Docker images from tarball if it exists
-if [ -f sparc-images-*.tar.gz ]; then
+TARBALL=$(ls sparc-images-*.tar.gz 2>/dev/null | head -1)
+
+if [ -f "$TARBALL" ]; then
     echo "Loading Docker images from tarball..."
-    gunzip -c sparc-images-*.tar.gz | sudo docker load
+    gunzip -c "$TARBALL" | sudo docker load
     echo "Docker images loaded successfully!"
+
+    # Extract version from tarball filename
+    LOADED_VERSION=$(echo "$TARBALL" | sed 's/sparc-images-\(.*\)\.tar\.gz/\1/')
+    echo "Loaded version: $LOADED_VERSION"
+
+    # Tag images as 'latest' so docker-compose can find them
+    echo "Tagging images as 'latest'..."
+    sudo docker tag sparc-backend:$LOADED_VERSION sparc-backend:latest
+    sudo docker tag sparc-frontend:$LOADED_VERSION sparc-frontend:latest
+
+    echo "Images tagged successfully!"
 else
     echo "WARNING: No image tarball found, Docker will build/pull images"
 fi
@@ -53,12 +68,18 @@ sleep 10
 echo "Running database migrations..."
 sudo docker compose -f docker-compose-server.yml exec -T backend python manage.py migrate
 
-# Create superuser (optional - comment out if you don't want this automated)
+# Create superuser (optional)
 echo ""
 echo "==================================="
-echo "Create Django superuser"
+echo "Create Django superuser (optional)"
 echo "==================================="
-sudo docker compose -f docker-compose-server.yml exec backend python manage.py createsuperuser --noinput --username admin --email admin@example.com 2>/dev/null || echo "Superuser already exists or creation skipped"
+echo "Would you like to create a superuser? (y/n)"
+read -t 10 -r response || response="n"
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+    sudo docker compose -f docker-compose-server.yml exec backend python manage.py createsuperuser
+else
+    echo "Skipping superuser creation"
+fi
 
 echo ""
 echo "==================================="
@@ -69,6 +90,6 @@ echo "==================================="
 echo ""
 echo "Useful commands:"
 echo "  View logs:    sudo docker compose -f docker-compose-server.yml logs -f"
-echo "  Stop:         sudo docker compose -f docker-compose-server.yml down"
+echo "  Stop:         sudo docker compose -f docker-compose-server.yml stop"
 echo "  Restart:      sudo docker compose -f docker-compose-server.yml restart"
 echo "  Show status:  sudo docker ps"

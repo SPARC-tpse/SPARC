@@ -1,5 +1,13 @@
 v0.3.0
 ===
+fix/workflow
+- change `frontend/Dockerfile` from `npm run dev` to `npm run release`
+- precent try to create release when opening a pull request
+- update workflow to not uploading to GitHub Container Registry
+- don't parse the === in CHANGELOG
+- update download_sparc script
+- update run_server script
+
 disruptions
 - backend intergration
 - time save fix

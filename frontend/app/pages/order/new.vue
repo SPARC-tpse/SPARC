@@ -1,5 +1,5 @@
 <script setup lang="js">
-import { ref, computed, onMounted, inject } from 'vue'
+import { ref, computed, onMounted, inject, watchEffect } from 'vue'
 import { useOrderDraft} from "~/composables/useOrderDraft.ts";
 
 definePageMeta({
@@ -82,15 +82,19 @@ function resetForm() {
   steps.value = [{ _id: Date.now(), workers: [], resource: '', name: '' }]
 }
 
-async function loadData() {
-    try {
-        const [w, r] = await Promise.all([
-          $fetch(`${API_BASE_URL}/api/worker/list`),
-          $fetch(`${API_BASE_URL}/api/resource/list`)
-        ])
-        allWorkers.value = w; allResources.value = r;
-    } catch (e) { console.error(e) }
-}
+// Worker/Resource Listen beim Öffnen der Seite laden
+onMounted(async () => {
+  try {
+    const [w, r] = await Promise.all([
+      $fetch(`${API_BASE_URL}/api/worker/list`),
+      $fetch(`${API_BASE_URL}/api/resource/list`),
+    ])
+    allWorkers.value = w
+    allResources.value = r
+  } catch (e) {
+    console.error(e)
+  }
+})
 
 async function submitOrder() {
   if (!canSubmit.value) return
@@ -111,7 +115,6 @@ watchEffect(() => {
     })
   }
 })
-
 
 </script>
 

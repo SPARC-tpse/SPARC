@@ -1,5 +1,5 @@
 <script setup lang="js">
-import { ref, computed, inject, watchEffect } from 'vue'
+import { computed, inject, watchEffect } from 'vue'
 import { useRouter } from '#app'
 import { useResourceDraft} from "~/composables/useResourceDraft.ts";
 
@@ -13,7 +13,7 @@ definePageMeta({
   },
 })
 
-const registerTopbarActions = inject('registerTopbarActions')
+const registerTopbarActions = inject('registerTopbarActions', null)
 
 
 const { theme } = useAppTheme()
@@ -23,9 +23,18 @@ const API_BASE_URL = config.public.apiBaseUrl
 
 const {draft: form, resetDraft } = useResourceDraft()
 
-const canSubmit = computed(() => form.value.name.length > 0 && form.value.type.length > 0 && form.value.status.length > 0)
+// robuster: keine Truthy-Fallen, keine Whitespaces
+const canSubmit = computed(() => {
+  const f = form.value
+  return Boolean(
+    f.name?.trim()?.length > 0 &&
+    f.type?.trim()?.length > 0 &&
+    f.status?.trim()?.length > 0
+  )
+})
 
 async function submit() {
+    if (!canSubmit.value) return
     const mapping = { 'available': 3, 'in-use': 2, 'maintenance': 4, 'offline': 1 }
     try {
         await $fetch(`${API_BASE_URL}/api/resource/post`, {
@@ -33,7 +42,7 @@ async function submit() {
             body: { ...form.value, status: mapping[form.value.status] }
         })
         resetDraft()
-        await router.push('/resource/overview') // TODO: await notwendig?
+        await router.push('/resource/overview')
     } catch (e) { alert('Error during creation') }
 }
 
@@ -42,11 +51,12 @@ function resetForm() {
 }
 
 watchEffect(() => {
-    registerTopbarActions({
-        reset: resetForm,
-        submit,
-        canSubmit
-    })
+  if (!registerTopbarActions) return
+  registerTopbarActions({
+    reset: resetForm,
+    submit,
+    canSubmit,
+  })
 })
 </script>
 

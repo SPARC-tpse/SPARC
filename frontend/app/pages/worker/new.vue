@@ -1,5 +1,5 @@
 <script setup lang="js">
-import { ref, computed, inject, watchEffect } from 'vue'
+import { computed, inject, watchEffect } from 'vue'
 import { useRouter } from '#app'
 import { useWorkerDraft} from "~/composables/useWorkerDraft.ts";
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount, computed, provide } from 'vue'
+import { ref, shallowRef, watch, onMounted, onBeforeUnmount, computed, provide } from 'vue'
 import { useTheme } from '~/composables/useTheme'
 import { useRoute} from "vue-router"
 
@@ -21,6 +21,13 @@ type TopbarActions = {
   canSubmit?: { value: boolean } | (() => boolean)
 }
 
+// Neu: interner Registry-Typ (explizit mit undefined)
+type TopbarActionsRegistry = {
+  reset?: () => void | Promise<void>
+  submit?: () => void | Promise<void>
+  canSubmit?: { value: boolean } | (() => boolean)
+}
+
 // Layout-Props kommen pro Page über definePageMeta({ layoutProps: {...} })
 const layoutProps = computed(() => (route.meta?.layoutProps ?? {}) as Record<string, any>)
 
@@ -30,11 +37,7 @@ const showCreate = computed(() => layoutProps.value.showCreate ?? true)
 const createLabel = computed(() => layoutProps.value.createLabel ?? 'Create')
 
 // Registry: page registriert Reset/Submit + reaktives canSubmit
-const actionsRef = shallowRef<Required<TopbarActions>>({
-  reset: undefined,
-  submit: undefined,
-  canSubmit: undefined,
-})
+const actionsRef = shallowRef<TopbarActionsRegistry>({})
 
 function registerTopbarActions(next: TopbarActions = {}) {
   actionsRef.value = {
@@ -67,22 +70,6 @@ async function handleSubmit() {
   await actionsRef.value.submit?.()
 }
 
-const topbarTitle = computed(() => {
-  // Page-spezifischer Titel (falls gesetzt)
-  const fromMeta = layoutProps.value?.title
-  if (typeof fromMeta === 'string' && fromMeta.trim().length) return fromMeta
-  // Fallback anhand der Route
-  const p = route.path
-  if (p.startsWith('/dashboard')) return 'Dashboard'
-  if (p.startsWith('/order')) return 'Orders'
-  if (p.startsWith('/disruption')) return 'Disruptions'
-  if (p.startsWith('/resource')) return 'Resources'
-  if (p.startsWith('/worker')) return 'Workers'
-  return 'Home'
-})
-
-
-
 // Globaler Timer (läuft bei Tabwechsel weiter, weil useState)
 const {
   isRunning,
@@ -97,15 +84,6 @@ const {
   ensureTicking,
 } = useDisruptionTimer()
 
-/**
-const newDisruption = useState('disruption:newForm', () => ({
-  name: '',
-  start: '',
-  end: '',
-  resource: '',
-  type: ''
-}))
- */
 
 const { draft: newDisruption } = useDisruptionDraft()
 
@@ -113,13 +91,15 @@ const { draft: newDisruption } = useDisruptionDraft()
 const dragging = ref(false)
 const dragOffset = ref({ x: 0, y: 0 })
 
-const onPointerDown = (e) => {
+const onPointerDown = (e: PointerEvent) => {
   dragging.value = true
   dragOffset.value = { x: e.clientX - popoutPos.value.x, y: e.clientY - popoutPos.value.y }
-  e.currentTarget?.setPointerCapture?.(e.pointerId)
+
+  const el = e.currentTarget as HTMLElement | null
+  el?.setPointerCapture?.(e.pointerId)
 }
 
-const onPointerMove = (e) => {
+const onPointerMove = (e: PointerEvent) => {
   if (!dragging.value) return
   popoutPos.value = { x: e.clientX - dragOffset.value.x, y: e.clientY - dragOffset.value.y }
 }
@@ -135,7 +115,7 @@ const handleVisibilityChange = () => {
   }
 }
 
-const isDisruptionRoute = (path) => path === '/disruption' || path.startsWith('/disruption/')
+const isDisruptionRoute = (path: string) => path === '/disruption' || path.startsWith('/disruption/')
 
 // Popout ein-/ausblenden je nach Route
 watch(
@@ -164,19 +144,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
-
-/*
-const topbarTitle = computed(() => {
-  const p = route.path;
-  if (p.startsWith("/dashboard")) return "Dashboard";
-  if (p.startsWith("/order")) return "Orders";
-  if (p.startsWith("/disruption")) return "Disruptions";
-  if (p.startsWith("/resource")) return "Resources";
-  if (p.startsWith("/worker")) return "Workers";
-  return "Home";
-});
- */
-
 
 </script>
 
@@ -212,50 +179,28 @@ const topbarTitle = computed(() => {
   </div>
 
    <!-- Popout Timer (liegt außerhalb des Flex-Containers, fixed im Viewport) -->
-  <div
-    v-if="popoutVisible && (isRunning || isPaused)"
-    class="fixed z-50 w-64 rounded-lg border border-slate-300 bg-white text-slate-900 shadow-lg select-none"
-    :style="{ left: popoutPos.x + 'px', top: popoutPos.y + 'px' }"
-  >
-    <DisruptionTimerPopout
-      :visible="popoutVisible"
-      :is-running="isRunning"
-      :is-paused="isPaused"
-      :formatted="formatted"
-      :pos="popoutPos"
-      :on-pointer-down="onPointerDown"
-      :on-pointer-move="onPointerMove"
-      :on-pointer-up="onPointerUp"
-      :on-start="start"
-      :on-pause="pause"
-      :on-resume="resume"
-      :on-stop="() => stopAndMaybeApply(newDisruption)"
-    />
+  <DisruptionTimerPopout
+    :visible="popoutVisible"
+    :is-running="isRunning"
+    :is-paused="isPaused"
+    :formatted="formatted"
+    :pos="popoutPos"
+    :on-pointer-down="onPointerDown"
+    :on-pointer-move="onPointerMove"
+    :on-pointer-up="onPointerUp"
+    :on-start="start"
+    :on-pause="pause"
+    :on-resume="resume"
+    :on-stop="() => stopAndMaybeApply(newDisruption)"
+  />
 
-    <!--
-    <div class="p-3 space-y-3">
-      <div class="text-2xl font-mono text-center">{{ formatted }}</div>
-
-      <div class="flex gap-2 justify-center">
-        <button class="px-3 py-2 rounded border" @click="start" :disabled="isRunning">Start</button>
-        <button class="px-3 py-2 rounded border" @click="isPaused ? resume() : pause()" :disabled="!isRunning">
-          {{ isPaused ? 'Weiter' : 'Pause' }}
-        </button>
-        <button
-            class="px-3 py-2 rounded border"
-            @click="stopAndMaybeApply(newDisruption)"
-            :disabled="!isRunning && !isPaused">
-          Stopp
-        </button>
-      </div>
-    </div>
-    -->
-  </div>
 
 </template>
 
 <style scoped>
 .zoom-root {
+  --app-zoom: var(--app-zoom, 1);
+
   transform: scale(var(--app-zoom, 1));
   transform-origin: top left;
   width: calc(100% / var(--app-zoom, 1));

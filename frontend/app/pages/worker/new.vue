@@ -58,17 +58,6 @@ watchEffect(() => {
 
 <template>
   <div :class="theme.pageWrapper">
-    <!-- <Topbar
-      title="Workers · New"
-      :can-submit="canSubmit"
-      :show-reset="true"
-      :show-create="true"
-      create-label="Create"
-      @reset="resetForm"
-      @submit="submitWorker"
-    />
-    -->
-
     <main :class="theme.container">
       <section :class="theme.card" class="max-w-2xl mx-auto">
         <h3 class="font-semibold text-lg mb-4">Add New Worker</h3>

@@ -52,8 +52,6 @@ watchEffect(() => {
 
 <template>
   <div :class="theme.pageWrapper">
-    <!-- <Topbar title="Resources · New" :can-submit="canSubmit" :show-create="true" @submit="submit" @reset="() => router.push('/resource/overview')" /> -->
-
     <main :class="theme.container">
       <section :class="theme.card">
         <div :class="theme.formGrid">

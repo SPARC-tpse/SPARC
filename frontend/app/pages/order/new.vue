@@ -102,9 +102,7 @@ async function submitOrder() {
   } catch (error) { alert('Error creating order') }
 }
 
-onMounted(() => {
-  loadData()
-
+watchEffect(() => {
   if (registerTopbarActions) {
     registerTopbarActions({
       reset: resetForm,
@@ -113,12 +111,12 @@ onMounted(() => {
     })
   }
 })
+
+
 </script>
 
 <template>
   <div :class="theme.pageWrapper">
-    <!-- <Topbar title="Orders · New" :can-submit="canSubmit" :show-reset="true" create-label="Create" @reset="resetForm" @submit="submitOrder" /> -->
-
     <main :class="theme.container" class="space-y-6">
       <section :class="theme.card">
         <h3 class="font-semibold text-lg mb-2">Order Information</h3>

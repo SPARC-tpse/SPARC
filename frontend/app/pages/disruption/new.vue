@@ -73,19 +73,19 @@ watch(
   () => [newDisruption.value.start, newDisruption.value.end],
   () => {
     if (isEndBeforeStart()) {
-      alert('Die Endzeit darf nicht vor der Startzeit liegen.')
+      alert('The end time must not be earlier than the start time.')
     }
   }
 )
 
 function resetForm() {
-  newDisruption.value = { name: '', start: '', end: '', resource: '', type: '' }
+  resetDraft()
   timerReset()
 }
 
 async function submitDisruption() {
     if (isEndBeforeStart()) {
-      alert('Die Endzeit darf nicht vor der Startzeit liegen.')
+      alert('The end time must not be earlier than the start time.')
       return
     }
     if (!canSubmit.value) return
@@ -94,7 +94,7 @@ async function submitDisruption() {
         method: 'POST',
         body: newDisruption.value
       })
-    resetDraft();timerReset()
+    resetDraft(); timerReset()
     await navigateTo('/disruption/overview')
   } catch (error) { console.error(error) }
 }
@@ -107,18 +107,6 @@ onMounted(loadFormData)
 <template>
 
   <div :class="theme.pageWrapper">
-    <!--
-    <Topbar
-      title="Disruptions · New"
-      :can-submit="canSubmit"
-      :show-reset="true"
-      :show-create="true"
-      create-label="Create"
-      @reset="resetForm"
-      @submit="submitDisruption"
-    />
-    -->
-
     <main :class="theme.container">
       <div class="space-y-6">
 

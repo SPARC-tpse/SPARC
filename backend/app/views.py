@@ -2,13 +2,15 @@ from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.http import JsonResponse
 from rest_framework.request import Request
-from .models import Order, Process, Worker, Resource, OrderFile
-from .serializers import OrderSerializer, WorkerSerializer, OrderFileSerializer
+from .models import Order, Process, Worker, Resource, OrderFile, ResourceType, Disruption, DisruptionType
+from .serializers import OrderSerializer, WorkerSerializer, OrderFileSerializer, ResourceSerializer, DisruptionSerializer
 from django.core.files.storage import default_storage
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from datetime import datetime, timedelta
+from django.utils.dateparse import parse_datetime
 
 def broadcast_order_change(action, order_data=None):
     """Helper to broadcast order changes via WebSocket"""
@@ -47,25 +49,12 @@ def get_orders(request: Request) -> JsonResponse:
 @api_view(['POST'])
 def create_order(request: Request) -> JsonResponse:
     try:
-        if request.data['priority'] == "Low":
-            priority = 1
-        elif request.data['priority'] == "Medium":
-            priority = 2
-        elif request.data['priority'] == "High":
-            priority = 3
-        else:
-            priority = 1
+        # Mapping helpers
+        priority_map = {"Low": 1, "Medium": 2, "High": 3}
+        status_map = {"Planned": 1, "Running": 2, "Paused": 3, "Done": 4}
 
-        if request.data['status'] == "Planned":
-            status = 1
-        elif request.data['status'] == "Running":
-            status = 2
-        elif request.data['status'] == "Paused":
-            status = 3
-        elif request.data['status'] == "Done":
-            status = 4
-        else:
-            status = 1
+        priority = priority_map.get(request.data.get('priority'), 1)
+        status = status_map.get(request.data.get('status'), 1)
 
         new_entry = Order(
             name = str(request.data['name']),
@@ -80,18 +69,25 @@ def create_order(request: Request) -> JsonResponse:
 
         process_steps = []
         for process in request.data['process']:
-            workers = Worker.objects.filter(name=process['worker'])
+
+            worker_names = process.get('workers', [])
+
+
+            workers = Worker.objects.filter(name__in=worker_names)
+
             resource = Resource.objects.filter(name=process['resource']).first()
-            if not workers:
-                return JsonResponse({'error': f'No worker exists with name: {process['worker']}'}, status=400)
-            elif not resource:
-                return JsonResponse({'error': f'No resource exists with name: {process['resource']}'}, status=400)
+
+            if not resource:
+                return JsonResponse({'error': f'No resource exists with name: {process["resource"]}'}, status=400)
+
             new_process = Process.objects.create(
                 name=process['name'],
                 resource=resource
             )
+            # Many-to-Many Beziehung setzen
             new_process.workers.set(workers)
             process_steps.append(new_process)
+
         new_entry.save()
         new_entry.processes.set(process_steps)
 
@@ -103,187 +99,161 @@ def create_order(request: Request) -> JsonResponse:
     except ValidationError as e:
         return JsonResponse({'error': str(e)}, status=400)
     except IntegrityError as e:
-        return JsonResponse({'error': 'Database integrity error (e.g., duplicate entry)'}, status=400)
+        return JsonResponse({'error': 'Database integrity error'}, status=400)
     except KeyError as e:
         return JsonResponse({'error': f'Missing field: {str(e)}'}, status=400)
     except Exception as e:
+        print(e)
         return JsonResponse({'error': 'Failed to create order'}, status=500)
 
 @api_view(['PUT'])
 def update_order(request: Request, order_id: int) -> JsonResponse:
     try:
-        order = Order.objects.get(id=order_id)
+        # getorder
+        try:
+            order = Order.objects.get(id=order_id)
+        except Order.DoesNotExist:
+            return JsonResponse({'error': 'Order not found'}, status=404)
+
+        # base data update
         order.name = request.data.get('name')
         order.target_amount = int(request.data.get('target_amount'))
-        # order.bill_of_materials = request.data.get('bill_of_materials')
-        # order.files = request.data.get('files')
         order.start_date = str(request.data.get('start_date'))
         order.end_date = str(request.data.get('end_date'))
         order.product_name = request.data.get('product_name')
-        order.priority = request.data.get('priority')
-        order.status = request.data.get('status')
+
+        # mapping for prios system
+        priority_map = {"Low": 1, "Medium": 2, "High": 3}
+        status_map = {"Planned": 1, "Running": 2, "Paused": 3, "Done": 4}
+
+        # no int mapping
+        p_val = request.data.get('priority')
+        s_val = request.data.get('status')
+
+        if isinstance(p_val, int):
+            order.priority = p_val
+        else:
+            order.priority = priority_map.get(p_val, order.priority)
+
+        if isinstance(s_val, int):
+            order.status = s_val
+        else:
+            order.status = status_map.get(s_val, order.status)
+
         order.comments = request.data.get('comments')
-        order.process.set(request.data.get('process'))
         order.save()
 
-        # Broadcast the change
+        # steps update
+        if 'process' in request.data:
+
+            order.processes.clear()
+
+            new_process_steps = []
+
+            for process_data in request.data['process']:
+                worker_names = process_data.get('workers', [])
+
+                # Worker & Resource ssearch
+                workers = Worker.objects.filter(name__in=worker_names)
+                resource = Resource.objects.filter(name=process_data['resource']).first()
+
+                if not resource:
+
+                    continue
+
+
+                new_process = Process.objects.create(
+                    name=process_data['name'],
+                    resource=resource
+
+                )
+                new_process.workers.set(workers)
+                new_process_steps.append(new_process)
+
+
+            order.processes.set(new_process_steps)
+
+
         serializer = OrderSerializer(order)
         broadcast_order_change('updated', serializer.data)
 
         return JsonResponse({'message': 'Order updated successfully'})
-    except Order.DoesNotExist:
-        return JsonResponse({'error': 'Order not found'}, status=404)
 
+    except Exception as e:
+        print(f"Update Error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
 @api_view(['DELETE'])
 def delete_order(request: Request, order_id: int) -> JsonResponse:
     print("start deleting")
     try:
         order = Order.objects.filter(id=order_id)
         order.delete()
-
-        # Broadcast the change
         broadcast_order_change('deleted', {'id': order_id})
-
         return JsonResponse({'message': 'Order deleted successfully'})
     except Order.DoesNotExist:
         return JsonResponse({'error': 'Order not found'}, status=404)
 
 # Order / Files
-
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def upload_order_file(request):
-    """Upload a file for an order"""
     try:
-        if 'file' not in request.FILES:
-            return JsonResponse({'error': 'No file provided'}, status=400)
-
+        if 'file' not in request.FILES: return JsonResponse({'error': 'No file provided'}, status=400)
         file = request.FILES['file']
         file_type = request.POST.get('type', 'general')
         order_id = request.POST.get('order_id')
-
-        if not order_id:
-            return JsonResponse({'error': 'order_id is required'}, status=400)
-
-        # Get the order
-        try:
-            order = Order.objects.get(id=order_id)
-        except Order.DoesNotExist:
-            return JsonResponse({'error': 'Order not found'}, status=404)
-
-        # Create OrderFile instance
-        order_file = OrderFile(
-            order=order,
-            file=file,
-            file_type=file_type,
-        )
+        if not order_id: return JsonResponse({'error': 'order_id is required'}, status=400)
+        try: order = Order.objects.get(id=order_id)
+        except Order.DoesNotExist: return JsonResponse({'error': 'Order not found'}, status=404)
+        order_file = OrderFile(order=order, file=file, file_type=file_type)
         order_file.save()
-
-        # Serialize and return
         serializer = OrderFileSerializer(order_file, context={'request': request})
-
         return JsonResponse(serializer.data, status=201)
-
     except Exception as e:
-        print(f"Upload error: {e}")
-        import traceback
-        traceback.print_exc()
         return JsonResponse({'error': str(e)}, status=500)
 
 @api_view(['DELETE'])
 def delete_order_file(request, file_id):
-    """Delete an uploaded file"""
     try:
         order_file = OrderFile.objects.get(id=file_id)
-
-        # Delete the actual file from disk
-        if order_file.file:
-            order_file.file.delete(save=False)
-
-        # Delete the database record
+        if order_file.file: order_file.file.delete(save=False)
         order_file.delete()
-
         return JsonResponse({'success': True, 'message': 'File deleted'})
-
-    except OrderFile.DoesNotExist:
-        return JsonResponse({'error': 'File not found'}, status=404)
-    except Exception as e:
-        print(f"Delete error: {e}")
-        import traceback
-        traceback.print_exc()
-        return JsonResponse({'error': str(e)}, status=500)
+    except OrderFile.DoesNotExist: return JsonResponse({'error': 'File not found'}, status=404)
+    except Exception as e: return JsonResponse({'error': str(e)}, status=500)
 
 @api_view(['GET'])
 def list_order_files(request, order_id):
-    """List all files for a specific order"""
     try:
         order = Order.objects.get(id=order_id)
         files = order.order_files.all()
-
         serializer = OrderFileSerializer(files, many=True, context={'request': request})
-
-        return JsonResponse({
-            'order_id': order_id,
-            'files': serializer.data
-        })
-
-    except Order.DoesNotExist:
-        return JsonResponse({'error': 'Order not found'}, status=404)
-    except Exception as e:
-        print(f"List files error: {e}")
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'order_id': order_id, 'files': serializer.data})
+    except Order.DoesNotExist: return JsonResponse({'error': 'Order not found'}, status=404)
+    except Exception as e: return JsonResponse({'error': str(e)}, status=500)
 
 # Process
-
 @api_view(['PUT'])
 def update_process_timing(request: Request, process_id: int) -> JsonResponse:
-    """Update timing for a specific process step"""
     try:
         process = Process.objects.get(id=process_id)
-
-        # Update timing fields if provided
-        if 'setup_time_seconds' in request.data:
-            process.setup_time_seconds = int(request.data['setup_time_seconds'])
-
-        if 'waiting_time_seconds' in request.data:
-            process.waiting_time_seconds = int(request.data['waiting_time_seconds'])
-
-        if 'process_time_seconds' in request.data:
-            process.process_time_seconds = int(request.data['process_time_seconds'])
-
+        if 'setup_time_seconds' in request.data: process.setup_time_seconds = int(request.data['setup_time_seconds'])
+        if 'waiting_time_seconds' in request.data: process.waiting_time_seconds = int(request.data['waiting_time_seconds'])
+        if 'process_time_seconds' in request.data: process.process_time_seconds = int(request.data['process_time_seconds'])
         process.save()
-
         return JsonResponse({
             'message': 'Process timing updated successfully',
             'setup_time_seconds': process.setup_time_seconds,
             'waiting_time_seconds': process.waiting_time_seconds,
             'process_time_seconds': process.process_time_seconds
         })
+    except Process.DoesNotExist: return JsonResponse({'error': 'Process not found'}, status=404)
+    except Exception as e: return JsonResponse({'error': str(e)}, status=500)
 
-    except Process.DoesNotExist:
-        return JsonResponse({'error': 'Process not found'}, status=404)
-    except Exception as e:
-        print(f"Update process timing error: {e}")
-        import traceback
-        traceback.print_exc()
-        return JsonResponse({'error': str(e)}, status=500)
-
-"""
-@api_view(['DELETE'])
-def delete_process(request: Request, process_id: int) -> JsonResponse:
-    try:
-        process = Process.objects.get(id=process_id)
-        process.delete()
-        return JsonResponse({'success': True, 'message': 'Process deleted'})
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
-"""
-# Worker
-
-"""@api_view(['GET'])
+# Worker - dropdownlist
+@api_view(['GET'])
 def get_workers(request: Request) -> JsonResponse:
-    ""Get all workers""
+    """Get all workers"""
     try:
         workers = Worker.objects.all()
         serializer = WorkerSerializer(workers, many=True)
@@ -291,6 +261,7 @@ def get_workers(request: Request) -> JsonResponse:
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+#worker view logic
 @api_view(['DELETE'])
 def delete_worker(request: Request, worker_id: int) -> JsonResponse:
     try:
@@ -302,7 +273,7 @@ def delete_worker(request: Request, worker_id: int) -> JsonResponse:
 
 @api_view(['POST'])
 def create_worker(request: Request) -> JsonResponse:
-    ""Create a new worker""
+    """Create a new worker"""
     try:
         serializer = WorkerSerializer(data=request.data)
         if serializer.is_valid():
@@ -311,4 +282,237 @@ def create_worker(request: Request) -> JsonResponse:
         return JsonResponse(serializer.errors, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-"""
+
+@api_view(['GET'])
+def get_worker(request: Request, worker_id: int) -> JsonResponse:
+    """Get a single worker by ID"""
+    try:
+        worker = Worker.objects.get(id=worker_id)
+        serializer = WorkerSerializer(worker, many=False)
+        return JsonResponse(serializer.data, safe=False)
+    except Worker.DoesNotExist:
+        return JsonResponse({'error': 'Worker not found'}, status=404)
+
+@api_view(['PUT'])
+def update_worker(request: Request, worker_id: int) -> JsonResponse:
+    """Update an existing worker"""
+    try:
+        worker = Worker.objects.get(id=worker_id)
+        worker.name = request.data.get('name', worker.name)
+        worker.save()
+        return JsonResponse({'message': 'Worker updated successfully', 'id': worker.id, 'name': worker.name})
+    except Worker.DoesNotExist:
+        return JsonResponse({'error': 'Worker not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+# --- RESOURCES ---
+
+@api_view(['GET'])
+def get_resources(request: Request) -> JsonResponse:
+    try:
+        resources = Resource.objects.all()
+        data = []
+        for r in resources:
+            data.append({
+                'id': r.id,
+                'name': r.name,
+                'type': r.type.name if r.type else "Unknown",
+                'status': r.status
+            })
+        return JsonResponse(data, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+def get_resource(request: Request, resource_id: int) -> JsonResponse:
+    try:
+        r = Resource.objects.get(id=resource_id)
+        return JsonResponse({
+            'id': r.id,
+            'name': r.name,
+            'type': r.type.name if r.type else "",
+            'status': r.status
+        })
+    except Resource.DoesNotExist:
+        return JsonResponse({'error': 'Resource not found'}, status=404)
+
+@api_view(['POST'])
+def create_resource(request: Request) -> JsonResponse:
+    try:
+        name = request.data.get('name')
+        type_name = request.data.get('type')
+        status = request.data.get('status')
+
+        # ResourceType handling
+        r_type_obj, _ = ResourceType.objects.get_or_create(
+            name__iexact=type_name,
+            defaults={'name': type_name}
+        )
+
+        Resource.objects.create(
+            name=name,
+            type=r_type_obj,
+            status=int(status)
+        )
+        return JsonResponse({'message': 'Resource created'}, status=201)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['PUT'])
+def update_resource(request: Request, resource_id: int) -> JsonResponse:
+    try:
+        r = Resource.objects.get(id=resource_id)
+        r.name = request.data.get('name', r.name)
+        r.status = int(request.data.get('status', r.status))
+
+        if 'type' in request.data:
+            type_name = request.data['type']
+            r_type_obj, _ = ResourceType.objects.get_or_create(
+                name__iexact=type_name,
+                defaults={'name': type_name}
+            )
+            r.type = r_type_obj
+
+        r.save()
+        return JsonResponse({'message': 'Resource updated'})
+    except Resource.DoesNotExist:
+        return JsonResponse({'error': 'Resource not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['DELETE'])
+def delete_resource(request: Request, resource_id: int) -> JsonResponse:
+    try:
+        Resource.objects.get(id=resource_id).delete()
+        return JsonResponse({'message': 'Resource deleted'})
+    except Resource.DoesNotExist:
+        return JsonResponse({'error': 'Resource not found'}, status=404)
+
+# --- DISRUPTIONS ---
+def format_dt(dt):
+    """Hilfsfunktion: Macht aus einem Datum einen sauberen String für das Frontend"""
+    if not dt: return None
+
+    return dt.strftime('%Y-%m-%dT%H:%M:%S')
+
+@api_view(['GET'])
+def get_disruptions(request: Request) -> JsonResponse:
+    try:
+        disruptions = Disruption.objects.all().order_by('-created_at')
+        data = []
+        for d in disruptions:
+            start_dt = d.created_at
+            end_dt = start_dt + timedelta(seconds=d.duration)
+
+            data.append({
+                'id': d.id,
+                'name': d.name,
+                'start': format_dt(start_dt),
+                'end': format_dt(end_dt),
+                'resource': d.resource.name if d.resource else "N/A",
+                'type': d.type.name if d.type else "General",
+            })
+        return JsonResponse(data, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+def get_disruption(request: Request, disruption_id: int) -> JsonResponse:
+    try:
+        d = Disruption.objects.get(id=disruption_id)
+
+        start_time = d.created_at
+        end_time = start_time + timedelta(seconds=d.duration)
+
+        return JsonResponse({
+            'id': d.id,
+            'name': d.name,
+            'start': start_time.strftime('%Y-%m-%dT%H:%M:%S'),
+            'end': end_time.strftime('%Y-%m-%dT%H:%M:%S'),
+            'resource': d.resource.id if d.resource else None,
+            'type': d.type.id if d.type else None,
+        })
+    except Disruption.DoesNotExist:
+        return JsonResponse({'error': 'Not found'}, status=404)
+
+@api_view(['GET'])
+def get_disruption_types(request: Request) -> JsonResponse:
+    """Liefert Typen und erstellt 'Error' & 'Maintenance', falls sie fehlen"""
+    try:
+        default_types = ['Error', 'Maintenance']
+
+        for t_name in default_types:
+            DisruptionType.objects.get_or_create(name=t_name)
+
+
+        types = DisruptionType.objects.all()
+        data = [{'id': t.id, 'name': t.name} for t in types]
+
+        return JsonResponse(data, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+def get_duration_from_strings(start_str, end_str):
+    """Hilfsfunktion zur Berechnung der Dauer in Sekunden"""
+    try:
+        if not start_str or not end_str:
+            return 0
+
+        s_dt = datetime.fromisoformat(start_str.split('.')[0].replace('Z', ''))
+        e_dt = datetime.fromisoformat(end_str.split('.')[0].replace('Z', ''))
+        return int((e_dt - s_dt).total_seconds())
+    except Exception as e:
+        print(f"Calculation Error: {e}")
+        return 0
+
+@api_view(['POST'])
+def create_disruption(request: Request) -> JsonResponse:
+    try:
+        data = request.data
+
+        duration = get_duration_from_strings(data.get('start'), data.get('end'))
+
+        type_obj = DisruptionType.objects.get(id=data.get('type'))
+        resource_obj = Resource.objects.get(id=data.get('resource'))
+
+        new_dis = Disruption.objects.create(
+            name=data.get('name'),
+            type=type_obj,
+            resource=resource_obj,
+            duration=max(0, duration)
+        )
+        return JsonResponse({'id': new_dis.id, 'message': 'Created'}, status=201)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['PUT'])
+def update_disruption(request: Request, disruption_id: int) -> JsonResponse:
+    try:
+        d = Disruption.objects.get(id=disruption_id)
+        data = request.data
+
+        d.name = data.get('name', d.name)
+
+
+        if 'start' in data and 'end' in data:
+            d.duration = get_duration_from_strings(data.get('start'), data.get('end'))
+
+        if 'resource' in data:
+            d.resource = Resource.objects.get(id=data['resource'])
+        if 'type' in data:
+            d.type = DisruptionType.objects.get(id=data['type'])
+
+        d.save()
+        return JsonResponse({'message': 'Updated'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['DELETE'])
+def delete_disruption(request: Request, disruption_id: int) -> JsonResponse:
+    """Störung löschen"""
+    try:
+        Disruption.objects.get(id=disruption_id).delete()
+        return JsonResponse({'message': 'Disruption deleted'})
+    except Disruption.DoesNotExist:
+        return JsonResponse({'error': 'Disruption not found'}, status=404)

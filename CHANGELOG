@@ -1,3 +1,60 @@
+v0.3.0
+===
+fix/workflow
+- change `frontend/Dockerfile` from `npm run dev` to `npm run release`
+- precent try to create release when opening a pull request
+- update workflow to not uploading to GitHub Container Registry
+- don't parse the === in CHANGELOG
+- update download_sparc script
+- update run_server script
+
+disruptions
+- backend intergration
+- time save fix
+- fixed edit mode
+- added delete mode
+
+Resources
+- backend intergration
+- added delete mode
+- fixed edit mode
+
+various backend fixes
+
+style changes
+- added useAppTheme composable for better theme management
+- updated badge colors for better visibility
+
+v0.2.0
+===
+fix/run_server
+- updated the run server script
+
+feature/workersmultiselect
+
+neworder
+- process steps alignment fix
+- process steps deletion fix
+- worker multi select
+- individual workers deletion
+- Backend integration workers
+
+editorders
+- process steps alignment fix
+- process steps deletion fix
+- worker multi select
+- individual workers deletion
+- Backend integration workers
+- added update order function
+
+- various backend fixes
+
+workers
+- added overview page
+- added creation tool
+- added delete mode
+- added backend compability
+
 v0.1.0
 ===
 feature/worker_view

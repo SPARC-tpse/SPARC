@@ -11,7 +11,7 @@ Resources
 - backend intergration
 - added delete mode
 - fixed edit mode
-- Added drafts for Disruptions
+- Added drafts for resources
 
 various backend fixes
 
@@ -21,7 +21,7 @@ Orders
 - The target amount of the new order can now only be digits
 
 Worker
-- Added drafts for new workers
+- Added drafts for workers
 
 style changes
 - added useAppTheme composable for better theme management

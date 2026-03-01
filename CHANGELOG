@@ -13,17 +13,30 @@ disruptions
 - time save fix
 - fixed edit mode
 - added delete mode
+- Added drafts for disruptions
 
 Resources
 - backend intergration
 - added delete mode
 - fixed edit mode
+- Added drafts for resources
 
 various backend fixes
+
+Orders
+- Addes Drafts for orders
+- Fixed the create (submit) button
+- The target amount of the new order can now only be digits
+
+Worker
+- Added drafts for workers
 
 style changes
 - added useAppTheme composable for better theme management
 - updated badge colors for better visibility
+- Added zooming functionality
+- Refactored the topbar logic for better maintainability
+- updated the design of the disruption timer for better visibility and user experience
 
 v0.2.0
 ===
@@ -120,3 +133,4 @@ feature/frontend
 
 feature/hello-world
 - basic structure of the website
+

@@ -1,6 +1,14 @@
 <script setup lang="js">
 import { ref, onMounted, computed } from 'vue'
-definePageMeta({ layout: 'custom' })
+
+definePageMeta({
+  layout: 'custom',
+  layoutProps: {
+    title: 'Disruptions · Overview',
+    showReset: false,
+    showCreate: false,
+  },
+})
 
 const { theme, getBadgeColor } = useAppTheme()
 const config = useRuntimeConfig()
@@ -44,7 +52,7 @@ onMounted(fetchDisruptions)
 
 <template>
   <div :class="theme.pageWrapper">
-    <Topbar title="Disruptions · Overview" :show-reset="false" :show-create="false" />
+    <!-- <Topbar title="Disruptions · Overview" :show-reset="false" :show-create="false" /> -->
     <main :class="theme.container">
       <section :class="theme.card">
         <div class="flex items-center justify-between gap-4">

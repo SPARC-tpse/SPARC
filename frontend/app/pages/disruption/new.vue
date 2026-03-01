@@ -1,9 +1,20 @@
 <script setup lang="js">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, inject, watchEffect, watch } from 'vue'
 import { useDisruptionTimer } from '~/composables/useDisruptionTimer';
 import { useDisruptionDraft } from "~/composables/useDisruptionDraft.ts";
 
-definePageMeta({ layout: 'custom' })
+definePageMeta({
+  layout: 'custom',
+  layoutProps: {
+    title: 'Disruptions · New',
+    showReset: true,
+    showCreate: true,
+    createLabel: 'Create',
+  },
+})
+
+const registerTopbarActions = inject('registerTopbarActions')
+
 
 const { theme } = useAppTheme()
 const config = useRuntimeConfig()
@@ -39,44 +50,63 @@ async function loadFormData() {
   } catch (e) { console.error(e) }
 }
 
-const canSubmit = computed(() => newDisruption.value.name && newDisruption.value.resource)
+const canSubmit = computed(() => newDisruption.value.name.length > 0 && newDisruption.value.resource.length > 0 && newDisruption.value.type.length > 0 && newDisruption.value.start && newDisruption.value.end)
 
 function setNow(field) {
-  newDisruption.value[field] = new Date().toISOString().slice(0, 16)
+  newDisruption.value[field] = new Date().toISOString().slice(0, 19)
 }
 
+// Validierung Start/Ende
+function isEndBeforeStart() {
+  const start = newDisruption.value.start
+  const end = newDisruption.value.end
+  if (!start || !end) return false
+
+  const s = new Date(start).getTime()
+  const e = new Date(end).getTime()
+  if (!Number.isFinite(s) || !Number.isFinite(e)) return false
+
+  return e < s
+}
+
+watch(
+  () => [newDisruption.value.start, newDisruption.value.end],
+  () => {
+    if (isEndBeforeStart()) {
+      alert('The end time must not be earlier than the start time.')
+    }
+  }
+)
+
 function resetForm() {
-  newDisruption.value = { name: '', start: '', end: '', resource: '', type: '' }
+  resetDraft()
   timerReset()
 }
 
 async function submitDisruption() {
+    if (isEndBeforeStart()) {
+      alert('The end time must not be earlier than the start time.')
+      return
+    }
     if (!canSubmit.value) return
     try {
       await $fetch(`${API_BASE_URL}/api/disruption/post`, {
         method: 'POST',
         body: newDisruption.value
       })
-      resetDraft(); timerReset()
-      await navigateTo('/disruption/overview')
-    } catch (error) { console.error(error) }
+    resetDraft(); timerReset()
+    await navigateTo('/disruption/overview')
+  } catch (error) { console.error(error) }
 }
+
+watchEffect(() => { registerTopbarActions?.({ reset: resetForm, submit: submitDisruption, canSubmit }) })
 
 onMounted(loadFormData)
 </script>
 
 <template>
-  <div :class="theme.pageWrapper">
-    <Topbar
-      title="Disruptions · New"
-      :can-submit="canSubmit"
-      :show-reset="true"
-      :show-create="true"
-      create-label="Create"
-      @reset="resetForm"
-      @submit="submitDisruption"
-    />
 
+  <div :class="theme.pageWrapper">
     <main :class="theme.container">
       <div class="space-y-6">
 

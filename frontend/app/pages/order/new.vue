@@ -71,7 +71,7 @@ function onTargetInput(e) {
 }
 
 /**
- * Numeric input validation
+ * Does not allow to copy and past into the target amount field
  */
 function onTargetKeydown(e) {
   // Erlaube: Backspace, Delete, Tab, Escape, Enter, Pfeiltasten, Home, End
@@ -91,6 +91,13 @@ function onTargetKeydown(e) {
   }
 }
 
+/**
+ * Adds a process to the processSteps list
+ */
+function addStep() {
+  processSteps.value.push({ _id: Date.now() + Math.random(), name: '', workers: [], resource: null, approximated_time: { h: 0, m: 0, s: 0 } })
+}
+  
 /**
  * Removes a process from the processSteps list
  * @param {int} index - the index of the element that should be removed

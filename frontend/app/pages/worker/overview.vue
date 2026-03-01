@@ -1,6 +1,14 @@
 <script setup lang="js">
 import { ref, onMounted, computed } from 'vue'
-definePageMeta({ layout: 'custom' })
+
+definePageMeta({
+  layout: 'custom',
+  layoutProps: {
+    title: 'Workers · Overview',
+    showReset: false,
+    showCreate: false,
+  },
+})
 
 const { theme } = useAppTheme()
 const config = useRuntimeConfig()
@@ -58,7 +66,7 @@ onMounted(loadWorkers)
 
 <template>
   <div :class="theme.pageWrapper">
-    <Topbar title="Workers · Overview" :show-reset="false" :show-create="false" />
+    <!-- <Topbar title="Workers · Overview" :show-reset="false" :show-create="false" /> -->
 
     <main :class="theme.container">
       <section :class="theme.card">

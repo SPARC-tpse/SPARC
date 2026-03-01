@@ -2,7 +2,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { useOrderWebSocket } from '~/composables/useOrderWebSocket'
 
-definePageMeta({ layout: 'custom' })
+definePageMeta({
+  layout: 'custom',
+  layoutProps: {
+    title: 'Orders · Overview',
+    showReset: false,
+    showCreate: false,
+  },
+})
 
 const { theme, getBadgeColor } = useAppTheme();
 const config = useRuntimeConfig();
@@ -169,8 +176,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div :class="theme.pageWrapper">
-    <Topbar title="Orders · Overview" :show-reset="false" :show-create="false" />
+  <div :class="theme.pageWrapper" class="h-full min-h-0 flex flex-col">
+    <!-- <Topbar title="Orders · Overview" :show-reset="false" :show-create="false" /> -->
 
     <main :class="theme.container">
       <section :class="theme.card">

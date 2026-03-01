@@ -1,19 +1,38 @@
 <script setup lang="js">
-import { ref, computed } from 'vue'
+import { computed, inject, watchEffect } from 'vue'
 import { useRouter } from '#app'
+import { useWorkerDraft} from "~/composables/useWorkerDraft.ts";
 
-definePageMeta({ layout: 'custom' })
+definePageMeta({
+  layout: 'custom',
+  layoutProps: {
+    title: 'Workers · New',
+    showReset: true,
+    showCreate: true,
+    createLabel: 'Create',
+  },
+})
+
+const registerTopbarActions = inject('registerTopbarActions')
+
+
 
 const { theme } = useAppTheme()
 const router = useRouter()
 const config = useRuntimeConfig()
 const API_BASE_URL = config.public.apiBaseUrl
 
-const workerName = ref('')
+const { draft, resetDraft } = useWorkerDraft()
+
+const workerName = computed({
+  get: () => draft.value.name,
+  set: (v) => { draft.value.name = v },
+})
+
 const canSubmit = computed(() => workerName.value.length > 1)
 
 function resetForm() {
-    workerName.value = ''
+    resetDraft()
 }
 
 async function submitWorker() {
@@ -23,23 +42,22 @@ async function submitWorker() {
             method: 'POST',
             body: { name: workerName.value }
         })
-        router.push('/worker/overview')
+        resetDraft()
+        await router.push('/worker/overview') // TODO: await notwendig?
     } catch (error) { alert('Failed to create worker') }
 }
+
+watchEffect(() => {
+    registerTopbarActions({
+        reset: resetForm,
+        submit: submitWorker,
+        canSubmit
+    })
+})
 </script>
 
 <template>
   <div :class="theme.pageWrapper">
-    <Topbar
-      title="Workers · New"
-      :can-submit="canSubmit"
-      :show-reset="true"
-      :show-create="true"
-      create-label="Create"
-      @reset="resetForm"
-      @submit="submitWorker"
-    />
-
     <main :class="theme.container">
       <section :class="theme.card" class="max-w-2xl mx-auto">
         <h3 class="font-semibold text-lg mb-4">Add New Worker</h3>

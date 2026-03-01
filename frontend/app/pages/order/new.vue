@@ -1,36 +1,77 @@
 <script setup lang="js">
-import { ref, computed, onMounted } from 'vue'
-import MultiSelect from '~/components/MultiSelect.vue'
+import { ref, computed, onMounted, inject, watchEffect } from 'vue'
+import { useOrderDraft} from "~/composables/useOrderDraft.ts";
 
-definePageMeta({ layout: 'custom' })
+definePageMeta({
+  layout: 'custom',
+  layoutProps: {
+    title: 'Orders · New',
+    showReset: true,
+    showCreate: true,
+    createLabel: 'Create',
+  },
+})
+
+const registerTopbarActions = inject('registerTopbarActions')
 
 const { theme } = useAppTheme();
 const config = useRuntimeConfig();
 const API_BASE_URL = config.public.apiBaseUrl;
 
-const newOrder = ref({
-  name: null,
-  target_amount: null,
-  start_date: null,
-  end_date: null,
-  product_name: null,
-  priority: 1,
-  status: 0,
-  comments: ''
-});
-const processSteps = ref([]);
-const workerList = ref([]);
-const resourceList = ref([]);
+const { draft: newOrder, resetDraft } = useOrderDraft()
+
+const targetError = ref('')
+
+const steps = ref([{ _id: Date.now(), workers: [], resource: '', name: '' }])
+const allWorkers = ref([]), allResources = ref([])
+
 const canSubmit = computed(() => {
   const o = newOrder.value
-  return Boolean(o.name && o.start_date && o.end_date && o.target_amount && o.product_name)
-});
+  const targetNum = Number(o.target)
+  return Boolean(
+    o.name && o.start && o.end && o.target
+    && o.product && targetNum >= 0 && !targetError.value
+  )
+})
 
-/**
- * Adds a process to the processSteps list
- */
-function addStep() {
-  processSteps.value.push({ _id: Date.now() + Math.random(), name: '', workers: [], resource: null, approximated_time: { h: 0, m: 0, s: 0 } })
+function onTargetInput(e) {
+  const raw = e.target.value
+  // Prüfe ob nicht-numerische Zeichen enthalten sind (außer leer)
+  if (raw !== '' && !/^\d+$/.test(raw)) {
+    targetError.value = 'Only digits (0–9) are allowed.'
+    // Alle Nicht-Ziffern entfernen
+    const cleaned = raw.replace(/\D/g, '')
+    newOrder.value.target = cleaned
+    e.target.value = cleaned
+    return
+  }
+  targetError.value = ''
+  // Negativwerte abfangen (z. B. durch Pfeiltasten)
+  const num = Number(raw)
+  if (num < 0) {
+    newOrder.value.target = '0'
+    e.target.value = '0'
+    return
+  }
+  newOrder.value.target = raw
+}
+
+function onTargetKeydown(e) {
+  // Erlaube: Backspace, Delete, Tab, Escape, Enter, Pfeiltasten, Home, End
+  const allowed = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+    'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End']
+  if (allowed.includes(e.key)) return
+  // Verbiete Ctrl/Cmd+C/V/X/A
+  if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) {
+    e.preventDefault()
+    targetError.value = 'Shortcuts Ctrl/Cmd + A/C/V/X are disabled for this field.'
+    return
+  }
+  // Nur Ziffern erlauben
+  if (!/^\d$/.test(e.key)) {
+    e.preventDefault()
+    targetError.value = 'Only digits (0–9) are allowed.'
+  }
 }
 
 /**
@@ -45,8 +86,8 @@ function removeStep(index) {
  * Resets the order form and deletes all processes
  */
 function resetForm() {
-  newOrder.value = { name: '', start_date: '', end_date: '', target_amount: '', product_name: '', status: 1, priority: 1, comments: '' }
-  processSteps.value = []
+  resetDraft();
+  steps.value = [{ _id: Date.now(), workers: [], resource: '', name: '' }]
 }
 
 /**
@@ -81,36 +122,46 @@ async function submitOrder() {
   }));
 
   try {
-    await $fetch(`${API_BASE_URL}/api/order/post/`, {
-      method: 'POST',
-      body: {
-        ...newOrder.value,
-        target_amount: Number(newOrder.value.target_amount),
-        process: processPayload
-      }
-    });
-    navigateTo('/order/overview');
-  } catch (error) {
-    alert(error.data?.error || error.message)
-  }
+    await $fetch(`${API_BASE_URL}/api/order/post`, { method: 'POST', body: { ...newOrder.value, target: Number(newOrder.value.target), process: processPayload } })
+    resetDraft()
+    navigateTo('/order/overview')
+  } catch (error) { alert('Error creating order') }
 }
 
-onMounted(loadDependencies)
+watchEffect(() => {
+  if (registerTopbarActions) {
+    registerTopbarActions({
+      reset: resetForm,
+      submit: submitOrder,
+      canSubmit,
+    })
+  }
+})
+
 </script>
 
 <template>
   <div :class="theme.pageWrapper">
-    <Topbar title="Orders · New" :can-submit="canSubmit" :show-reset="true" create-label="Create" @reset="resetForm" @submit="submitOrder" />
-
     <main :class="theme.container" class="space-y-6">
       <!-- order form -->
       <section :class="theme.card">
         <h3 class="font-semibold text-lg mb-2">Order Information</h3>
         <div :class="theme.formGrid">
           <label :class="theme.label">Name <input v-model="newOrder.name" :class="theme.input" /></label>
-          <label :class="theme.label">Target amount <input v-model="newOrder.target_amount" type="number" :class="theme.input" /></label>
+          <label :class="theme.label">
+            Target amount
+            <input
+              :value="newOrder.target_amount"
+              type="number"
+              min="0"
+              :class="[theme.input, targetError ? 'border-red-500 ring-1 ring-red-500' : '']"
+              @input="onTargetInput"
+              @keydown="onTargetKeydown"
+            />
+            <span v-if="targetError" class="text-red-500 text-xs mt-1">{{ targetError }}</span>
+          </label>
           <label :class="theme.label">Product name <input v-model="newOrder.product_name" :class="theme.input" /></label>
-          <label :class="theme.label">Start date <input v-model="newOrder.start_date" type="datetime-local" :class="theme.input" /></label>
+          <label :class="theme.label">Start date <input v-model="newOrder.start_date" type="date" :class="theme.input" /></label>
           <label :class="theme.label">End date <input v-model="newOrder.end_date" type="date" :class="theme.input" /></label>
           <label :class="theme.label">Status
             <select v-model="newOrder.status" :class="theme.input">

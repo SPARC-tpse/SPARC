@@ -37,7 +37,7 @@ async function submit() {
     if (!canSubmit.value) return
     const mapping = { 'available': 3, 'in-use': 2, 'maintenance': 4, 'offline': 1 }
     try {
-        await $fetch(`${API_BASE_URL}/api/resource/post`, {
+        await $fetch(`${API_BASE_URL}/api/resource/post/`, {
             method: 'POST',
             body: { ...form.value, status: mapping[form.value.status] }
         })

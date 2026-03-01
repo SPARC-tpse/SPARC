@@ -28,9 +28,9 @@ const disruptionChart = {
 }
 
 const orders = ref([
-  { id: 'ORD-1042', name: 'Test Order', status: 'Running', start: '2025-11-27' },
-  { id: 'ORD-1043', name: 'Calibration Batch', status: 'Planned', start: '2025-11-29' },
-  { id: 'ORD-1044', name: 'Valve Assembly', status: 'Paused', start: '2025-11-30' }
+  { id: 'ORD-1042', name: 'Test Order', status: 'Running', start_date: '2025-11-27' },
+  { id: 'ORD-1043', name: 'Calibration Batch', status: 'Planned', start_date: '2025-11-29' },
+  { id: 'ORD-1044', name: 'Valve Assembly', status: 'Paused', start_date: '2025-11-30' }
 ])
 
 const resources = ref([
@@ -40,11 +40,11 @@ const resources = ref([
 ])
 
 const disruptions = ref([
-  { id: 'DIS-1234', name: 'Machine Malfunction', start: '2025-12-27T10:00', type: 'Error' },
-  { id: 'DIS-1235', name: 'Planned Calibration', start: '2025-12-27T14:00', type: 'Maintenance' },
-  { id: 'DIS-1236', name: 'Sensor Drift', start: '2025-12-28T09:20', type: 'Quality' },
-  { id: 'DIS-1237', name: 'Material Shortage', start: '2025-12-28T13:30', type: 'Material' },
-  { id: 'DIS-1238', name: 'Line Stop', start: '2025-12-28T16:10', type: 'Error' }
+  { id: 'DIS-1234', name: 'Machine Malfunction', start_date: '2025-12-27T10:00', type: 'Error' },
+  { id: 'DIS-1235', name: 'Planned Calibration', start_date: '2025-12-27T14:00', type: 'Maintenance' },
+  { id: 'DIS-1236', name: 'Sensor Drift', start_date: '2025-12-28T09:20', type: 'Quality' },
+  { id: 'DIS-1237', name: 'Material Shortage', start_date: '2025-12-28T13:30', type: 'Material' },
+  { id: 'DIS-1238', name: 'Line Stop', start_date: '2025-12-28T16:10', type: 'Error' }
 ])
 
 const kpis = ref([
@@ -321,7 +321,7 @@ function formatDate(value) {
                   {{ order.status }}
                 </span>
                 <span class="text-xs" :class="isDarkMode ? 'text-slate-300' : 'text-slate-500'">
-                  {{ order.start }}
+                  {{ order.start_date }}
                 </span>
               </div>
             </div>
@@ -425,7 +425,7 @@ function formatDate(value) {
                   {{ disruption.type }}
                 </span>
                 <span class="text-xs" :class="isDarkMode ? 'text-slate-300' : 'text-slate-500'">
-                  {{ formatDate(disruption.start) }}
+                  {{ formatDate(disruption.start_date) }}
                 </span>
               </div>
             </div>

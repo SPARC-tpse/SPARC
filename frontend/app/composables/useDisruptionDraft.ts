@@ -8,8 +8,8 @@ type DisruptionDraft = {
 
 const emptyDraft = (): DisruptionDraft => ({
   name: '',
-  start: '',
-  end: '',
+  start_date: '',
+  end_date: '',
   resource: '',
   type: '',
 });
@@ -26,8 +26,8 @@ export function useDisruptionDraft() {
     const d = draft.value;
     return (
       (d.name ?? '').toString().trim().length > 0 ||
-      (d.start ?? '').toString().trim().length > 0 ||
-      (d.end ?? '').toString().trim().length > 0 ||
+      (d.start_date ?? '').toString().trim().length > 0 ||
+      (d.end_date ?? '').toString().trim().length > 0 ||
       (d.resource ?? '').toString().trim().length > 0 ||
       (d.type ?? '').toString().trim().length > 0
     );

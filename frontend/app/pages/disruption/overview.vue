@@ -36,14 +36,14 @@ function sortBy(col) {
 function getSortIcon(col) { return sortColumn.value !== col ? '↕' : (sortDirection.value === 'asc' ? '↑' : '↓') }
 const formatDate = (d) => d ? new Date(d).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
 
-async function fetchDisruptions() { try { disruptions.value = await $fetch(`${API_BASE_URL}/api/disruption/list`) } catch (e) {} }
+async function fetchDisruptions() { try { disruptions.value = await $fetch(`${API_BASE_URL}/api/disruption/get/`) } catch (e) {} }
 function toggleDeleteMode() { isDeleteMode.value = !isDeleteMode.value; deleteConfirmId.value = null; }
 function handleAction(id) {
     if (!isDeleteMode.value) navigateTo(`/disruption/edit/${id}`)
     else deleteConfirmId.value = (deleteConfirmId.value === id) ? null : id
 }
 async function executeDelete(id) {
-    try { await $fetch(`${API_BASE_URL}/api/disruption/delete/${id}`, { method: 'DELETE' })
+    try { await $fetch(`${API_BASE_URL}/api/disruption/delete/${id}/`, { method: 'DELETE' })
     disruptions.value = disruptions.value.filter(d => d.id !== id); deleteConfirmId.value = null;
     } catch (e) { alert('Failed to delete') }
 }
@@ -83,8 +83,8 @@ onMounted(fetchDisruptions)
                <span class="truncate">{{ d.name }}</span>
             </div>
             <span class="font-mono text-xs opacity-50">#{{ d.id }}</span>
-            <span class="text-xs opacity-80">{{ formatDate(d.start) }}</span>
-            <span class="text-xs opacity-80">{{ formatDate(d.end) }}</span>
+            <span class="text-xs opacity-80">{{ formatDate(d.start_date) }}</span>
+            <span class="text-xs opacity-80">{{ formatDate(d.end_date) }}</span>
             <span class="text-xs truncate">{{ d.resource }}</span>
             <div><span :class="[theme.badge, getBadgeColor('disruption', d.type)]">{{ d.type }}</span></div>
             <div class="text-right">

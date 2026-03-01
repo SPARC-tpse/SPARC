@@ -3,8 +3,9 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useTheme } from '~/composables/useTheme'
 
 const props = defineProps({
-  allWorkers: { type: Array, default: () => [] },
-  modelValue: { type: Array, default: () => [] }
+  modelList: { type: Array, default: () => [] },
+  modelValue: { type: Array, default: () => [] },
+  single: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -14,24 +15,23 @@ const searchQuery = ref('')
 const isOpen = ref(false)
 const containerRef = ref(null)
 
-
 const availableOptions = computed(() => {
   const query = searchQuery.value.toLowerCase()
-  return props.allWorkers.filter(worker => {
-    const isSelected = props.modelValue.some(selected => selected.id === worker.id)
-    const matchesSearch = worker.name.toLowerCase().includes(query)
+  return props.modelList.filter(element => {
+    const isSelected = props.modelValue.some(selected => selected.id === element.id)
+    const matchesSearch = element.name.toLowerCase().includes(query)
     return matchesSearch && !isSelected
   })
 })
 
-function selectWorker(worker) {
-  emit('update:modelValue', [...props.modelValue, worker])
+function selectElement(element) {
+  emit('update:modelValue', props.single ? [element] : [...props.modelValue, element])
   searchQuery.value = ''
-
+  if (props.single) isOpen.value = false
 }
 
-function removeWorker(workerId) {
-  emit('update:modelValue', props.modelValue.filter(w => w.id !== workerId))
+function removeElement(elementId) {
+  emit('update:modelValue', props.modelValue.filter(w => w.id !== elementId))
 }
 
 function closeDropdown(e) {
@@ -55,13 +55,13 @@ onUnmounted(() => document.removeEventListener('click', closeDropdown))
       @click="isOpen = true"
     >
       <span
-        v-for="worker in modelValue"
-        :key="worker.id"
+        v-for="element in modelValue"
+        :key="element.id"
         class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium border"
         :class="isDarkMode ? 'bg-gray-700 border-gray-600 text-slate-200' : 'bg-indigo-50 border-indigo-100 text-indigo-700'"
       >
-        {{ worker.name }}
-        <button @click.stop="removeWorker(worker.id)" class="hover:text-red-500 font-bold px-0.5">&times;</button>
+        {{ element.name }}
+        <button @click.stop="removeElement(element.id)" class="hover:text-red-500 font-bold px-0.5">&times;</button>
       </span>
 
       <input
@@ -79,13 +79,13 @@ onUnmounted(() => document.removeEventListener('click', closeDropdown))
       :class="isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-slate-200'"
     >
       <li
-        v-for="worker in availableOptions"
-        :key="worker.id"
+        v-for="element in availableOptions"
+        :key="element.id"
         class="px-3 py-2 text-sm cursor-pointer transition-colors"
         :class="isDarkMode ? 'text-slate-200 hover:bg-gray-700' : 'text-slate-700 hover:bg-slate-100'"
-        @click="selectWorker(worker)"
+        @click="selectElement(element)"
       >
-        {{ worker.name }}
+        {{ element.name }}
       </li>
     </ul>
   </div>

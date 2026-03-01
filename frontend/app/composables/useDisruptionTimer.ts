@@ -138,8 +138,8 @@ export function useDisruptionTimer() {
 
     if (!startMs.value || !endMs.value) return;
 
-    const hasExistingStart = hasNonEmpty(target.start);
-    const hasExistingEnd = hasNonEmpty(target.end);
+    const hasExistingStart = hasNonEmpty(target.start_date);
+    const hasExistingEnd = hasNonEmpty(target.end_date);
 
     if (hasExistingStart || hasExistingEnd) {
       const ok = window.confirm(
@@ -170,7 +170,7 @@ export function useDisruptionTimer() {
     popoutPos,
 
     // Actions
-    start,
+    start_date: start,
     pause,
     resume,
     stop,

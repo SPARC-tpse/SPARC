@@ -38,7 +38,7 @@ function resetForm() {
 async function submitWorker() {
     if (!canSubmit.value) return
     try {
-        await $fetch(`${API_BASE_URL}/api/worker/post`, {
+        await $fetch(`${API_BASE_URL}/api/worker/post/`, {
             method: 'POST',
             body: { name: workerName.value }
         })

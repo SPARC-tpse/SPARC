@@ -66,7 +66,7 @@
         formData.append('order_id', props.orderId)
 
         try {
-            const response = await $fetch(`${API_BASE_URL}/api/order/file/post`, {
+            const response = await $fetch(`${API_BASE_URL}/api/order/file/post/`, {
                 method: 'POST',
                 body: formData
             })
@@ -85,7 +85,7 @@
         if (!confirm(`Delete ${file.file_name}?`)) return
 
         try {
-            await $fetch(`${API_BASE_URL}/api/order/file/delete/${file.id}`, {
+            await $fetch(`${API_BASE_URL}/api/order/file/delete/${file.id}/`, {
                 method: 'DELETE'
             })
 
@@ -103,7 +103,7 @@
         if (props.orderId === undefined) return
 
         try {
-            const response = await $fetch(`${API_BASE_URL}/api/order/${props.orderId}/file/get`, {
+            const response = await $fetch(`${API_BASE_URL}/api/order/file/get/${props.orderId}/`, {
                 method: 'GET'
             })
 

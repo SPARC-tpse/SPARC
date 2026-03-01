@@ -38,14 +38,14 @@ function getSortIcon(col) { return sortColumn.value !== col ? '↕' : (sortDirec
 const statusMap = { 1: 'Offline', 2: 'In Use', 3: 'Available', 4: 'Maintenance' }
 const getStatusText = (val) => statusMap[val] || 'Unknown'
 
-async function fetchResources() { try { resources.value = await $fetch(`${API_BASE_URL}/api/resource/list`) } catch (e) {} }
+async function fetchResources() { try { resources.value = await $fetch(`${API_BASE_URL}/api/resource/get/`) } catch (e) {} }
 function toggleDeleteMode() { isDeleteMode.value = !isDeleteMode.value; deleteConfirmId.value = null; }
 function handleRowAction(id) {
     if (!isDeleteMode.value) navigateTo(`/resource/edit/${id}`)
     else deleteConfirmId.value = (deleteConfirmId.value === id) ? null : id
 }
 async function executeDelete(id) {
-    try { await $fetch(`${API_BASE_URL}/api/resource/delete/${id}`, { method: 'DELETE' })
+    try { await $fetch(`${API_BASE_URL}/api/resource/delete/${id}/`, { method: 'DELETE' })
     resources.value = resources.value.filter(r => r.id !== id); deleteConfirmId.value = null;
     } catch (e) { alert('Delete failed') }
 }

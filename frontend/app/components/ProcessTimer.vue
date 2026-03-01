@@ -72,7 +72,7 @@
                 [`${props.timerType}_seconds`]: seconds.value
             }
 
-            const response = await $fetch(`${API_BASE_URL}/api/process/timing/${props.processId}`, {
+            const response = await $fetch(`${API_BASE_URL}/api/process/timing/${props.processId}/`, {
                 method: 'PUT',
                 body: payload,
                 headers: {

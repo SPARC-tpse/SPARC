@@ -16,8 +16,8 @@ const types = ref([])
 const disruption = ref({
   id: disruptionId,
   name: '',
-  start: '',
-  end: '',
+  start_date: '',
+  end_date: '',
   resource: '',
   type: ''
 })
@@ -31,9 +31,9 @@ function setNow(field) {
 async function loadData() {
   try {
     const [resData, typeData, dispData] = await Promise.all([
-      $fetch(`${API_BASE_URL}/api/resource/list`),
-      $fetch(`${API_BASE_URL}/api/disruption-type/list`),
-      $fetch(`${API_BASE_URL}/api/disruption/get/${disruptionId}`)
+      $fetch(`${API_BASE_URL}/api/resource/get/`),
+      $fetch(`${API_BASE_URL}/api/disruption-type/get/`),
+      $fetch(`${API_BASE_URL}/api/disruption/get/${disruptionId}/`)
     ])
 
     resources.value = resData
@@ -43,8 +43,8 @@ async function loadData() {
 
     disruption.value = {
       ...dispData,
-      start: toInputFormat(dispData.start),
-      end: toInputFormat(dispData.end),
+      start_date: toInputFormat(dispData.start_date),
+      end_date: toInputFormat(dispData.end_date),
       resource: dispData.resource,
       type: dispData.type
     }
@@ -54,7 +54,7 @@ async function loadData() {
 async function updateDisruption() {
   if (!canSubmit.value) return
   try {
-    await $fetch(`${API_BASE_URL}/api/disruption/put/${disruptionId}`, {
+    await $fetch(`${API_BASE_URL}/api/disruption/put/${disruptionId}/`, {
       method: 'PUT',
       body: disruption.value
     })
@@ -95,7 +95,7 @@ onMounted(loadData)
           <div class="flex flex-col">
             <label :class="theme.label">Start</label>
             <div class="flex gap-2 items-end">
-              <input v-model="disruption.start" type="datetime-local" :class="theme.input" />
+              <input v-model="disruption.start_date" type="datetime-local" :class="theme.input" />
               <button type="button" @click="setNow('start')" :class="theme.btnDeleteMode" class="h-[42px] px-4">Now</button>
             </div>
           </div>
@@ -103,7 +103,7 @@ onMounted(loadData)
           <div class="flex flex-col">
             <label :class="theme.label">End</label>
             <div class="flex gap-2 items-end">
-              <input v-model="disruption.end" type="datetime-local" :class="theme.input" />
+              <input v-model="disruption.end_date" type="datetime-local" :class="theme.input" />
               <button type="button" @click="setNow('end')" :class="theme.btnDeleteMode" class="h-[42px] px-4">Now</button>
             </div>
           </div>

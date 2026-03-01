@@ -42,8 +42,8 @@ function onPrimaryClick() {
 async function loadFormData() {
   try {
     const [resData, typeData] = await Promise.all([
-      $fetch(`${API_BASE_URL}/api/resource/list`),
-      $fetch(`${API_BASE_URL}/api/disruption-type/list`)
+      $fetch(`${API_BASE_URL}/api/resource/get/`),
+      $fetch(`${API_BASE_URL}/api/disruption-type/get/`)
     ])
     resources.value = resData
     types.value = typeData
@@ -90,7 +90,7 @@ async function submitDisruption() {
     }
     if (!canSubmit.value) return
     try {
-      await $fetch(`${API_BASE_URL}/api/disruption/post`, {
+      await $fetch(`${API_BASE_URL}/api/disruption/post/`, {
         method: 'POST',
         body: newDisruption.value
       })
@@ -143,7 +143,7 @@ onMounted(loadFormData)
             <div class="flex flex-col">
               <label :class="theme.label">Start</label>
               <div class="flex gap-2 items-end">
-                <input v-model="newDisruption.start" type="datetime-local" step="1" :class="theme.input" />
+                <input v-model="newDisruption.start_date" type="datetime-local" step="1" :class="theme.input" />
                 <button type="button" @click="setNow('start')" :class="theme.btnDeleteMode" class="h-[42px] px-4">Now</button>
               </div>
             </div>
@@ -151,7 +151,7 @@ onMounted(loadFormData)
             <div class="flex flex-col">
               <label :class="theme.label">End</label>
               <div class="flex gap-2 items-end">
-                <input v-model="newDisruption.end" type="datetime-local" step="1" :class="theme.input" />
+                <input v-model="newDisruption.end_date" type="datetime-local" step="1" :class="theme.input" />
                 <button type="button" @click="setNow('end')" :class="theme.btnDeleteMode" class="h-[42px] px-4">Now</button>
               </div>
             </div>

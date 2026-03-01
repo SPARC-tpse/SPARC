@@ -1,9 +1,11 @@
 # SPARC
 
+SPARC (Smart Planning and Resource Control) is a web application that runs on mobile devices. It allows users to enter production steps and manage resources, such as personnel and machinery
+
 > [!IMPORTANT]
-> 1. This repo is under active development till 15.02.2026
+> 1. This repo is under active development till 08.03.2026
 > 2. Instructions are planted to be performed on an ubuntu system
-> 3. This project was only planed for use in a private network
+> 3. This project is only planed for use in a private network
 
 > [!IMPORTANT]
 > Before you commit!
@@ -26,6 +28,8 @@
 
 
 ### on ubuntu server
+open your firewall at port 3000 and 8000:\
+\
 In this repo (if manually else just take from repo release):
 1. `sudo docker compose build`
 2. `sudo docker save sparc-backend sparc-frontend postgres:18 -o sparc-images.tar`
@@ -46,7 +50,12 @@ on server: (make sure that the docker-compose.yml does not use build instead of 
 `sudo docker compose exec backend python manage.py migrate`
 
 ## run tests
-`sudo docker compose exec backend python manage.py test`
+`sudo docker compose exec backend pytest`\
+or if you want to run a specific test (e.g.: test_models):\
+`sudo docker compose exec backend pytest app/tests/test_models.py`\
+if you want to add a test:\
+1. go to backend\app\tests\
+2. if you want to 
 
 ## create super user
 `sudo docker compose exec backend python manage.py collectstatic --noinput`\
@@ -59,77 +68,105 @@ on server: (make sure that the docker-compose.yml does not use build instead of 
 
 ## project structure
 
-```txt
-SPARC/
-├── backend
-│   ├── app                                         |
-│   │   ├── admin.py                                | what is visible in admin view
-│   │   ├── apps.py                                 | app config
-│   │   ├── __init__.py                             |
-│   │   ├── migrations                              |
-│   │   │   └── __init__.py
-│   │   ├── models.py                               | definition of all Entety of the ER diagram
-│   │   ├── serializers.py                          | serilizer definitions of the models
-│   │   ├── test.py                                 | test cases
-│   │   ├── urls.py                                 | urls for the api
-│   │   └── views.py                                | definitions of api functions
-│   ├── config                                      |
-│   │   ├── asgi.py                                 |
-│   │   ├── __init__.py                             |
-│   │   ├── settings.py                             |
-│   │   ├── urls.py                                 |
-│   │   └── wsgi.py                                 |
-│   ├── Dockerfile                                  |
-│   ├── manage.py                                   |
-│   ├── requirements.txt                            |
-│   └── staticfiles
-│       ├── admin
-│       └── rest_framework
-├── frontend                                        |
-│   ├── app                                         |
-│   │   ├── app.vue                                 |
-│   │   ├── assets                                  |
-│   │   │   └── css                                 |
-│   │   │       └── tailwind.css                    |
-│   │   ├── components                              |
-│   │   │   ├── Navbar.vue                          | navbar with the diffrent views as buttons
-│   │   │   └── Topbar.vue                          | topbar with title and submit button
-│   │   ├── composables                             |
-│   │   │   └── useTheme.js
-│   │   ├── layouts
-│   │   │   └── custom.vue
-│   │   └── pages
-│   │       ├── disruption
-│   │       │   ├── edit
-│   │       │   │   └── [id].vue
-│   │       │   ├── index.vue
-│   │       │   ├── new.vue
-│   │       │   └── overview.vue
-│   │       ├── index.vue
-│   │       └── order
-│   │           ├── edit
-│   │           │   └── [id].vue
-│   │           ├── index.vue
-│   │           ├── new.vue
-│   │           └── overview.vue
-│   ├── Dockerfile
-│   ├── node_modules
-│   ├── nuxt.config.ts
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── postcss.config.cjs
-│   ├── public
-│   │   ├── favicon.ico
-│   │   └── robots.txt
-│   ├── tailwind.config.cjs
-│   └── tsconfig.json
-├── .gitattributes
-├── .gitignore
-├── CHANGELOG
-├── docker-compose.yml
-├── LICENSE
-├── package-lock.json
-└── README.md
+`tree -I 'node_modules*|staticfiles*|htmlcov*|media*|__pycache__*|migrations*' --dirsfirst`
+```
+SPARC
+├── backend                             |
+│   ├── app                             |
+│   │   ├── tests                       |
+│   │   │   ├── __init__.py             |
+│   │   │   ├── test_config.py          |
+│   │   │   ├── test_models.py          |
+│   │   │   └── test_views.py           |
+│   │   ├── admin.py                    | what is visible in admin view
+│   │   ├── apps.py                     |
+│   │   ├── consumers.py                |
+│   │   ├── __init__.py                 |
+│   │   ├── models.py                   | definition of all Entety of the ER diagram
+│   │   ├── routing.py                  |
+│   │   ├── serializers.py              | serilizer definitions of the models
+│   │   ├── urls.py                     | urls for the api
+│   │   └── views.py                    | definitions of api functions
+│   ├── config                          |
+│   │   ├── asgi.py                     |
+│   │   ├── __init__.py                 |
+│   │   ├── settings.py                 |
+│   │   ├── urls.py                     |
+│   │   └── wsgi.py                     |
+│   ├── scripts                         |
+│   │   └── generate_test_data.py       |
+│   ├── Dockerfile                      |
+│   ├── manage.py                       |
+│   ├── pytest.ini                      |
+│   └── requirements.txt                |
+├── frontend                            |
+│   ├── app                             |
+│   │   ├── assets                      |
+│   │   │   └── css                     |
+│   │   │       └── tailwind.css        |
+│   │   ├── components                  |
+│   │   │   ├── FileUpload.vue          |
+│   │   │   ├── Navbar.vue              | navbar with the diffrent views as buttons
+│   │   │   ├── ProcessTimer.vue        | topbar with title and submit button
+│   │   │   ├── Topbar.vue              |
+│   │   │   └── WorkerMultiSelect.vue   |
+│   │   ├── composables                 |
+│   │   │   ├── useAppTheme.js          |
+│   │   │   ├── useDisruptionDraft.ts   |
+│   │   │   ├── useDisruptionTimer.ts   |
+│   │   │   ├── useTheme.js             |
+│   │   │   └── useWebSocket.js         | handels connection to the websocket and passes msgs on to page
+│   │   ├── layouts                     |
+│   │   │   └── custom.vue              |
+│   │   ├── pages                       |
+│   │   │   ├── disruption              |
+│   │   │   │   ├── edit                |
+│   │   │   │   │   └── [id].vue        |
+│   │   │   │   ├── index.vue           |
+│   │   │   │   ├── new.vue             |
+│   │   │   │   └── overview.vue        |
+│   │   │   ├── order                   |
+│   │   │   │   ├── edit                |
+│   │   │   │   │   └── [id].vue        |
+│   │   │   │   ├── process-steps       |
+│   │   │   │   │   └── [id].vue        |
+│   │   │   │   ├── index.vue           |
+│   │   │   │   ├── new.vue             |
+│   │   │   │   └── overview.vue        |
+│   │   │   ├── resource                |
+│   │   │   │   ├── edit                |
+│   │   │   │   │   └── [id].vue        |
+│   │   │   │   ├── index.vue           |
+│   │   │   │   ├── new.vue             |
+│   │   │   │   └── overview.vue        |
+│   │   │   ├── worker                  |
+│   │   │   │   ├── edit                |
+│   │   │   │   │   └── [id].vue        |
+│   │   │   │   ├── index.vue           |
+│   │   │   │   ├── new.vue             |
+│   │   │   │   └── overview.vue        |
+│   │   │   ├── dashboard.vue           | 
+│   │   │   └── index.vue               | redirects to dashboard
+│   │   └── app.vue                     |
+│   ├── public                          |
+│   │   ├── favicon.ico                 |
+│   │   └── robots.txt                  |
+│   ├── Dockerfile                      |
+│   ├── nuxt.config.ts                  | config file for nuxt
+│   ├── package.json                    | used packages
+│   ├── package-lock.json               |
+│   ├── postcss.config.cjs              |
+│   ├── tailwind.config.cjs             | tailwind config
+│   └── tsconfig.json                   |
+├── CHANGELOG                           |
+├── docker-compose-server.yml           |
+├── docker-compose.yml                  |
+├── download_sparc.sh                   |
+├── LICENSE                             |
+├── manuel_tests.md                     |
+├── package-lock.json                   |
+├── README.md                           |
+└── run_server.sh                       |
 ```
 
 ## Package manager

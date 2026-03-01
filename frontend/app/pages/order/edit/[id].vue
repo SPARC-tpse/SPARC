@@ -1,5 +1,5 @@
 <script setup lang="js">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import MultiSelect from '~/components/MultiSelect.vue'
 
 definePageMeta({ layout: 'custom' })

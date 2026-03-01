@@ -244,85 +244,81 @@ onMounted(() => {
           </select>
         </label>
 
-              <div v-if="selectedProcessStep" class="space-y-4 pt-4 border-t" :class="isDarkMode ? 'border-gray-700' : 'border-slate-200'">
-                <div>
-                  <span class="text-sm label-text">Process Step ID:</span>
-                  <span class="ml-2 font-mono font-semibold" :class="isDarkMode ? 'text-slate-200' : 'text-slate-700'">
-                    {{ selectedProcessStep.id || 'N/A' }}
+        <div v-if="selectedProcessStep" class="space-y-4 pt-4 border-t" :class="isDarkMode ? 'border-gray-700' : 'border-slate-200'">
+          <div>
+            <span class="text-sm label-text">Process Step ID:</span>
+            <span class="ml-2 font-mono font-semibold" :class="isDarkMode ? 'text-slate-200' : 'text-slate-700'">
+              {{ selectedProcessStep.id || 'N/A' }}
+            </span>
+          </div>
+
+          <!-- setup time -->
+          <ProcessTimer label="Setup Time" :initial-seconds="selectedProcessStep.setup_time_seconds || 0"
+                        :process-id="selectedProcessStep.id" timer-type="setup_time" @time-saved="handleTimeSaved" />
+
+          <!-- create disruption button -->
+          <div>
+            <button @click="createDisruption" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md bg-gradient-to-r from-amber-500 to-red-500 hover:shadow-lg">
+              ⚠️ Create Disruption
+            </button>
+          </div>
+
+          <!-- waiting time -->
+          <ProcessTimer label="Waiting Time" :initial-seconds="selectedProcessStep.waiting_time_seconds || 0"
+                        :process-id="selectedProcessStep.id" timer-type="waiting_time" @time-saved="handleTimeSaved" />
+
+          <!-- horizontal separator -->
+          <hr :class="isDarkMode ? 'border-gray-700' : 'border-slate-300'" />
+
+          <!-- process time -->
+          <ProcessTimer label="Process Time" :initial-seconds="selectedProcessStep.process_time_seconds || 0"
+                        :process-id="selectedProcessStep.id" timer-type="process_time" @time-saved="handleTimeSaved" />
+
+          <!-- add part -->
+          <div class="space-y-3 pt-2">
+            <div class="flex items-center gap-3">
+              <span class="text-sm label-text">Part</span>
+              <span class="px-3 py-1 rounded-lg font-mono font-bold" :class="isDarkMode ? 'bg-gray-800 text-green-400' : 'bg-green-50 text-green-600'">
+                {{ partsProduced }}
+              </span>
+              <button @click="addPart" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg">
+                + Add Part
+              </button>
+            </div>
+
+            <!-- parts list -->
+            <div v-if="partsList.length > 0" class="space-y-2">
+              <div class="text-xs font-semibold" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
+                Produced Parts:
+              </div>
+              <div class="max-h-40 overflow-y-auto space-y-1">
+                <div v-for="(part, index) in partsList" :key="index" class="flex items-center justify-between p-2 rounded border text-sm"
+                     :class="isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-slate-200 bg-slate-50'">
+                  <span class="font-medium">Part {{ index + 1 }}</span>
+                  <span class="font-mono text-xs" :class="isDarkMode ? 'text-slate-300' : 'text-slate-600'">
+                    {{ formatTime(part.process_time_seconds) }}
                   </span>
                 </div>
-
-                <!-- setup time -->
-                <ProcessTimer label="Setup Time" :initial-seconds="selectedProcessStep.setup_time_seconds || 0"
-                              :process-id="selectedProcessStep.id" timer-type="setup_time" @time-saved="handleTimeSaved" />
-
-                <!-- create disruption button -->
-                <div>
-                  <button @click="createDisruption" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md bg-gradient-to-r from-amber-500 to-red-500 hover:shadow-lg">
-                    ⚠️ Create Disruption
-                  </button>
-                </div>
-
-                <!-- waiting time -->
-                <ProcessTimer label="Waiting Time" :initial-seconds="selectedProcessStep.waiting_time_seconds || 0"
-                              :process-id="selectedProcessStep.id" timer-type="waiting_time" @time-saved="handleTimeSaved" />
-
-                <!-- horizontal separator -->
-                <hr :class="isDarkMode ? 'border-gray-700' : 'border-slate-300'" />
-
-                <!-- process time -->
-                <ProcessTimer label="Process Time" :initial-seconds="selectedProcessStep.process_time_seconds || 0"
-                              :process-id="selectedProcessStep.id" timer-type="process_time" @time-saved="handleTimeSaved" />
-
-                <!-- add part -->
-                <div class="space-y-3 pt-2">
-                  <div class="flex items-center gap-3">
-                    <span class="text-sm label-text">Part</span>
-                    <span class="px-3 py-1 rounded-lg font-mono font-bold" :class="isDarkMode ? 'bg-gray-800 text-green-400' : 'bg-green-50 text-green-600'">
-                      {{ partsProduced }}
-                    </span>
-                    <button @click="addPart" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg">
-                      + Add Part
-                    </button>
-                  </div>
-
-                  <!-- parts list -->
-                  <div v-if="partsList.length > 0" class="space-y-2">
-                    <div class="text-xs font-semibold" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-                      Produced Parts:
-                    </div>
-                    <div class="max-h-40 overflow-y-auto space-y-1">
-                      <div v-for="(part, index) in partsList" :key="index" class="flex items-center justify-between p-2 rounded border text-sm"
-                           :class="isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-slate-200 bg-slate-50'">
-                        <span class="font-medium">Part {{ index + 1 }}</span>
-                        <span class="font-mono text-xs" :class="isDarkMode ? 'text-slate-300' : 'text-slate-600'">
-                          {{ formatTime(part.process_time_seconds) }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div v-else class="p-4 rounded-lg border-2 border-dashed text-center"
-                   :class="isDarkMode ? 'border-gray-700 text-slate-400' : 'border-slate-300 text-slate-500'">
-                <p class="text-sm">Please select a process step to manage timing</p>
               </div>
             </div>
+          </div>
+        </div>
 
-            <div v-else class="rounded-xl border p-4 text-center transition-colors"
-                 :class="isDarkMode ? 'border-gray-900 bg-slate-900' : 'border-slate-200 bg-white'">
-              <p class="text-sm" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-                No process steps defined for this order. Add process steps below to enable timing management.
-              </p>
-            </div>
+        <div v-else class="rounded-xl border p-4 text-center transition-colors"
+             :class="isDarkMode ? 'border-gray-900 bg-slate-900' : 'border-slate-200 bg-white'">
+          <p class="text-sm" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
+            No process steps defined for this order. Add process steps below to enable timing management.
+          </p>
+        </div>
+      </section>
 
-            <!-- process editor -->
-            <section :class="theme.card">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="font-semibold text-lg">Process Steps Editor</h3>
-                    <button :class="theme.linkAction" @click="addStep">+ Add step</button>
-                </div>
+      <!-- process editor -->
+      <section :class="theme.card">
+        <!-- title and add button -->
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold text-lg">Process Steps Editor</h3>
+          <button :class="theme.linkAction" @click="addStep">+ Add step</button>
+        </div>
 
         <!-- table -->
         <div class="space-y-3">

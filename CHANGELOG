@@ -27,6 +27,14 @@ testing
 - change api urls to be disruption/get instead of disruption/list same for resource and worker and end on a /
 - changed disruption api -> Disruption is broken! but it should be redesigned anyway considering the change in model
 
+fix/workflow
+- change `frontend/Dockerfile` from `npm run dev` to `npm run release`
+- precent try to create release when opening a pull request
+- update workflow to not uploading to GitHub Container Registry
+- don't parse the === in CHANGELOG
+- update download_sparc script
+- update run_server script
+
 disruptions
 - backend integration
 - time save fix

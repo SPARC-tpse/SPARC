@@ -19,7 +19,7 @@ COPY . .
 EXPOSE 3000
 
 # Start Nuxt dev server
-#CMD ["npm", "run", "dev", "--", "-o"]
+CMD ["npm", "run", "dev", "--", "-o"]
 
 # build for release
-CMD ["npm", "run", "build", "--", "-o"]
+# CMD ["npm", "run", "build", "--", "-o"]

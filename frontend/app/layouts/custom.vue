@@ -2,6 +2,7 @@
 import { ref, shallowRef, watch, onMounted, onBeforeUnmount, computed, provide } from 'vue'
 import { useTheme } from '~/composables/useTheme'
 import { useRoute} from "vue-router"
+import { useZoom } from '~/composables/useZoom'
 
 import Navbar from "~/components/Navbar.vue";
 import Topbar from "~/components/Topbar.vue";
@@ -198,9 +199,11 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+:root {
+  /* Standard-Zoom-Level (kann von Seite zu Seite überschrieben werden) */
+  --app-zoom: 1;
+}
 .zoom-root {
-  --app-zoom: var(--app-zoom, 1);
-
   transform: scale(var(--app-zoom, 1));
   transform-origin: top left;
   width: calc(100% / var(--app-zoom, 1));

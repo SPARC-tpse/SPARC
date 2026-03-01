@@ -133,7 +133,7 @@ export function useDisruptionTimer() {
 
   const hasNonEmpty = (v: unknown) => (v ?? '').toString().trim().length > 0;
 
-  const stopAndMaybeApply = (target: { start: string; end: string }) => {
+  const stopAndMaybeApply = (target: { start_date: string; end_date: string }) => {
     stop();
 
     if (!startMs.value || !endMs.value) return;
@@ -148,8 +148,8 @@ export function useDisruptionTimer() {
       if (!ok) return;
     }
 
-    target.start = toDateTimeLocal(startMs.value);
-    target.end = toDateTimeLocal(endMs.value);
+    target.start_date = toDateTimeLocal(startMs.value);
+    target.end_date = toDateTimeLocal(endMs.value);
 
     reset()
   };
@@ -170,7 +170,7 @@ export function useDisruptionTimer() {
     popoutPos,
 
     // Actions
-    start_date: start,
+    start: start,
     pause,
     resume,
     stop,

@@ -1,22 +1,22 @@
 type OrderDraft = {
   name: string;
-  start: string;
-  end: string;
-  target: string | number;
-  product: string;
-  status: string;
-  priority: string;
+  start_date: string;
+  end_date: string;
+  target_amount: number;
+  product_name: string;
+  status: number;
+  priority: number;
   comments: string;
 };
 
 const emptyDraft = (): OrderDraft => ({
   name: '',
-  start: '',
-  end: '',
-  target: '',
-  product: '',
-  status: 'Planned',
-  priority: 'Medium',
+  start_date: '',
+  end_date: '',
+  target_amount: 0,
+  product_name: '',
+  status: 0,
+  priority: 1,
   comments: '',
 });
 
@@ -31,10 +31,10 @@ export function useOrderDraft() {
     const d = draft.value;
     return (
       (d.name ?? '').toString().trim().length > 0 ||
-      (d.start ?? '').toString().trim().length > 0 ||
-      (d.end ?? '').toString().trim().length > 0 ||
-      (d.target ?? '').toString().trim().length > 0 ||
-      (d.product ?? '').toString().trim().length > 0 ||
+      (d.start_date ?? '').toString().trim().length > 0 ||
+      (d.end_date ?? '').toString().trim().length > 0 ||
+      (d.target_amount ?? '').toString().trim().length > 0 ||
+      (d.product_name ?? '').toString().trim().length > 0 ||
       (d.status ?? '').toString().trim().length > 0 ||
       (d.priority ?? '').toString().trim().length > 0 ||
       (d.comments ?? '').toString().trim().length > 0

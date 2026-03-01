@@ -50,7 +50,7 @@ async function loadFormData() {
   } catch (e) { console.error(e) }
 }
 
-const canSubmit = computed(() => newDisruption.value.name.length > 0 && newDisruption.value.resource.length > 0 && newDisruption.value.type.length > 0 && newDisruption.value.start && newDisruption.value.end)
+const canSubmit = computed(() => newDisruption.value.name.length > 0 && newDisruption.value.resource.length > 0 && newDisruption.value.type.length > 0 && newDisruption.value.start_date && newDisruption.value.end_date)
 
 function setNow(field) {
   newDisruption.value[field] = new Date().toISOString().slice(0, 19)
@@ -58,8 +58,8 @@ function setNow(field) {
 
 // Validierung Start/Ende
 function isEndBeforeStart() {
-  const start = newDisruption.value.start
-  const end = newDisruption.value.end
+  const start = newDisruption.value.start_date
+  const end = newDisruption.value.end_date
   if (!start || !end) return false
 
   const s = new Date(start).getTime()
@@ -70,7 +70,7 @@ function isEndBeforeStart() {
 }
 
 watch(
-  () => [newDisruption.value.start, newDisruption.value.end],
+  () => [newDisruption.value.start_date, newDisruption.value.end_date],
   () => {
     if (isEndBeforeStart()) {
       alert('The end time must not be earlier than the start time.')
@@ -144,7 +144,7 @@ onMounted(loadFormData)
               <label :class="theme.label">Start</label>
               <div class="flex gap-2 items-end">
                 <input v-model="newDisruption.start_date" type="datetime-local" step="1" :class="theme.input" />
-                <button type="button" @click="setNow('start')" :class="theme.btnDeleteMode" class="h-[42px] px-4">Now</button>
+                <button type="button" @click="setNow('start_date')" :class="theme.btnDeleteMode" class="h-[42px] px-4">Now</button>
               </div>
             </div>
 
@@ -152,7 +152,7 @@ onMounted(loadFormData)
               <label :class="theme.label">End</label>
               <div class="flex gap-2 items-end">
                 <input v-model="newDisruption.end_date" type="datetime-local" step="1" :class="theme.input" />
-                <button type="button" @click="setNow('end')" :class="theme.btnDeleteMode" class="h-[42px] px-4">Now</button>
+                <button type="button" @click="setNow('end_date')" :class="theme.btnDeleteMode" class="h-[42px] px-4">Now</button>
               </div>
             </div>
 

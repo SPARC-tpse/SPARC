@@ -1,7 +1,7 @@
 type DisruptionDraft = {
   name: string;
-  start: string;
-  end: string;
+  start_date: string;
+  end_date: string;
   resource: string | number;
   type: string | number;
 };

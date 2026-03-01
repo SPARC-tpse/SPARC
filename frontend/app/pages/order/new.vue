@@ -22,16 +22,15 @@ const { draft: newOrder, resetDraft } = useOrderDraft()
 
 const targetError = ref('')
 
-const steps = ref([{ _id: Date.now(), workers: [], resource: '', name: '' }])
+const processSteps = ref([]);
 const workerList = ref([]);
 const resourceList = ref([]);
   
 const canSubmit = computed(() => {
   const o = newOrder.value
-  const targetNum = Number(o.target)
+  // const targetNum = Number(o.target_amount)
   return Boolean(
-    o.name && o.start && o.end && o.target
-    && o.product && targetNum >= 0 && !targetError.value
+    o.name && o.start_date && o.end_date && o.product_name && o.target_amount >= 0 && !targetError.value
   )
 })
 
@@ -47,6 +46,7 @@ watchEffect(() => {
 
 /**
  * Numeric input validation
+ * @param {Event} e - the input event from the target amount field
  */
 function onTargetInput(e) {
   const raw = e.target.value
@@ -55,7 +55,7 @@ function onTargetInput(e) {
     targetError.value = 'Only digits (0–9) are allowed.'
     // Alle Nicht-Ziffern entfernen
     const cleaned = raw.replace(/\D/g, '')
-    newOrder.value.target = cleaned
+    newOrder.value.target_amount = cleaned
     e.target.value = cleaned
     return
   }
@@ -63,11 +63,11 @@ function onTargetInput(e) {
   // Negativwerte abfangen (z. B. durch Pfeiltasten)
   const num = Number(raw)
   if (num < 0) {
-    newOrder.value.target = '0'
+    newOrder.value.target_amount = 0
     e.target.value = '0'
     return
   }
-  newOrder.value.target = raw
+  newOrder.value.target_amount = raw
 }
 
 /**
@@ -111,7 +111,7 @@ function removeStep(index) {
  */
 function resetForm() {
   resetDraft();
-  steps.value = [{ _id: Date.now(), workers: [], resource: '', name: '' }]
+  processSteps.value = []
 }
 
 /**
@@ -146,11 +146,11 @@ async function submitOrder() {
   }));
 
   try {
-    await $fetch(`${API_BASE_URL}/api/order/post`, {
+    await $fetch(`${API_BASE_URL}/api/order/post/`, {
       method: 'POST',
       body: {
         ...newOrder.value,
-        target: Number(newOrder.value.target),
+        target_amount: Number(newOrder.value.target_amount),
         process: processPayload
       }
     });
@@ -183,7 +183,7 @@ onMounted(loadDependencies)
             <span v-if="targetError" class="text-red-500 text-xs mt-1">{{ targetError }}</span>
           </label>
           <label :class="theme.label">Product name <input v-model="newOrder.product_name" :class="theme.input" /></label>
-          <label :class="theme.label">Start date <input v-model="newOrder.start_date" type="date" :class="theme.input" /></label>
+          <label :class="theme.label">Start date <input v-model="newOrder.start_date" type="datetime-local" :class="theme.input" /></label>
           <label :class="theme.label">End date <input v-model="newOrder.end_date" type="date" :class="theme.input" /></label>
           <label :class="theme.label">Status
             <select v-model="newOrder.status" :class="theme.input">

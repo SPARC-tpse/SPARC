@@ -23,8 +23,9 @@ const { draft: newOrder, resetDraft } = useOrderDraft()
 const targetError = ref('')
 
 const steps = ref([{ _id: Date.now(), workers: [], resource: '', name: '' }])
-const allWorkers = ref([]), allResources = ref([])
-
+const workerList = ref([]);
+const resourceList = ref([]);
+  
 const canSubmit = computed(() => {
   const o = newOrder.value
   const targetNum = Number(o.target)
@@ -34,6 +35,19 @@ const canSubmit = computed(() => {
   )
 })
 
+watchEffect(() => {
+  if (registerTopbarActions) {
+    registerTopbarActions({
+      reset: resetForm,
+      submit: submitOrder,
+      canSubmit,
+    })
+  }
+})
+
+/**
+ * Numeric input validation
+ */
 function onTargetInput(e) {
   const raw = e.target.value
   // Prüfe ob nicht-numerische Zeichen enthalten sind (außer leer)
@@ -56,6 +70,9 @@ function onTargetInput(e) {
   newOrder.value.target = raw
 }
 
+/**
+ * Numeric input validation
+ */
 function onTargetKeydown(e) {
   // Erlaube: Backspace, Delete, Tab, Escape, Enter, Pfeiltasten, Home, End
   const allowed = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
@@ -122,22 +139,20 @@ async function submitOrder() {
   }));
 
   try {
-    await $fetch(`${API_BASE_URL}/api/order/post`, { method: 'POST', body: { ...newOrder.value, target: Number(newOrder.value.target), process: processPayload } })
-    resetDraft()
-    navigateTo('/order/overview')
+    await $fetch(`${API_BASE_URL}/api/order/post`, {
+      method: 'POST',
+      body: {
+        ...newOrder.value,
+        target: Number(newOrder.value.target),
+        process: processPayload
+      }
+    });
+    resetDraft();
+    navigateTo('/order/overview');
   } catch (error) { alert('Error creating order') }
 }
 
-watchEffect(() => {
-  if (registerTopbarActions) {
-    registerTopbarActions({
-      reset: resetForm,
-      submit: submitOrder,
-      canSubmit,
-    })
-  }
-})
-
+onMounted(loadDependencies)
 </script>
 
 <template>

@@ -33,7 +33,7 @@ function getSortIcon(col) { return sortColumn.value !== col ? '↕' : (sortDirec
 
 async function loadWorkers() {
     try {
-        const response = await $fetch(`${API_BASE_URL}/api/worker/list`)
+        const response = await $fetch(`${API_BASE_URL}/api/worker/get/`)
         workers.value = response || []
     } catch (error) { console.error('API Error:', error) }
 }
@@ -47,7 +47,7 @@ function handleRowAction(id) {
 
 async function executeDelete(id) {
     try {
-        await $fetch(`${API_BASE_URL}/api/worker/delete/${id}`, { method: 'DELETE' })
+        await $fetch(`${API_BASE_URL}/api/worker/delete/${id}/`, { method: 'DELETE' })
         workers.value = workers.value.filter(o => o.id !== id)
         deleteConfirmId.value = null
     } catch (error) { alert('Failed to delete worker') }

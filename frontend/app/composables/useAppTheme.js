@@ -26,7 +26,7 @@ export const useAppTheme = () => {
     gridDisruptions: 'grid grid-cols-[1.2fr,0.8fr,1fr,1fr,1fr,0.8fr,100px] gap-3 items-center',
     gridWorkers:     'grid grid-cols-[1.5fr,1fr,120px] gap-3 items-center',
     gridForm:        'grid grid-cols-1 sm:grid-cols-2 gap-4',
-    gridProcessSteps:'grid grid-cols-[30px_30px_1fr_1fr_1fr] gap-3 items-start',
+    gridProcessSteps:'grid grid-cols-[30px_30px_1fr_1fr_1fr_130px] gap-3 items-start',
 
     // Structural UI Shapes
     cardShape:     'rounded-xl border p-4 space-y-4 shadow-lg transition-colors',

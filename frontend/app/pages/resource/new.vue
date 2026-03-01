@@ -10,12 +10,12 @@ const config = useRuntimeConfig()
 const API_BASE_URL = config.public.apiBaseUrl
 
 const form = ref({ name: "", type: "Machinery", status: "available" })
-const canSubmit = computed(() => form.value.name && form.value.type && form.value.status)
+const canSubmit = computed(() => Boolean(form.value.name && form.value.type && form.value.status))
 
 async function submit() {
     const mapping = { 'available': 3, 'in-use': 2, 'maintenance': 4, 'offline': 1 }
     try {
-        await $fetch(`${API_BASE_URL}/api/resource/post`, {
+        await $fetch(`${API_BASE_URL}/api/resource/post/`, {
             method: 'POST',
             body: { ...form.value, status: mapping[form.value.status] }
         })

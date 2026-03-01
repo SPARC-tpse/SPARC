@@ -110,7 +110,7 @@ onBeforeUnmount(() => {
 
   </div>
 
-   <!-- Popout Timer (liegt außerhalb des Flex-Containers, fixed im Viewport) -->
+  <!-- Popout Timer (liegt außerhalb des Flex-Containers, fixed im Viewport) -->
   <div
     v-if="popoutVisible && (isRunning || isPaused)"
     class="fixed z-50 w-64 rounded-lg border border-slate-300 bg-white text-slate-900 shadow-lg select-none"
@@ -143,5 +143,4 @@ onBeforeUnmount(() => {
       </div>
     </div>
   </div>
-
 </template>

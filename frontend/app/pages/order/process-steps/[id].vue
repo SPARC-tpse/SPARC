@@ -50,7 +50,7 @@ const allResources = ref([]);
 
 async function loadResources() {
     try {
-        const response = await $fetch(`${API_BASE_URL}/api/resource/list`);
+        const response = await $fetch(`${API_BASE_URL}/api/resource/get/`);
         allResources.value = response || [];
     } catch (e) { console.error(e); }
 }

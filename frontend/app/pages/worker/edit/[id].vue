@@ -18,7 +18,7 @@ const canSubmit = computed(() => worker.value.name.length > 1)
 
 async function loadWorker() {
     try {
-        const response = await $fetch(`${API_BASE_URL}/api/worker/get/${workerId}`)
+        const response = await $fetch(`${API_BASE_URL}/api/worker/get/${workerId}/`)
         worker.value = response
     } catch (error) {
         console.error(error)
@@ -29,7 +29,7 @@ async function loadWorker() {
 async function updateWorker() {
     if (!canSubmit.value) return
     try {
-        await $fetch(`${API_BASE_URL}/api/worker/put/${workerId}`, {
+        await $fetch(`${API_BASE_URL}/api/worker/put/${workerId}/`, {
             method: 'PUT',
             body: { name: worker.value.name }
         })

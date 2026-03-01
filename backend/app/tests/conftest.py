@@ -2,6 +2,7 @@
 Pytest fixtures and configuration for tests
 """
 import pytest
+from django.utils import timezone
 from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 from app.models import (
@@ -29,45 +30,8 @@ def resource(db, resource_type):
     return Resource.objects.create(
         name="Machine A",
         type=resource_type,
-        status="Available"
+        status=3
     )
-
-
-@pytest.fixture
-def worker(db):
-    """Create a test worker"""
-    return Worker.objects.create(name="John Doe")
-
-
-@pytest.fixture
-def process(db, worker):
-    """Create a test process"""
-    process = Process.objects.create(
-        start_time=datetime(2026, 1, 1, 8, 0, 0),
-        end_time=datetime(2026, 1, 1, 16, 0, 0),
-        setup_time_seconds=300,
-        waiting_time_seconds=120,
-        process_time_seconds=1800
-    )
-    process.workers.add(worker)
-    return process
-
-
-@pytest.fixture
-def order(db, process):
-    """Create a test order"""
-    order = Order.objects.create(
-        name="Test Order",
-        target_amount=100,
-        start_date=date(2026, 1, 1),
-        end_date=date(2026, 1, 31),
-        product_name="Test Product",
-        priority=2,
-        status=0,  # Planned
-        comments="Test comment"
-    )
-    order.process.add(process)
-    return order
 
 
 @pytest.fixture
@@ -77,15 +41,51 @@ def disruption_type(db):
 
 
 @pytest.fixture
+def worker(db):
+    """Create a test worker"""
+    return Worker.objects.create(name="John Doe")
+
+@pytest.fixture
+def order(db):
+    """Create a test order"""
+    order = Order.objects.create(
+        name="Test Order",
+        order_number="28022026001",
+        target_amount=100,
+        start_date=timezone.make_aware(datetime(2026, 1, 1, 8, 0, 0)),
+        end_date=date(2026, 1, 31),
+        product_name="Test Product",
+        priority=1,
+        status=0,
+        comments="Test comment"
+    )
+    return order
+
+
+@pytest.fixture
+def process(db, worker, resource, order):
+    """Create a test process"""
+    process = Process.objects.create(
+        name="Test Process",
+        approximated_time=800,
+        setup_time=300,
+        waiting_time=120,
+        resource=resource,
+        order=order
+    )
+    process.workers.add(worker)
+    return process
+
+
+@pytest.fixture
 def disruption(db, disruption_type, resource, process):
     """Create a test disruption"""
     return Disruption.objects.create(
         name="Test Disruption",
         type=disruption_type,
-        resource=resource,
         process=process,
-        start_date=datetime(2026, 1, 15, 10, 0, 0),
-        end_date=datetime(2026, 1, 15, 12, 0, 0)
+        resource=resource,
+        disruption_time=100
     )
 
 

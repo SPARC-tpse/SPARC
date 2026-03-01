@@ -5,12 +5,27 @@ testing
 - added Part model
 - added order_number to Order model
 - deleted process in Order model
+- changed start_date type to date-time format in Order model
 - added order in Process model
 - added approximated_time to Process model
-- change create_order view to accommodate model changes
+- changed create_order view to accommodate model changes
+- changed update_order view to accommodate model changes
+- added small documentation for all order api functions
+- added small documentation for all order pages
+- added get_order_processes view
+- added get_processes view
 - added unit tests for every api function
-- fixed minor bugs in api
-- added generate data script for better
+- fixed all order logic
+- added generate_test_data script for better testing
+- generalise frontend/app/components/MultiWorkerSelect and rename it to MultiSelect
+- added dropdown for Resource in order/new
+- added time approx. field in order/new
+- default sort for order/new is ascending now
+- changed order/new order/overview and order/edit pages to accommodate model changes
+- order/overview checks if resource is status "available" or "in use", else a warning appear for the order
+- unified order status and priority encoding across front- and backend
+- change api urls to be disruption/get instead of disruption/list same for resource and worker and end on a /
+- changed disruption api -> Disruption is broken! but it should be redesigned anyway considering the change in model
 
 disruptions
 - backend integration

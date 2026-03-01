@@ -19,7 +19,7 @@ const strToStatus = { 'available': 3, 'in-use': 2, 'maintenance': 4, 'offline': 
 
 async function load() {
     try {
-        const data = await $fetch(`${API_BASE_URL}/api/resource/get/${resId}`)
+        const data = await $fetch(`${API_BASE_URL}/api/resource/get/${resId}/`)
         form.value = {
             name: data.name,
             type: data.type,
@@ -30,7 +30,7 @@ async function load() {
 
 async function update() {
     try {
-        await $fetch(`${API_BASE_URL}/api/resource/put/${resId}`, {
+        await $fetch(`${API_BASE_URL}/api/resource/put/${resId}/`, {
             method: 'PUT',
             body: { ...form.value, status: strToStatus[form.value.status] }
         })

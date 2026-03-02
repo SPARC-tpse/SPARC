@@ -1,5 +1,5 @@
 <script setup lang="js">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import MultiSelect from '~/components/MultiSelect.vue'
 
 definePageMeta({ layout: 'custom' })
@@ -42,11 +42,7 @@ const hasProcessWarning = (step) => {
   return !hasWorkers || !hasResource
 }
 
-const priorityMap = { 1: 'Low', 2: 'Medium', 3: 'High' }
-const statusMap = { 1: 'Planned', 2: 'Running', 3: 'Paused', 4: 'Done' }
-const priorityMapReverse = { 'Low': 1, 'Medium': 2, 'High': 3 }
-const statusMapReverse = { 'Planned': 1, 'Running': 2, 'Paused': 3, 'Done': 4 }
-
+/*
 async function addPart() {
   if (!selectedProcessStep.value || !selectedProcessStep.value.id) {
     alert('Please select a process step')
@@ -56,7 +52,7 @@ async function addPart() {
   const currentProcessTime = selectedProcessStep.value.process_time_seconds || 0
 
   try {
-    const response = await $fetch(`${API_BASE_URL}/api/process/add_part/${selectedProcessStep.value.id}`, {
+    const response = await $fetch(`${API_BASE_URL}/api/process/add_part/${selectedProcessStep.value.id}/`, {
       method: 'POST',
       body: { process_time_seconds: currentProcessTime },
       headers: { 'Content-Type': 'application/json' }
@@ -74,12 +70,30 @@ async function addPart() {
     alert('Failed to add part')
   }
 }
+*/
 
 /**
  * Adds a process to the processSteps list
  */
 function addStep() {
   processSteps.value.push({ _id: Date.now() + Math.random(), name: '', workers: [], resource: null, approximated_time: { h: 0, m: 0, s: 0 } })
+}
+
+async function addPart(part) {
+  partsProduced.value = partsProduced.value + 1;
+  partsList.value.push(part);
+}
+
+async function loadParts() {
+  try {
+    console.log(selectedProcessStep.value);
+    const response = await $fetch(`${API_BASE_URL}/api/process/part/get/${selectedProcessStep.value.id}/`, {
+      method: 'GET',
+    });
+    partsList.value = response || [];
+  } catch (error) {
+    alert(error.data?.error || error.message);
+  }
 }
 
 /**
@@ -135,7 +149,7 @@ async function loadDependencies() {
   try {
     const [w, r] = await Promise.all([
       $fetch(`${API_BASE_URL}/api/worker/get/`),
-      $fetch(`${API_BASE_URL}/api/resource/get/`)
+      $fetch(`${API_BASE_URL}/api/resource/get/`),
     ])
     workerList.value = w || [];
     resourceList.value = r || [];
@@ -176,6 +190,12 @@ async function updateOrder() {
     alert(error.data?.error || error.message)
   }
 }
+
+watch(selectedProcessStep, (newValue) => {
+  if (newValue?.id) {
+    loadParts();
+  }
+})
 
 onMounted(() => {
   loadOrder()
@@ -245,6 +265,7 @@ onMounted(() => {
         </label>
 
         <div v-if="selectedProcessStep" class="space-y-4 pt-4 border-t" :class="isDarkMode ? 'border-gray-700' : 'border-slate-200'">
+          <!-- process id -->
           <div>
             <span class="text-sm label-text">Process Step ID:</span>
             <span class="ml-2 font-mono font-semibold" :class="isDarkMode ? 'text-slate-200' : 'text-slate-700'">
@@ -252,9 +273,25 @@ onMounted(() => {
             </span>
           </div>
 
+          <!-- waiting time -->
+          <ProcessTimer
+              label="Waiting Time"
+              :initial-seconds="selectedProcessStep.waiting_time_seconds || 0"
+              :process-id="selectedProcessStep.id"
+              timer-type="waiting_time"
+          />
+
+
           <!-- setup time -->
-          <ProcessTimer label="Setup Time" :initial-seconds="selectedProcessStep.setup_time_seconds || 0"
-                        :process-id="selectedProcessStep.id" timer-type="setup_time" @time-saved="handleTimeSaved" />
+          <ProcessTimer
+              label="Setup Time"
+              :initial-seconds="selectedProcessStep.setup_time_seconds || 0"
+              :process-id="selectedProcessStep.id"
+              timer-type="setup_time"
+          />
+
+          <!-- horizontal separator -->
+          <hr :class="isDarkMode ? 'border-gray-700' : 'border-slate-300'" />
 
           <!-- create disruption button -->
           <div>
@@ -263,27 +300,29 @@ onMounted(() => {
             </button>
           </div>
 
-          <!-- waiting time -->
-          <ProcessTimer label="Waiting Time" :initial-seconds="selectedProcessStep.waiting_time_seconds || 0"
-                        :process-id="selectedProcessStep.id" timer-type="waiting_time" @time-saved="handleTimeSaved" />
-
           <!-- horizontal separator -->
           <hr :class="isDarkMode ? 'border-gray-700' : 'border-slate-300'" />
 
           <!-- process time -->
-          <ProcessTimer label="Process Time" :initial-seconds="selectedProcessStep.process_time_seconds || 0"
-                        :process-id="selectedProcessStep.id" timer-type="process_time" @time-saved="handleTimeSaved" />
+          <ProcessTimer
+              label="Process Time"
+              :initial-seconds="selectedProcessStep.process_time_seconds || 0"
+              :process-id="selectedProcessStep.id"
+              timer-type="process_time"
+              @update="addPart"
+          />
 
           <!-- add part -->
           <div class="space-y-3 pt-2">
             <div class="flex items-center gap-3">
-              <span class="text-sm label-text">Part</span>
+              <span class="text-sm label-text">Parts produced</span>
               <span class="px-3 py-1 rounded-lg font-mono font-bold" :class="isDarkMode ? 'bg-gray-800 text-green-400' : 'bg-green-50 text-green-600'">
                 {{ partsProduced }}
               </span>
+              <!--
               <button @click="addPart" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg">
                 + Add Part
-              </button>
+              </button>-->
             </div>
 
             <!-- parts list -->
@@ -296,7 +335,7 @@ onMounted(() => {
                      :class="isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-slate-200 bg-slate-50'">
                   <span class="font-medium">Part {{ index + 1 }}</span>
                   <span class="font-mono text-xs" :class="isDarkMode ? 'text-slate-300' : 'text-slate-600'">
-                    {{ formatTime(part.process_time_seconds) }}
+                    {{ part.process_time }}
                   </span>
                 </div>
               </div>

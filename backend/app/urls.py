@@ -22,14 +22,14 @@ urlpatterns = [
     # File endpoints
     path("order/file/post/", upload_order_file, name="upload_order_file"),
     path("order/file/delete/<int:file_id>/", delete_order_file, name="delete_order_file"),
-    path("order/file/get/<int:order_id>", list_order_files, name="list_order_files"),
+    path("order/file/get/<int:order_id>/", list_order_files, name="list_order_files"),
 
     # Process
-    path("process/timing/<int:process_id>", update_process_timing, name="update_process_timing"),
-    path("process/delete/<int:process_id>", delete_process, name="delete_process"),
-    path("process/add_part/<int:process_id>", add_part, name="add_part"),
-    path("process/get_parts/<int:process_id>", get_parts, name="get_parts"),
+    path("process/timing/<int:process_id>/", update_process_timing, name="update_process_timing"),
+    path("process/delete/<int:process_id>/", delete_process, name="delete_process"),
     path("process/get/", get_processes, name="get_processes"),
+    path("process/part/post/<int:process_id>/", add_part, name="add_part"),
+    path("process/part/get/<int:process_id>/", get_parts, name="get_parts"),
 
     # Worker
     path("worker/get/", get_workers, name="get_workers"),

@@ -7,9 +7,9 @@ from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.http import JsonResponse
 from rest_framework.request import Request
-from .models import Order, Process, Worker, Resource, OrderFile, ResourceType, Disruption, DisruptionType
+from .models import Order, Process, Worker, Resource, OrderFile, ResourceType, Disruption, DisruptionType, Part
 from .serializers import OrderSerializer, WorkerSerializer, OrderFileSerializer, ResourceSerializer, \
-    DisruptionSerializer, ProcessSerializer
+    DisruptionSerializer, ProcessSerializer, PartSerializer
 from django.core.files.storage import default_storage
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
@@ -356,6 +356,7 @@ def list_order_files(request, order_id):
     except Order.DoesNotExist: return JsonResponse({'error': 'Order not found'}, status=404)
     except Exception as e: return JsonResponse({'error': str(e)}, status=500)
 
+
 # --- Process ---
 @api_view(['GET'])
 def get_processes(request: Request) -> JsonResponse:
@@ -372,68 +373,20 @@ def get_processes(request: Request) -> JsonResponse:
 def update_process_timing(request: Request, process_id: int) -> JsonResponse:
     try:
         process = Process.objects.get(id=process_id)
-        if 'setup_time_seconds' in request.data: process.setup_time_seconds = int(request.data['setup_time_seconds'])
-        if 'waiting_time_seconds' in request.data: process.waiting_time_seconds = int(request.data['waiting_time_seconds'])
-        if 'process_time_seconds' in request.data: process.process_time_seconds = int(request.data['process_time_seconds'])
+        if 'setup_time' in request.data:
+            process.setup_time = int(request.data['setup_time'])
+        if 'waiting_time' in request.data:
+            process.waiting_time = int(request.data['waiting_time'])
         process.save()
         return JsonResponse({
             'message': 'Process timing updated successfully',
-            'setup_time_seconds': process.setup_time_seconds,
-            'waiting_time_seconds': process.waiting_time_seconds,
-            'process_time_seconds': process.process_time_seconds
+            'setup_time': process.setup_time,
+            'waiting_time': process.waiting_time,
         })
-    except Process.DoesNotExist: return JsonResponse({'error': 'Process not found'}, status=404)
-    except Exception as e: return JsonResponse({'error': str(e)}, status=500)
-
-@api_view(['POST'])
-def add_part(request: Request, process_id: int) -> JsonResponse:
-    """Add a part to a process with the current process time"""
-    try:
-        process = Process.objects.get(id=process_id)
-
-        process_time = request.data.get('process_time', 0)
-
-        # Create Part instance
-        part = Part.objects.create(
-            process=process,
-            process_time=process_time
-        )
-
-        return JsonResponse({
-            'success': True,
-            'part_id': part.id,
-            'process_time_seconds': part.process_time,
-            'created_at': part.created_at.isoformat()
-        }, status=201)
-
     except Process.DoesNotExist:
         return JsonResponse({'error': 'Process not found'}, status=404)
     except Exception as e:
-        print(f"Add part error: {e}")
         return JsonResponse({'error': str(e)}, status=500)
-
-
-@api_view(['GET'])
-def get_parts(request: Request, process_id: int) -> JsonResponse:
-    """Get all parts for a process"""
-    try:
-        process = Process.objects.get(id=process_id)
-        parts = process.parts.all().order_by('-created_at')
-
-        parts_data = [{
-            'id': part.id,
-            'process_time_seconds': part.process_time_seconds,
-            'created_at': part.created_at.isoformat()
-        } for part in parts]
-
-        return JsonResponse({
-            'process_id': process_id,
-            'parts_count': parts.count(),
-            'parts': parts_data
-        })
-
-    except Process.DoesNotExist:
-        return JsonResponse({'error': 'Process not found'}, status=404)
 
 @api_view(['DELETE'])
 def delete_process(request: Request, process_id: int) -> JsonResponse:
@@ -445,6 +398,39 @@ def delete_process(request: Request, process_id: int) -> JsonResponse:
         return JsonResponse({'error': 'Process not found'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['POST'])
+def add_part(request: Request, process_id: int) -> JsonResponse:
+    """Add a part to a process with the current process time"""
+    try:
+        process = Process.objects.get(id=process_id)
+        process_time = request.data.get('process_time', 0)
+        # Create Part instance
+        part = Part.objects.create(
+            process=process,
+            process_time=process_time
+        )
+        part.save()
+        serializer = PartSerializer(part, many=False)
+        return JsonResponse(serializer.data, status=201)
+    except Process.DoesNotExist:
+        return JsonResponse({'error': 'Process not found'}, status=404)
+    except Exception as e:
+        print(f"Add part error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+def get_parts(request: Request, process_id: int) -> JsonResponse:
+    """Get all parts for a process"""
+    try:
+        parts = Part.objects.filter(process=process_id)
+        serializer = PartSerializer(parts, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Part.DoesNotExist:
+        return JsonResponse({'error': 'Part not found'}, status=404)
+    except Exception as e:
+        print(e, flush=True)
+        return JsonResponse({'error': 'Failed to retrieve orders'}, status=500)
 
 
 # --- Worker ---

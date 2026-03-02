@@ -99,7 +99,7 @@ function toForLink(link) {
           -
         </button>
 
-        <span class="min-w-14 text-center tabular-nums text-sm">
+        <span :class="[theme.zoomBtn, 'border-none min-w-14 text-center tabular-nums text-sm']">
           {{ zoomPercent }}
         </span>
 

@@ -53,13 +53,13 @@ export const useAppTheme = () => {
     // Tables & Lists
     headerText: isDarkMode.value
         ? 'text-slate-400 border-gray-700'
-        : 'text-slate-600 border-slate-200',
+        : 'text-slate-700 border-slate-200',
     row: isDarkMode.value
       ? 'border-gray-700 bg-slate-800/50 hover:bg-slate-800'
       : 'border-slate-300 bg-slate-50 hover:bg-white hover:shadow-sm',
     totalBadge: isDarkMode.value
       ? 'border-slate-700 text-slate-400 bg-slate-800'
-      : 'border-slate-300 text-slate-600 bg-slate-50',
+      : 'border-slate-400 text-slate-700 bg-slate-50',
 
 
     // Form Inputs & Labels
@@ -71,7 +71,7 @@ export const useAppTheme = () => {
       : 'bg-slate-100 text-slate-600 border-slate-300',
     label: isDarkMode.value
         ? 'text-slate-400'
-        : 'text-slate-600',
+        : 'text-slate-700',
 
     // Navigation specific colors
     navActive:   'bg-gradient-to-r from-indigo-600 to-pink-600 text-white border-transparent shadow-indigo-500/20',
@@ -112,8 +112,8 @@ export const useAppTheme = () => {
     fileRow: isDarkMode.value
       ? 'border-gray-700 bg-gray-800'
       : 'border-slate-200 bg-slate-50',
-    fileNameText: isDarkMode.value ? 'text-slate-200' : 'text-slate-700',
-    fileMetaText: isDarkMode.value ? 'text-slate-400' : 'text-slate-500',
+    fileNameText: isDarkMode.value ? 'text-slate-200' : 'text-slate-800',
+    fileMetaText: isDarkMode.value ? 'text-slate-400' : 'text-slate-600',
     fileViewBtn: isDarkMode.value
       ? 'border-gray-600 text-slate-300 hover:bg-gray-700'
       : 'border-slate-300 text-slate-600 hover:bg-slate-100',
@@ -122,7 +122,7 @@ export const useAppTheme = () => {
       : 'border-red-200 text-red-600 hover:bg-red-50',
     fileEmptyState: isDarkMode.value
       ? 'border-gray-700 text-slate-400'
-      : 'border-slate-300 text-slate-500',
+      : 'border-slate-400 text-slate-600',
 
     // --- MultiSelect ---
     multiSelectContainer: isDarkMode.value
@@ -133,21 +133,21 @@ export const useAppTheme = () => {
       : 'ring-1 ring-indigo-500 border-indigo-500',
     multiSelectTag: isDarkMode.value
       ? 'bg-gray-700 border-gray-600 text-slate-200'
-      : 'bg-indigo-50 border-indigo-100 text-indigo-700',
+      : 'bg-indigo-50 border-indigo-200 text-indigo-800',
     multiSelectInput: isDarkMode.value
       ? 'text-slate-100 placeholder-slate-500'
-      : 'text-slate-900 placeholder-slate-400',
+      : 'text-slate-900 placeholder-slate-500',
     multiSelectDropdown: isDarkMode.value
       ? 'bg-gray-800 border-gray-700'
       : 'bg-white border-slate-200',
     multiSelectOption: isDarkMode.value
       ? 'text-slate-200 hover:bg-gray-700'
-      : 'text-slate-700 hover:bg-slate-100',
+      : 'text-slate-800 hover:bg-slate-100',
 
     // --- Timer Display ---
     timerDisplay: isDarkMode.value
       ? 'bg-gray-800 text-green-400 border border-gray-700'
-      : 'bg-slate-100 text-green-600 border border-slate-300',
+      : 'bg-slate-100 text-green-700 border border-slate-300',
     timerResetBtn: isDarkMode.value
       ? 'border-gray-700 bg-gray-800 text-slate-200 hover:bg-gray-700'
       : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100',
@@ -163,15 +163,15 @@ export const useAppTheme = () => {
 
     // --- Zoom / small utility buttons ---
     zoomBtn: isDarkMode.value
-      ? 'border-slate-600'
-      : 'border-slate-300/70',
+      ? 'border-slate-600 text-slate-300'
+      : 'border-slate-500 text-slate-800',
 
     // Status indicator dot
     modeIndicator: isDarkMode.value ? 'bg-indigo-500' : 'bg-amber-500',
 
     // --- Dashboard ---
-    dashboardSubtitle: isDarkMode.value ? 'text-slate-300' : 'text-slate-500',
-    dashboardHint: isDarkMode.value ? 'text-slate-400' : 'text-slate-500',
+    dashboardSubtitle: isDarkMode.value ? 'text-slate-300' : 'text-slate-700',
+    dashboardHint: isDarkMode.value ? 'text-slate-400' : 'text-slate-600',
     dashboardPanel: isDarkMode.value
       ? 'border-gray-700 bg-slate-900 shadow-black'
       : 'border-slate-200 bg-white shadow-slate-200',
@@ -183,25 +183,25 @@ export const useAppTheme = () => {
       : 'border-slate-200 text-slate-900',
     dashboardEditBtn: isDarkMode.value
       ? 'border-gray-600 hover:bg-gray-700 text-slate-200'
-      : 'border-slate-300 hover:bg-slate-200 text-slate-700',
+      : 'border-slate-400 hover:bg-slate-200 text-slate-700',
     dashboardOpenLink: isDarkMode.value
       ? 'text-pink-200 hover:text-pink-100'
-      : 'text-pink-600 hover:text-pink-800',
-    dashboardDragHint: isDarkMode.value ? 'text-slate-400' : 'text-slate-500',
+      : 'text-pink-700 hover:text-pink-900',
+    dashboardDragHint: isDarkMode.value ? 'text-slate-400' : 'text-slate-600',
     dashboardEditRing: isDarkMode.value ? 'ring-2 ring-pink-500' : 'ring-2 ring-indigo-400',
     dashboardChartBg: isDarkMode.value
       ? 'border-gray-700 bg-gray-800'
       : 'border-slate-200 bg-slate-50',
-    dashboardAxisStroke: isDarkMode.value ? '#475569' : '#cbd5f5',
-    dashboardAxisText: isDarkMode.value ? '#94a3b8' : '#64748b',
+    dashboardAxisStroke: isDarkMode.value ? '#475569' : '#94a3b8',
+    dashboardAxisText: isDarkMode.value ? '#94a3b8' : '#475569',
     dashboardBarFill: isDarkMode.value ? '#f472b6' : '#6366f1',
-    dashboardMetaText: isDarkMode.value ? 'text-slate-300' : 'text-slate-500',
-    dashboardEmptyChart: isDarkMode.value ? 'text-slate-400' : 'text-slate-500',
+    dashboardMetaText: isDarkMode.value ? 'text-slate-300' : 'text-slate-600',
+    dashboardEmptyChart: isDarkMode.value ? 'text-slate-400' : 'text-slate-600',
 
     // --- Info box (notes) ---
     infoBox: isDarkMode.value
       ? 'bg-slate-800/50 border-slate-700'
-      : 'bg-slate-500/5 border-slate-500/10'
+      : 'bg-slate-100 border-slate-300'
   }))
 
   // --- SECTION 3: UNIFIED THEME OBJECT ---

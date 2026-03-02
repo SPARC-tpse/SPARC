@@ -28,7 +28,6 @@ const resourceList = ref([]);
   
 const canSubmit = computed(() => {
   const o = newOrder.value
-  // const targetNum = Number(o.target_amount)
   return Boolean(
     o.name && o.start_date && o.end_date && o.product_name && o.target_amount >= 0 && !targetError.value
   )
@@ -163,105 +162,99 @@ onMounted(loadDependencies)
 </script>
 
 <template>
-  <div :class="theme.pageWrapper">
-    <main :class="theme.container" class="space-y-6">
-      <!-- order form -->
-      <section :class="theme.card">
-        <h3 class="font-semibold text-lg mb-2">Order Information</h3>
-        <div :class="theme.formGrid">
-          <label :class="theme.label">Name <input v-model="newOrder.name" :class="theme.input" /></label>
-          <label :class="theme.label">
-            Target amount
-            <input
-              :value="newOrder.target_amount"
-              type="number"
-              min="0"
-              :class="[theme.input, targetError ? 'border-red-500 ring-1 ring-red-500' : '']"
-              @input="onTargetInput"
-              @keydown="onTargetKeydown"
-            />
-            <span v-if="targetError" class="text-red-500 text-xs mt-1">{{ targetError }}</span>
-          </label>
-          <label :class="theme.label">Product name <input v-model="newOrder.product_name" :class="theme.input" /></label>
-          <label :class="theme.label">Start date <input v-model="newOrder.start_date" type="datetime-local" :class="theme.input" /></label>
-          <label :class="theme.label">End date <input v-model="newOrder.end_date" type="date" :class="theme.input" /></label>
-          <label :class="theme.label">Status
-            <select v-model="newOrder.status" :class="theme.input">
-              <option
-                v-for="(s, i) in ['Planned', 'Running', 'Paused', 'Done']"
-                :key="s"
-                :value="i"
-              >
-                {{ s }}
-              </option>
-            </select>
-          </label>
-          <label :class="theme.label">Priority
-            <select v-model="newOrder.priority" :class="theme.input">
-              <option
-                v-for="(p, i) in ['High', 'Medium', 'Low']"
-                :key="p"
-                :value="i"
-              >
-                {{ p }}
-              </option>
-            </select>
-          </label>
-          <label :class="theme.label" class="sm:col-span-2">Comments <textarea v-model="newOrder.comments" rows="2" :class="theme.input" /></label>
+  <main :class="theme.container" class="space-y-6">
+    <!-- order form -->
+    <section :class="theme.card">
+      <h3 class="font-semibold text-lg mb-2">Order Information</h3>
+      <div :class="theme.formGrid">
+        <label :class="theme.label">Name <input v-model="newOrder.name" :class="theme.input" /></label>
+        <label :class="theme.label">
+          Target amount
+          <input
+            :value="newOrder.target_amount"
+            type="number"
+            min="0"
+            :class="[theme.input, targetError ? 'border-red-500 ring-1 ring-red-500' : '']"
+            @input="onTargetInput"
+            @keydown="onTargetKeydown"
+          />
+          <span v-if="targetError" class="text-red-500 text-xs mt-1">{{ targetError }}</span>
+        </label>
+        <label :class="theme.label">Product name <input v-model="newOrder.product_name" :class="theme.input" /></label>
+        <label :class="theme.label">Start date <input v-model="newOrder.start_date" type="datetime-local" :class="theme.input" /></label>
+        <label :class="theme.label">End date <input v-model="newOrder.end_date" type="date" :class="theme.input" /></label>
+        <label :class="theme.label">Status
+          <select v-model="newOrder.status" :class="theme.input">
+            <option
+              v-for="(s, i) in ['Planned', 'Running', 'Paused', 'Done']"
+              :key="s"
+              :value="i"
+            >
+              {{ s }}
+            </option>
+          </select>
+        </label>
+        <label :class="theme.label">Priority
+          <select v-model="newOrder.priority" :class="theme.input">
+            <option
+              v-for="(p, i) in ['High', 'Medium', 'Low']"
+              :key="p"
+              :value="i"
+            >
+              {{ p }}
+            </option>
+          </select>
+        </label>
+        <label :class="theme.label" class="sm:col-span-2">Comments <textarea v-model="newOrder.comments" rows="2" :class="theme.input" /></label>
+      </div>
+    </section>
+
+    <!-- process editor -->
+    <section :class="theme.card">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-semibold text-lg">Process Steps</h3>
+        <button :class="theme.linkAction" @click="addStep">+ Add step</button>
+      </div>
+
+      <div class="space-y-3">
+        <div
+          v-if="processSteps.length > 0"
+          :class="['px-1 opacity-70', theme.processStepGrid.replace('items-start', '')]"
+        >
+          <span></span>
+          <span class="text-center font-bold">#</span>
+          <span :class="theme.label">Process Name</span>
+          <span :class="theme.label">Worker</span>
+          <span :class="theme.label">Resource</span>
+          <span :class="theme.label">Time (Approx.)</span>
         </div>
-      </section>
 
-      <!-- process editor -->
-      <section :class="theme.card">
-        <!-- title and add button -->
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="font-semibold text-lg">Process Steps</h3>
-          <button :class="theme.linkAction" @click="addStep">+ Add step</button>
-        </div>
-
-        <!-- table -->
-        <div class="space-y-3">
-          <!-- column names -->
-          <div
-            v-if="processSteps.length > 0"
-            :class="['px-1 opacity-70', theme.processStepGrid.replace('items-start', '')]"
-          >
-            <span></span>
-            <span class="text-center font-bold">#</span>
-            <span :class="theme.label">Process Name</span>
-            <span :class="theme.label">Worker</span>
-            <span :class="theme.label">Resource</span>
-            <span :class="theme.label">Time (Approx.)</span>
-          </div>
-
-          <!-- rows -->
-          <div
-            v-for="(step, i) in processSteps"
-            :key="step._id"
-            :class="[theme.processStepGrid, theme.row]"
-          >
-            <button @click="removeStep(i)" class="mt-2 text-slate-400 hover:text-red-500 transition-colors">✕</button>
-            <span class="mt-2 text-center text-xs opacity-50">{{ i + 1 }}</span>
-            <input v-model="step.name" :class="theme.input" class="mt-0 h-[38px]" placeholder="Choose a name..." />
-            <MultiSelect v-model="step.workers" :model-list="workerList" />
-            <MultiSelect
-                :model-value="step.resource ? [step.resource] : []"
-                :model-list="resourceList"
-                single
-                @update:model-value="step.resource = $event[0] ?? null"
-            />
-            <div class="flex items-center gap-1">
-              <input v-model.number="step.approximated_time.h" type="number" min="0" :class="theme.input" class="w-16 text-center no-arrows" placeholder="hh" />
-              <span class="opacity-50">:</span>
-              <input v-model.number="step.approximated_time.m" type="number" min="0" max="59" :class="theme.input" class="w-16 text-center no-arrows" placeholder="mm" />
-              <span class="opacity-50">:</span>
-              <input v-model.number="step.approximated_time.s" type="number" min="0" max="59" :class="theme.input" class="w-16 text-center no-arrows" placeholder="ss" />
-            </div>
+        <div
+          v-for="(step, i) in processSteps"
+          :key="step._id"
+          :class="[theme.processStepGrid, theme.row]"
+        >
+          <button @click="removeStep(i)" class="mt-2 text-slate-400 hover:text-red-500 transition-colors">✕</button>
+          <span class="mt-2 text-center text-xs opacity-50">{{ i + 1 }}</span>
+          <input v-model="step.name" :class="theme.input" class="mt-0 h-[38px]" placeholder="Choose a name..." />
+          <MultiSelect v-model="step.workers" :model-list="workerList" />
+          <MultiSelect
+              :model-value="step.resource ? [step.resource] : []"
+              :model-list="resourceList"
+              single
+              @update:model-value="step.resource = $event[0] ?? null"
+          />
+          <div class="flex items-center gap-1">
+            <input v-model.number="step.approximated_time.h" type="number" min="0" :class="theme.input" class="w-16 text-center no-arrows" placeholder="hh" />
+            <span class="opacity-50">:</span>
+            <input v-model.number="step.approximated_time.m" type="number" min="0" max="59" :class="theme.input" class="w-16 text-center no-arrows" placeholder="mm" />
+            <span class="opacity-50">:</span>
+            <input v-model.number="step.approximated_time.s" type="number" min="0" max="59" :class="theme.input" class="w-16 text-center no-arrows" placeholder="ss" />
           </div>
         </div>
-      </section>
-    </main>
-  </div>
+      </div>
+    </section>
+  </main>
 </template>
 
 <style scoped>

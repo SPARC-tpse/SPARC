@@ -1,6 +1,5 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useTheme } from '~/composables/useTheme'
 
 const props = defineProps({
   modelList: { type: Array, default: () => [] },
@@ -9,7 +8,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue'])
-const { isDarkMode } = useTheme()
+const { theme } = useAppTheme()
 
 const searchQuery = ref('')
 const isOpen = ref(false)
@@ -47,18 +46,16 @@ onUnmounted(() => document.removeEventListener('click', closeDropdown))
 <template>
   <div ref="containerRef" class="relative w-full">
     <div
-      class="min-h-[40px] w-full rounded-lg border px-2 py-1.5 flex flex-wrap gap-2 items-center cursor-text transition-colors"
       :class="[
-        isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-slate-300 bg-white',
-        isOpen ? (isDarkMode ? 'ring-1 ring-pink-500 border-pink-500' : 'ring-1 ring-indigo-500 border-indigo-500') : ''
+        theme.multiSelectContainer,
+        isOpen ? theme.multiSelectFocus : ''
       ]"
       @click="isOpen = true"
     >
       <span
         v-for="element in modelValue"
         :key="element.id"
-        class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium border"
-        :class="isDarkMode ? 'bg-gray-700 border-gray-600 text-slate-200' : 'bg-indigo-50 border-indigo-100 text-indigo-700'"
+        :class="theme.multiSelectTag"
       >
         {{ element.name }}
         <button @click.stop="removeElement(element.id)" class="hover:text-red-500 font-bold px-0.5">&times;</button>
@@ -66,8 +63,7 @@ onUnmounted(() => document.removeEventListener('click', closeDropdown))
 
       <input
         v-model="searchQuery"
-        class="flex-1 min-w-[60px] bg-transparent outline-none text-sm"
-        :class="isDarkMode ? 'text-slate-100 placeholder-slate-500' : 'text-slate-900 placeholder-slate-400'"
+        :class="theme.multiSelectInput"
         placeholder="Select..."
         @focus="isOpen = true"
       />
@@ -75,14 +71,12 @@ onUnmounted(() => document.removeEventListener('click', closeDropdown))
 
     <ul
       v-if="isOpen && availableOptions.length > 0"
-      class="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border shadow-lg py-1"
-      :class="isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-slate-200'"
+      :class="theme.multiSelectDropdown"
     >
       <li
         v-for="element in availableOptions"
         :key="element.id"
-        class="px-3 py-2 text-sm cursor-pointer transition-colors"
-        :class="isDarkMode ? 'text-slate-200 hover:bg-gray-700' : 'text-slate-700 hover:bg-slate-100'"
+        :class="theme.multiSelectOption"
         @click="selectElement(element)"
       >
         {{ element.name }}

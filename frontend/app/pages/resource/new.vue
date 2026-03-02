@@ -15,7 +15,6 @@ definePageMeta({
 
 const registerTopbarActions = inject('registerTopbarActions', null)
 
-
 const { theme } = useAppTheme()
 const router = useRouter()
 const config = useRuntimeConfig()
@@ -61,36 +60,34 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div :class="theme.pageWrapper">
-    <main :class="theme.container">
-      <section :class="theme.card">
-        <div :class="theme.formGrid">
-            <label :class="theme.label">
-              Name
-              <input v-model="form.name" :class="theme.input" placeholder="Enter resource name..."/>
-            </label>
+  <main :class="theme.container">
+    <section :class="theme.card">
+      <div :class="theme.formGrid">
+          <label :class="theme.label">
+            Name
+            <input v-model="form.name" :class="theme.input" placeholder="Enter resource name..."/>
+          </label>
 
-            <label :class="theme.label">
-              Type
-              <select v-model="form.type" :class="theme.input">
-                <option value="Machinery">Machinery</option>
-                <option value="Worker">Worker</option>
-                <option value="Tool">Tool</option>
-                <option value="Vehicle">Vehicle</option>
-              </select>
-            </label>
+          <label :class="theme.label">
+            Type
+            <select v-model="form.type" :class="theme.input">
+              <option value="Machinery">Machinery</option>
+              <option value="Worker">Worker</option>
+              <option value="Tool">Tool</option>
+              <option value="Vehicle">Vehicle</option>
+            </select>
+          </label>
 
-            <label :class="theme.label">
-              Status
-              <select v-model="form.status" :class="theme.input">
-                <option value="available">Available</option>
-                <option value="in-use">In Use</option>
-                <option value="maintenance">Maintenance</option>
-                <option value="offline">Offline</option>
-              </select>
-            </label>
-        </div>
-      </section>
-    </main>
-  </div>
+          <label :class="theme.label">
+            Status
+            <select v-model="form.status" :class="theme.input">
+              <option value="available">Available</option>
+              <option value="in-use">In Use</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="offline">Offline</option>
+            </select>
+          </label>
+      </div>
+    </section>
+  </main>
 </template>

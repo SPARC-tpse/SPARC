@@ -1,11 +1,20 @@
 <script setup lang="js">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, inject, watchEffect } from 'vue'
 
-definePageMeta({ layout: 'custom' })
+definePageMeta({
+  layout: 'custom',
+  layoutProps: {
+    title: 'Disruptions · Edit',
+    showReset: true,
+    showCreate: true,
+    createLabel: 'Update',
+  },
+})
+
+const registerTopbarActions = inject('registerTopbarActions')
 
 const { theme } = useAppTheme()
 const route = useRoute()
-const router = useRouter()
 const config = useRuntimeConfig()
 const API_BASE_URL = config.public.apiBaseUrl
 const disruptionId = route.params.id
@@ -62,69 +71,66 @@ async function updateDisruption() {
   } catch (e) { console.error('Update failed:', e) }
 }
 
+function resetForm() {
+  navigateTo('/disruption/overview')
+}
+
+watchEffect(() => {
+  registerTopbarActions?.({ reset: resetForm, submit: updateDisruption, canSubmit })
+})
+
 onMounted(loadData)
 </script>
 
 <template>
-  <div :class="theme.pageWrapper">
-    <Topbar
-      title="Disruptions · Edit"
-      :can-submit="canSubmit"
-      :show-reset="true"
-      :show-create="true"
-      create-label="Update"
-      @reset="() => navigateTo('/disruption/overview')"
-      @submit="updateDisruption"
-    />
+  <main :class="theme.container">
+    <section :class="theme.card">
+      <h3 class="font-semibold text-lg mb-2">Edit Disruption Details</h3>
 
-    <main :class="theme.container">
-      <section :class="theme.card">
-        <h3 class="font-semibold text-lg mb-2">Edit Disruption Details</h3>
+      <div :class="theme.formGrid">
+        <label :class="theme.label">
+          Name
+          <input v-model="disruption.name" :class="theme.input" placeholder="e.g. Belt Jam" />
+        </label>
 
-        <div :class="theme.formGrid">
-          <label :class="theme.label">
-            Name
-            <input v-model="disruption.name" :class="theme.input" placeholder="e.g. Belt Jam" />
-          </label>
+        <label :class="theme.label">
+          Internal ID
+          <input :value="disruption.id" :class="[theme.input, 'opacity-50 cursor-not-allowed']" disabled />
+        </label>
 
-          <label :class="theme.label">
-            Internal ID
-            <input :value="disruption.id" :class="[theme.input, 'opacity-50 cursor-not-allowed']" disabled />
-          </label>
-
-          <div class="flex flex-col">
-            <label :class="theme.label">Start</label>
-            <div class="flex gap-2 items-end">
-              <input v-model="disruption.start_date" type="datetime-local" :class="theme.input" />
-              <button type="button" @click="setNow('start')" :class="theme.btnDeleteMode" class="h-[42px] px-4">Now</button>
-            </div>
+        <div class="flex flex-col">
+          <label :class="theme.label">Start</label>
+          <div class="flex gap-2 items-end">
+            <input v-model="disruption.start_date" type="datetime-local" :class="theme.input" />
+            <button type="button" @click="setNow('start_date')" :class="theme.btnDeleteMode" class="h-[42px] px-4">Now</button>
           </div>
-
-          <div class="flex flex-col">
-            <label :class="theme.label">End</label>
-            <div class="flex gap-2 items-end">
-              <input v-model="disruption.end_date" type="datetime-local" :class="theme.input" />
-              <button type="button" @click="setNow('end')" :class="theme.btnDeleteMode" class="h-[42px] px-4">Now</button>
-            </div>
-          </div>
-
-          <label :class="theme.label">
-            Affected Resource
-            <select v-model="disruption.resource" :class="theme.input">
-              <option disabled value="">-- choose --</option>
-              <option v-for="r in resources" :key="r.id" :value="r.id">{{ r.name }}</option>
-            </select>
-          </label>
-
-          <label :class="theme.label">
-            Disruption Type
-            <select v-model="disruption.type" :class="theme.input">
-              <option disabled value="">-- choose --</option>
-              <option v-for="t in types" :key="t.id" :value="t.id">{{ t.name }}</option>
-            </select>
-          </label>
         </div>
-      </section>
-    </main>
-  </div>
+
+        <div class="flex flex-col">
+          <label :class="theme.label">End</label>
+          <div class="flex gap-2 items-end">
+            <input v-model="disruption.end_date" type="datetime-local" :class="theme.input" />
+            <button type="button" @click="setNow('end_date')" :class="theme.btnDeleteMode" class="h-[42px] px-4">Now</button>
+          </div>
+        </div>
+
+        <label :class="theme.label">
+          Affected Resource
+          <select v-model="disruption.resource" :class="theme.input">
+            <option disabled value="">-- choose --</option>
+            <option v-for="r in resources" :key="r.id" :value="r.id">{{ r.name }}</option>
+          </select>
+        </label>
+
+        <label :class="theme.label">
+          Disruption Type
+          <select v-model="disruption.type" :class="theme.input">
+            <option disabled value="">-- choose --</option>
+            <option v-for="t in types" :key="t.id" :value="t.id">{{ t.name }}</option>
+          </select>
+        </label>
+      </div>
+    </section>
+  </main>
 </template>
+

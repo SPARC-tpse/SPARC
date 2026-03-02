@@ -1,12 +1,20 @@
 <script setup lang="js">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, inject, watchEffect } from 'vue'
 import { useRoute, useRouter } from '#app'
 
-definePageMeta({ layout: 'custom' })
+definePageMeta({
+  layout: 'custom',
+  layoutProps: {
+    title: 'Workers · Edit',
+    showReset: true,
+    showCreate: true,
+    createLabel: 'Update',
+  },
+})
 
-// Theme-Zentrale laden
+const registerTopbarActions = inject('registerTopbarActions')
+
 const { theme } = useAppTheme()
-
 const route = useRoute()
 const router = useRouter()
 const config = useRuntimeConfig()
@@ -37,42 +45,38 @@ async function updateWorker() {
     } catch (error) { alert('Failed to update worker') }
 }
 
+function resetForm() {
+    router.push('/worker/overview')
+}
+
+watchEffect(() => {
+    registerTopbarActions?.({ reset: resetForm, submit: updateWorker, canSubmit })
+})
+
 onMounted(loadWorker)
 </script>
 
 <template>
-  <div :class="theme.pageWrapper">
-    <Topbar
-      title="Workers · Edit"
-      :can-submit="canSubmit"
-      :show-reset="true"
-      :show-create="true"
-      create-label="Update"
-      @reset="() => router.push('/worker/overview')"
-      @submit="updateWorker"
-    />
+  <main :class="theme.container">
+    <section :class="theme.card" class="max-w-2xl mx-auto">
+      <h3 class="font-semibold text-lg mb-4">Edit Worker Details</h3>
 
-    <main :class="theme.container">
-      <section :class="theme.card" class="max-w-2xl mx-auto">
-        <h3 class="font-semibold text-lg mb-4">Edit Worker Details</h3>
+      <div class="space-y-4">
+        <label :class="theme.label">
+          Worker Name
+          <input
+            v-model="worker.name"
+            :class="theme.input"
+            placeholder="e.g. John Doe"
+            autofocus
+            @keyup.enter="updateWorker"
+          />
+        </label>
 
-        <div class="space-y-4">
-          <label :class="theme.label">
-            Worker Name
-            <input
-              v-model="worker.name"
-              :class="theme.input"
-              placeholder="e.g. John Doe"
-              autofocus
-              @keyup.enter="updateWorker"
-            />
-          </label>
-
-          <div class="text-xs opacity-50 italic">
-            ID: #{{ workerId }}
-          </div>
+        <div class="text-xs opacity-50 italic">
+          ID: #{{ workerId }}
         </div>
-      </section>
-    </main>
-  </div>
+      </div>
+    </section>
+  </main>
 </template>

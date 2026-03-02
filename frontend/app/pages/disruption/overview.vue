@@ -51,50 +51,49 @@ onMounted(fetchDisruptions)
 </script>
 
 <template>
-  <div :class="theme.pageWrapper">
-    <!-- <Topbar title="Disruptions · Overview" :show-reset="false" :show-create="false" /> -->
-    <main :class="theme.container">
-      <section :class="theme.card">
-        <div class="flex items-center justify-between gap-4">
-          <div class="flex items-center gap-4">
-            <h3 class="font-semibold text-lg">Disruptions overview</h3>
-            <span :class="theme.totalBadge">{{ disruptions.length }} total</span>
-          </div>
-          <div class="flex gap-2">
-            <button @click="toggleDeleteMode" :class="isDeleteMode ? 'bg-slate-700 text-white border-slate-600 px-3 py-2 rounded-lg text-sm font-semibold border' : theme.btnDeleteMode">{{ isDeleteMode ? 'Done' : 'Delete Mode' }}</button>
-            <NuxtLink to="/disruption/new" class="px-3 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-pink-500 shadow-md">+ New Disruption</NuxtLink>
-          </div>
+  <main :class="theme.container">
+    <section :class="theme.card">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <h3 class="font-semibold text-lg">Disruptions overview</h3>
+          <span :class="theme.totalBadge">{{ disruptions.length }} total</span>
+        </div>
+        <div class="flex gap-2">
+          <button @click="toggleDeleteMode" :class="isDeleteMode ? theme.btnDeleteModeActive : theme.btnDeleteMode">
+            {{ isDeleteMode ? 'Done' : 'Delete Mode' }}
+          </button>
+          <NuxtLink to="/disruption/new" :class="theme.btnNewEntity">+ New Disruption</NuxtLink>
+        </div>
+      </div>
+
+      <div class="grid gap-2 overflow-x-auto">
+        <div :class="theme.tableHeaderDisruptions">
+          <button @click="sortBy('name')" :class="[theme.headerBtn, 'justify-start']">Name <span class="opacity-50 ml-1">{{ getSortIcon('name') }}</span></button>
+          <button @click="sortBy('id')" :class="[theme.headerBtn, 'justify-start']">ID <span class="opacity-50 ml-1">{{ getSortIcon('id') }}</span></button>
+          <button @click="sortBy('start')" :class="[theme.headerBtn, 'justify-start']">Start <span class="opacity-50 ml-1">{{ getSortIcon('start') }}</span></button>
+          <button @click="sortBy('end')" :class="[theme.headerBtn, 'justify-start']">End <span class="opacity-50 ml-1">{{ getSortIcon('end') }}</span></button>
+          <button @click="sortBy('resource')" :class="[theme.headerBtn, 'justify-start']">Resource <span class="opacity-50 ml-1">{{ getSortIcon('resource') }}</span></button>
+          <button @click="sortBy('type')" :class="[theme.headerBtn, 'justify-start']">Type <span class="opacity-50 ml-1">{{ getSortIcon('type') }}</span></button>
+          <span class="text-right block w-full">Action</span>
         </div>
 
-        <div class="grid gap-2 overflow-x-auto">
-          <div :class="theme.tableHeaderDisruptions">
-            <button @click="sortBy('name')" :class="[theme.headerBtn, 'justify-start']">Name <span class="opacity-50 ml-1">{{ getSortIcon('name') }}</span></button>
-            <button @click="sortBy('id')" :class="[theme.headerBtn, 'justify-start']">ID <span class="opacity-50 ml-1">{{ getSortIcon('id') }}</span></button>
-            <button @click="sortBy('start')" :class="[theme.headerBtn, 'justify-start']">Start <span class="opacity-50 ml-1">{{ getSortIcon('start') }}</span></button>
-            <button @click="sortBy('end')" :class="[theme.headerBtn, 'justify-start']">End <span class="opacity-50 ml-1">{{ getSortIcon('end') }}</span></button>
-            <button @click="sortBy('resource')" :class="[theme.headerBtn, 'justify-start']">Resource <span class="opacity-50 ml-1">{{ getSortIcon('resource') }}</span></button>
-            <button @click="sortBy('type')" :class="[theme.headerBtn, 'justify-start']">Type <span class="opacity-50 ml-1">{{ getSortIcon('type') }}</span></button>
-            <span class="text-right block w-full">Action</span>
+        <div v-for="d in sortedDisruptions" :key="d.id" :class="[theme.tableRowDisruptions, deleteConfirmId === d.id ? '!border-red-500 !bg-red-500/10' : '']">
+          <div class="font-medium flex items-center gap-2 overflow-hidden">
+            <button v-if="deleteConfirmId === d.id" @click.stop="executeDelete(d.id)" :class="theme.btnConfirmDelete">Confirm</button>
+            <span class="truncate">{{ d.name }}</span>
           </div>
-
-          <div v-for="d in sortedDisruptions" :key="d.id" :class="[theme.tableRowDisruptions, deleteConfirmId === d.id ? '!border-red-500 !bg-red-500/10' : '']">
-            <div class="font-medium flex items-center gap-2 overflow-hidden">
-               <button v-if="deleteConfirmId === d.id" @click.stop="executeDelete(d.id)" class="bg-red-600 text-white text-[10px] font-bold uppercase px-2 py-1 rounded shadow-sm">Confirm</button>
-               <span class="truncate">{{ d.name }}</span>
-            </div>
-            <span class="font-mono text-xs opacity-50">#{{ d.id }}</span>
-            <span class="text-xs opacity-80">{{ formatDate(d.start_date) }}</span>
-            <span class="text-xs opacity-80">{{ formatDate(d.end_date) }}</span>
-            <span class="text-xs truncate">{{ d.resource }}</span>
-            <div><span :class="[theme.badge, getBadgeColor('disruption', d.type)]">{{ d.type }}</span></div>
-            <div class="text-right">
-              <button @click="handleAction(d.id)" :class="isDeleteMode ? 'border-red-200 text-red-500 hover:bg-red-50 w-full px-2 py-1.5 text-xs font-medium rounded border transition-colors' : theme.btnAction">
-                {{ isDeleteMode ? (deleteConfirmId === d.id ? 'Cancel' : 'Delete') : 'Edit' }}
-              </button>
-            </div>
+          <span class="font-mono text-xs opacity-50">#{{ d.id }}</span>
+          <span class="text-xs opacity-80">{{ formatDate(d.start_date) }}</span>
+          <span class="text-xs opacity-80">{{ formatDate(d.end_date) }}</span>
+          <span class="text-xs truncate">{{ d.resource }}</span>
+          <div><span :class="[theme.badge, getBadgeColor('disruption', d.type)]">{{ d.type }}</span></div>
+          <div class="text-right">
+            <button @click="handleAction(d.id)" :class="isDeleteMode ? theme.btnActionDelete : theme.btnAction">
+              {{ isDeleteMode ? (deleteConfirmId === d.id ? 'Cancel' : 'Delete') : 'Edit' }}
+            </button>
           </div>
         </div>
-      </section>
-    </main>
-  </div>
+      </div>
+    </section>
+  </main>
 </template>

@@ -1,6 +1,5 @@
 <script setup lang="js">
 import { ref, computed } from 'vue'
-import { useTheme } from '~/composables/useTheme'
 
 definePageMeta({
   layout: 'custom',
@@ -11,7 +10,7 @@ definePageMeta({
   },
 })
 
-const { isDarkMode } = useTheme()
+const { theme, colors, isDarkMode, getBadgeColor } = useAppTheme()
 
 const editMode = ref(false)
 const panelToAdd = ref('')
@@ -156,14 +155,7 @@ function onDragEnd() {
 }
 
 function orderBadge(status) {
-  const tones = {
-    Running: 'bg-emerald-600 text-emerald-100',
-    Planned: 'bg-blue-600 text-blue-100',
-    Paused: 'bg-amber-600 text-amber-100',
-    Done: 'bg-slate-600 text-slate-100',
-    default: 'bg-slate-600 text-slate-100'
-  }
-  return tones[status] || tones.default
+  return getBadgeColor('status', status)
 }
 
 function resourceBadge(status) {
@@ -171,10 +163,9 @@ function resourceBadge(status) {
     Online: 'bg-emerald-600 text-emerald-100',
     Idle: 'bg-amber-600 text-amber-100',
     Maintenance: 'bg-pink-600 text-pink-100',
-    Offline: 'bg-slate-600 text-slate-100',
-    default: 'bg-slate-600 text-slate-100'
+    Offline: 'bg-slate-600 text-slate-100'
   }
-  return tones[status] || tones.default
+  return tones[status] || 'bg-slate-600 text-slate-100'
 }
 
 function disruptionBadge(type) {
@@ -182,286 +173,203 @@ function disruptionBadge(type) {
     Error: 'bg-amber-600 text-amber-100',
     Maintenance: 'bg-indigo-600 text-indigo-100',
     Quality: 'bg-cyan-600 text-cyan-100',
-    Material: 'bg-orange-600 text-orange-100',
-    default: 'bg-slate-600 text-slate-100'
+    Material: 'bg-orange-600 text-orange-100'
   }
-  return tones[type] || tones.default
+  return tones[type] || 'bg-slate-600 text-slate-100'
 }
 
 function formatDate(value) {
   if (!value) return '-'
   return new Date(value).toLocaleString('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
+    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
   })
 }
 </script>
 
 <template>
-  <div :class="isDarkMode ? 'dark-mode' : 'light-mode'">
-    <!--
-    <Topbar
-      title="Overview"
-      :show-reset="false"
-      :show-create="false"
-    />
-    -->
+  <main :class="theme.container" class="space-y-4">
 
-    <main class="max-w-6xl mx-auto p-6 space-y-4">
-      <section
-        class="rounded-xl border p-4 shadow-lg transition-colors"
-        :class="isDarkMode
-          ? 'border-gray-700 bg-slate-900 shadow-black'
-          : 'border-slate-200 bg-white shadow-slate-200'"
-      >
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 class="text-sm font-semibold uppercase tracking-[0.2em]" :class="isDarkMode ? 'text-slate-300' : 'text-slate-500'">
-              Dashboard layout
-            </h2>
-            <p class="text-xs mt-1" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-              Edit mode enables drag, close, and add panels.
-            </p>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
+    <!-- Layout-Editor Card -->
+    <section :class="theme.dashboardCard">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 :class="theme.dashboardSubtitle">Dashboard layout</h2>
+          <p :class="theme.dashboardHint">Edit mode enables drag, close, and add panels.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button :class="theme.dashboardEditBtn" @click="editMode = !editMode">
+            {{ editMode ? 'Finish edit' : 'Edit layout' }}
+          </button>
+          <div class="flex items-center gap-2">
+            <select v-model="panelToAdd" :class="theme.input" class="h-10 mt-0">
+              <option disabled value="">Add panel</option>
+              <option v-for="panel in availablePanels" :key="panel.id" :value="panel.id">
+                {{ panel.title }}
+              </option>
+            </select>
             <button
-              class="px-3 py-2 text-sm rounded-lg border transition-colors"
-              :class="isDarkMode
-                ? 'border-gray-600 hover:bg-gray-700 text-slate-200'
-                : 'border-slate-300 hover:bg-slate-200 text-slate-700'"
-              @click="editMode = !editMode"
+              :class="theme.dashboardEditBtn"
+              class="disabled:opacity-50"
+              :disabled="!panelToAdd"
+              @click="addPanel"
             >
-              {{ editMode ? 'Finish edit' : 'Edit layout' }}
+              Add
             </button>
-            <div class="flex items-center gap-2">
-              <select v-model="panelToAdd" class="input h-10">
-                <option disabled value="">Add panel</option>
-                <option v-for="panel in availablePanels" :key="panel.id" :value="panel.id">
-                  {{ panel.title }}
-                </option>
-              </select>
-              <button
-                class="px-3 py-2 text-sm rounded-lg border transition-colors disabled:opacity-50"
-                :class="isDarkMode
-                  ? 'border-gray-600 hover:bg-gray-700 text-slate-200'
-                  : 'border-slate-300 hover:bg-slate-200 text-slate-700'"
-                :disabled="!panelToAdd"
-                @click="addPanel"
-              >
-                Add
-              </button>
-            </div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <TransitionGroup name="panel-swap" tag="section" class="dashboard-grid">
-        <article
-          v-for="(widget, index) in widgets"
-          :key="widget.id"
-          class="panel"
-          :style="panelStyle(widget)"
-          :class="[
-            isDarkMode ? 'border-gray-700 bg-slate-900 shadow-black' : 'border-slate-200 bg-white shadow-slate-200',
-            editMode ? 'cursor-move' : '',
-            editMode && dragOverIndex === index
-              ? (isDarkMode ? 'ring-2 ring-pink-500' : 'ring-2 ring-indigo-400')
-              : ''
-          ]"
-          :draggable="editMode"
-          @dragstart="startDrag(index, $event)"
-          @dragover="onDragOver(index, $event)"
-          @drop="onDrop(index)"
-          @dragend="onDragEnd"
-        >
-          <div class="panel-header">
-            <div class="flex items-center gap-2">
-              <span class="text-sm font-semibold">{{ widget.title }}</span>
-              <span v-if="editMode" class="text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">Drag</span>
+    <!-- Widget Grid -->
+    <TransitionGroup name="panel-swap" tag="section" class="dashboard-grid">
+      <article
+        v-for="(widget, index) in widgets"
+        :key="widget.id"
+        class="panel"
+        :style="panelStyle(widget)"
+        :class="[
+          theme.dashboardPanel,
+          editMode ? 'cursor-move' : '',
+          editMode && dragOverIndex === index ? theme.dashboardEditRing : ''
+        ]"
+        :draggable="editMode"
+        @dragstart="startDrag(index, $event)"
+        @dragover="onDragOver(index, $event)"
+        @drop="onDrop(index)"
+        @dragend="onDragEnd"
+      >
+        <div class="panel-header" :class="colors.dashboardPanelHeaderBorder">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold">{{ widget.title }}</span>
+            <span v-if="editMode" :class="theme.dashboardDragHint">Drag</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <NuxtLink v-if="widget.link" :to="widget.link" :class="theme.dashboardOpenLink">Open</NuxtLink>
+            <button v-if="editMode" :class="theme.dashboardEditBtn" @click="closePanel(widget.id)">Close</button>
+          </div>
+        </div>
+
+        <div class="panel-body space-y-2">
+
+          <!-- Orders -->
+          <div v-if="widget.type === 'orders'" class="space-y-2">
+            <div class="grid grid-cols-[1.3fr,0.7fr,0.7fr] gap-2" :class="theme.dashboardHeaderText">
+              <span>Order</span><span>Status</span><span>Start</span>
             </div>
-            <div class="flex items-center gap-2">
-              <NuxtLink
-                v-if="widget.link"
-                :to="widget.link"
-                class="text-xs font-medium"
-                :class="isDarkMode ? 'text-pink-200 hover:text-pink-100' : 'text-pink-600 hover:text-pink-800'"
-              >
-                Open
-              </NuxtLink>
-              <button
-                v-if="editMode"
-                class="text-xs px-2 py-1 rounded border transition-colors"
-                :class="isDarkMode
-                  ? 'border-gray-600 hover:bg-gray-700 text-slate-200'
-                  : 'border-slate-300 hover:bg-slate-200 text-slate-700'"
-                @click="closePanel(widget.id)"
-              >
-                Close
-              </button>
+            <div
+              v-for="order in orders.slice(0, 4)" :key="order.id"
+              class="grid grid-cols-[1.3fr,0.7fr,0.7fr] gap-2 items-center"
+              :class="theme.dashboardPanelRow"
+            >
+              <span class="font-medium">{{ order.name }}</span>
+              <span :class="[theme.badge, orderBadge(order.status)]" class="w-fit">{{ order.status }}</span>
+              <span :class="theme.dashboardMetaText">{{ order.start_date }}</span>
             </div>
           </div>
 
-          <div class="panel-body space-y-2">
-            <div v-if="widget.type === 'orders'" class="space-y-2">
-              <div class="grid grid-cols-[1.3fr,0.7fr,0.7fr] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-                <span>Order</span><span>Status</span><span>Start</span>
+          <!-- KPIs -->
+          <div v-else-if="widget.type === 'kpis'" class="space-y-2">
+            <div
+              v-for="kpi in kpis" :key="kpi.id"
+              class="flex items-center justify-between"
+              :class="theme.dashboardPanelRow"
+            >
+              <div>
+                <div class="font-medium">{{ kpi.name }}</div>
+                <div :class="theme.dashboardMetaText">{{ kpi.unit }}</div>
               </div>
-              <div
-                v-for="order in orders.slice(0, 4)"
-                :key="order.id"
-                class="grid grid-cols-[1.3fr,0.7fr,0.7fr] gap-2 items-center rounded-lg border px-3 py-2 text-sm"
-                :class="isDarkMode
-                  ? 'border-gray-700 bg-gray-700'
-                  : 'border-slate-200 bg-slate-50'"
-              >
-                <span class="font-medium">{{ order.name }}</span>
-                <span class="px-2 py-1 rounded-full text-xs font-semibold w-fit" :class="orderBadge(order.status)">
-                  {{ order.status }}
-                </span>
-                <span class="text-xs" :class="isDarkMode ? 'text-slate-300' : 'text-slate-500'">
-                  {{ order.start_date }}
-                </span>
-              </div>
-            </div>
-
-            <div v-else-if="widget.type === 'kpis'" class="space-y-2">
-              <div
-                v-for="kpi in kpis"
-                :key="kpi.id"
-                class="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
-                :class="isDarkMode
-                  ? 'border-gray-700 bg-gray-700'
-                  : 'border-slate-200 bg-slate-50'"
-              >
-                <div>
-                  <div class="font-medium">{{ kpi.name }}</div>
-                  <div class="text-xs" :class="isDarkMode ? 'text-slate-300' : 'text-slate-500'">{{ kpi.unit }}</div>
-                </div>
-                <div class="text-right">
-                  <div class="font-semibold">{{ kpi.value }}</div>
-                  <div class="text-xs" :class="kpi.delta.startsWith('+') ? 'text-emerald-500' : 'text-rose-400'">
-                    {{ kpi.delta }}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div v-else-if="widget.type === 'disruption-trend'" class="space-y-2">
-              <div class="text-xs" :class="isDarkMode ? 'text-slate-300' : 'text-slate-500'">
-                Frequency by type
-              </div>
-              <div class="rounded-lg border px-3 py-3" :class="isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-slate-200 bg-slate-50'">
-                <svg
-                  v-if="disruptionBars.length"
-                  :viewBox="`0 0 ${disruptionChart.width} ${disruptionChart.height}`"
-                  class="w-full h-36"
-                >
-                  <line
-                    :x1="disruptionChart.leftPad"
-                    :y1="disruptionChart.height - disruptionChart.bottomPad"
-                    :x2="disruptionChart.width - disruptionChart.rightPad"
-                    :y2="disruptionChart.height - disruptionChart.bottomPad"
-                    :stroke="isDarkMode ? '#475569' : '#cbd5f5'"
-                    stroke-width="1"
-                  />
-                  <text
-                    :x="disruptionChart.leftPad - 10"
-                    :y="disruptionChart.height / 2"
-                    :fill="isDarkMode ? '#94a3b8' : '#64748b'"
-                    font-size="6"
-                    text-anchor="middle"
-                    :transform="`rotate(-90 ${disruptionChart.leftPad - 10} ${disruptionChart.height / 2})`"
-                  >
-                    Duration
-                  </text>
-                  <text
-                    :x="disruptionChart.width / 2"
-                    :y="disruptionChart.height - 4"
-                    :fill="isDarkMode ? '#94a3b8' : '#64748b'"
-                    font-size="6"
-                    text-anchor="middle"
-                  >
-                    Frequency
-                  </text>
-                  <rect
-                    v-for="bar in disruptionBars"
-                    :key="bar.label"
-                    :x="bar.x"
-                    :y="bar.y"
-                    :width="bar.width"
-                    :height="bar.height"
-                    :fill="isDarkMode ? '#f472b6' : '#6366f1'"
-                    rx="2"
-                  />
-                </svg>
-                <div v-else class="text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-                  No disruption data yet.
-                </div>
-              </div>
-              <div class="grid grid-cols-2 gap-2 text-xs" :class="isDarkMode ? 'text-slate-300' : 'text-slate-500'">
-                <div v-for="item in disruptionSeries" :key="item.label" class="flex items-center justify-between">
-                  <span>{{ item.label }}</span>
-                  <span class="font-semibold">{{ item.count }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div v-else-if="widget.type === 'disruptions'" class="space-y-2">
-              <div class="grid grid-cols-[1.2fr,0.7fr,0.9fr] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-                <span>Disruption</span><span>Type</span><span>Start</span>
-              </div>
-              <div
-                v-for="disruption in disruptions"
-                :key="disruption.id"
-                class="grid grid-cols-[1.2fr,0.7fr,0.9fr] gap-2 items-center rounded-lg border px-3 py-2 text-sm"
-                :class="isDarkMode
-                  ? 'border-gray-700 bg-gray-700'
-                  : 'border-slate-200 bg-slate-50'"
-              >
-                <span class="font-medium">{{ disruption.name }}</span>
-                <span class="px-2 py-1 rounded-full text-xs font-semibold w-fit" :class="disruptionBadge(disruption.type)">
-                  {{ disruption.type }}
-                </span>
-                <span class="text-xs" :class="isDarkMode ? 'text-slate-300' : 'text-slate-500'">
-                  {{ formatDate(disruption.start_date) }}
-                </span>
-              </div>
-            </div>
-
-            <div v-else-if="widget.type === 'resources'" class="space-y-2">
-              <div class="grid grid-cols-[1.2fr,0.7fr] gap-2 text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-                <span>Resource</span><span>Status</span>
-              </div>
-              <div
-                v-for="resource in resources"
-                :key="resource.id"
-                class="grid grid-cols-[1.2fr,0.7fr] gap-2 items-center rounded-lg border px-3 py-2 text-sm"
-                :class="isDarkMode
-                  ? 'border-gray-700 bg-gray-700'
-                  : 'border-slate-200 bg-slate-50'"
-              >
-                <span class="font-medium">{{ resource.name }}</span>
-                <span class="px-2 py-1 rounded-full text-xs font-semibold w-fit" :class="resourceBadge(resource.status)">
-                  {{ resource.status }}
-                </span>
+              <div class="text-right">
+                <div class="font-semibold">{{ kpi.value }}</div>
+                <div class="text-xs" :class="kpi.delta.startsWith('+') ? 'text-emerald-500' : 'text-rose-400'">{{ kpi.delta }}</div>
               </div>
             </div>
           </div>
-        </article>
-      </TransitionGroup>
-    </main>
-  </div>
+
+          <!-- Disruption Trend -->
+          <div v-else-if="widget.type === 'disruption-trend'" class="space-y-2">
+            <div :class="theme.dashboardMetaText">Frequency by type</div>
+            <div :class="theme.dashboardChartBg">
+              <svg
+                v-if="disruptionBars.length"
+                :viewBox="`0 0 ${disruptionChart.width} ${disruptionChart.height}`"
+                class="w-full h-36"
+              >
+                <line
+                  :x1="disruptionChart.leftPad"
+                  :y1="disruptionChart.height - disruptionChart.bottomPad"
+                  :x2="disruptionChart.width - disruptionChart.rightPad"
+                  :y2="disruptionChart.height - disruptionChart.bottomPad"
+                  :stroke="colors.dashboardAxisStroke"
+                  stroke-width="1"
+                />
+                <text
+                  :x="disruptionChart.leftPad - 10"
+                  :y="disruptionChart.height / 2"
+                  :fill="colors.dashboardAxisText"
+                  font-size="6" text-anchor="middle"
+                  :transform="`rotate(-90 ${disruptionChart.leftPad - 10} ${disruptionChart.height / 2})`"
+                >Duration</text>
+                <text
+                  :x="disruptionChart.width / 2"
+                  :y="disruptionChart.height - 4"
+                  :fill="colors.dashboardAxisText"
+                  font-size="6" text-anchor="middle"
+                >Frequency</text>
+                <rect
+                  v-for="bar in disruptionBars" :key="bar.label"
+                  :x="bar.x" :y="bar.y" :width="bar.width" :height="bar.height"
+                  :fill="colors.dashboardBarFill"
+                  rx="2"
+                />
+              </svg>
+              <div v-else :class="theme.dashboardEmptyChart">No disruption data yet.</div>
+            </div>
+            <div class="grid grid-cols-2 gap-2" :class="theme.dashboardMetaText">
+              <div v-for="item in disruptionSeries" :key="item.label" class="flex items-center justify-between">
+                <span>{{ item.label }}</span>
+                <span class="font-semibold">{{ item.count }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Disruptions -->
+          <div v-else-if="widget.type === 'disruptions'" class="space-y-2">
+            <div class="grid grid-cols-[1.2fr,0.7fr,0.9fr] gap-2" :class="theme.dashboardHeaderText">
+              <span>Disruption</span><span>Type</span><span>Start</span>
+            </div>
+            <div
+              v-for="disruption in disruptions" :key="disruption.id"
+              class="grid grid-cols-[1.2fr,0.7fr,0.9fr] gap-2 items-center"
+              :class="theme.dashboardPanelRow"
+            >
+              <span class="font-medium">{{ disruption.name }}</span>
+              <span :class="[theme.badge, disruptionBadge(disruption.type)]" class="w-fit">{{ disruption.type }}</span>
+              <span :class="theme.dashboardMetaText">{{ formatDate(disruption.start_date) }}</span>
+            </div>
+          </div>
+
+          <!-- Resources -->
+          <div v-else-if="widget.type === 'resources'" class="space-y-2">
+            <div class="grid grid-cols-[1.2fr,0.7fr] gap-2" :class="theme.dashboardHeaderText">
+              <span>Resource</span><span>Status</span>
+            </div>
+            <div
+              v-for="resource in resources" :key="resource.id"
+              class="grid grid-cols-[1.2fr,0.7fr] gap-2 items-center"
+              :class="theme.dashboardPanelRow"
+            >
+              <span class="font-medium">{{ resource.name }}</span>
+              <span :class="[theme.badge, resourceBadge(resource.status)]" class="w-fit">{{ resource.status }}</span>
+            </div>
+          </div>
+
+        </div>
+      </article>
+    </TransitionGroup>
+  </main>
 </template>
 
 <style scoped>
-.dark-mode {
-  @apply bg-slate-950 text-slate-100;
-}
-.light-mode {
-  @apply bg-slate-50 text-slate-900;
-}
 .dashboard-grid {
   @apply grid gap-4;
   grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -488,21 +396,6 @@ function formatDate(value) {
 }
 .panel-body {
   @apply flex-1 px-4 pb-4 pt-3 overflow-auto;
-}
-.dark-mode .panel-header {
-  @apply border-gray-700 text-slate-100;
-}
-.light-mode .panel-header {
-  @apply border-slate-200 text-slate-900;
-}
-.input {
-  @apply w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors;
-}
-.dark-mode .input {
-  @apply border-gray-700 bg-gray-800 text-slate-100 placeholder-slate-500 focus:border-pink-500 focus:ring-1 focus:ring-pink-500;
-}
-.light-mode .input {
-  @apply border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500;
 }
 @media (max-width: 1024px) {
   .dashboard-grid {

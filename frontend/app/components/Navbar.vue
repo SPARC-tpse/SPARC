@@ -6,8 +6,7 @@ import { useResourceDraft } from '~/composables/useResourceDraft'
 import { useWorkerDraft } from '~/composables/useWorkerDraft'
 import { useZoom } from '~/composables/useZoom';
 
-const { theme } = useAppTheme()
-const { isDarkMode } = useTheme()
+const { theme, isDarkMode } = useAppTheme()
 const route = useRoute()
 const { zoomIn, zoomOut, resetZoom, zoomPercent } = useZoom();
 
@@ -86,14 +85,14 @@ function toForLink(link) {
 
     <div :class="theme.navFooter" class="mt-auto">
       <div class="flex items-center gap-2">
-        <div class="w-1.5 h-1.5 rounded-full" :class="isDarkMode ? 'bg-indigo-500' : 'bg-amber-500'"></div>
+        <div :class="theme.modeIndicator"></div>
         <span>Mode: {{ isDarkMode ? 'Dark' : 'Light' }}</span>
       </div>
 
       <div class="mt-3 pt-3 border-t border-slate-200/60 flex items-center gap-2">
         <button
           type="button"
-          class="px-2 py-1 rounded border border-slate-300/70"
+          :class="theme.zoomBtn"
           @click="zoomOut"
           aria-label="Zoom verkleinern"
         >
@@ -106,7 +105,7 @@ function toForLink(link) {
 
         <button
           type="button"
-          class="px-2 py-1 rounded border border-slate-300/70"
+          :class="theme.zoomBtn"
           @click="zoomIn"
           aria-label="Zoom vergrößern"
         >
@@ -115,7 +114,7 @@ function toForLink(link) {
 
         <button
           type="button"
-          class="ml-auto px-2 py-1 rounded border border-slate-300/70 text-sm"
+          :class="[theme.zoomBtn, 'ml-auto text-sm']"
           @click="resetZoom"
         >
           Reset

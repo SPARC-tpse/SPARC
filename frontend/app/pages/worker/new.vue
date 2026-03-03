@@ -15,8 +15,6 @@ definePageMeta({
 
 const registerTopbarActions = inject('registerTopbarActions')
 
-
-
 const { theme } = useAppTheme()
 const router = useRouter()
 const config = useRuntimeConfig()
@@ -43,7 +41,7 @@ async function submitWorker() {
             body: { name: workerName.value }
         })
         resetDraft()
-        await router.push('/worker/overview') // TODO: await notwendig?
+        await router.push('/worker/overview')
     } catch (error) { alert('Failed to create worker') }
 }
 
@@ -57,28 +55,26 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div :class="theme.pageWrapper">
-    <main :class="theme.container">
-      <section :class="theme.card" class="max-w-2xl mx-auto">
-        <h3 class="font-semibold text-lg mb-4">Add New Worker</h3>
+  <main :class="theme.container">
+    <section :class="theme.card" class="max-w-2xl mx-auto">
+      <h3 class="font-semibold text-lg mb-4">Add New Worker</h3>
 
-        <div class="space-y-4">
-          <label :class="theme.label">
-            Worker Name
-            <input
-              v-model="workerName"
-              :class="theme.input"
-              placeholder="e.g. Maxi Musterknabe"
-              autofocus
-              @keyup.enter="submitWorker"
-            />
-          </label>
+      <div class="space-y-4">
+        <label :class="theme.label">
+          Worker Name
+          <input
+            v-model="workerName"
+            :class="theme.input"
+            placeholder="e.g. Maxi Musterknabe"
+            autofocus
+            @keyup.enter="submitWorker"
+          />
+        </label>
 
-          <div class="p-3 rounded-lg bg-slate-500/5 border border-slate-500/10 text-xs opacity-70 leading-relaxed">
-            <strong>Note:</strong> This name will appear in the selection list when creating or editing orders.
-          </div>
+        <div :class="theme.infoBox">
+          <strong>Note:</strong> This name will appear in the selection list when creating or editing orders.
         </div>
-      </section>
-    </main>
-  </div>
+      </div>
+    </section>
+  </main>
 </template>

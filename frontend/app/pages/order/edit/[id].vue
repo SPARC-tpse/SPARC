@@ -1,8 +1,18 @@
 <script setup lang="js">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, inject, watchEffect } from 'vue'
 import MultiSelect from '~/components/MultiSelect.vue'
 
-definePageMeta({ layout: 'custom' })
+definePageMeta({
+  layout: 'custom',
+  layoutProps: {
+    title: 'Orders · Edit',
+    showReset: true,
+    showCreate: true,
+    createLabel: 'Update',
+  },
+})
+
+const registerTopbarActions = inject('registerTopbarActions')
 
 const { theme } = useAppTheme();
 const config = useRuntimeConfig();
@@ -145,8 +155,6 @@ async function loadDependencies() {
 async function updateOrder() {
   if (!canSubmit.value) return
 
-  console.log(processSteps.value)
-
   const processPayload = processSteps.value.map(s => ({
     id: s.id ?? null,
     name: s.name,
@@ -154,8 +162,6 @@ async function updateOrder() {
     workers: s.workers.map(w => w.id),
     approximated_time: s.approximated_time
   }));
-
-  console.log(processPayload)
 
   try {
     await $fetch(`${API_BASE_URL}/api/order/put/${orderId}/`, {
@@ -177,6 +183,14 @@ watch(selectedProcessStep, (newValue) => {
   }
 })
 
+function resetForm() {
+  navigateTo('/order/overview')
+}
+
+watchEffect(() => {
+  registerTopbarActions?.({ reset: resetForm, submit: updateOrder, canSubmit })
+})
+
 onMounted(() => {
   loadOrder()
   loadDependencies()
@@ -184,106 +198,74 @@ onMounted(() => {
 </script>
 
 <template>
-  <div :class="theme.pageWrapper">
-    <Topbar title="Orders · Edit" :can-submit="canSubmit" :show-reset="true" create-label="Update" @reset="() => navigateTo('/order/overview')" @submit="updateOrder" />
-
-    <main :class="theme.container" class="space-y-6">
-      <!-- order form -->
-      <section :class="theme.card">
-        <div :class="theme.formGrid">
-          <label :class="theme.label">
-              <div class="flex items-center gap-2"><span>Order Name</span><span v-if="hasWarning('name')" class="text-amber-500">⚠️</span></div>
-              <input v-model="order.name" :class="[theme.input, hasWarning('name') ? 'border-amber-500' : '']" />
-          </label>
-          <label :class="theme.label">ID <input :value="order.id" :class="theme.inputDisabled" disabled /></label>
-          <label :class="theme.label">Target Amount <input v-model="order.target_amount" type="number" :class="theme.input" /></label>
-          <label :class="theme.label">Product Name <input v-model="order.product_name" :class="theme.input" /></label>
-          <label :class="theme.label">Start date <input v-model="order.start_date" type="datetime-local" :class="theme.input" /></label>
-          <label :class="theme.label">End Date <input v-model="order.end_date" type="date" :class="theme.input" /></label>
-          <label :class="theme.label">Status
-            <select v-model="order.status" :class="theme.input">
-              <option
-                v-for="(s, i) in ['Planned', 'Running', 'Paused', 'Done']"
-                :key="s"
-                :value="i"
-              >
-                {{ s }}
-              </option>
-            </select>
-          </label>
-          <label :class="theme.label">Priority
-            <select v-model="order.priority" :class="theme.input">
-              <option
-                v-for="(p, i) in ['High', 'Medium', 'Low']"
-                :key="p"
-                :value="i"
-              >
-                {{ p }}
-              </option>
-            </select>
-          </label>
-          <label :class="theme.label" class="sm:col-span-2">Comments <textarea v-model="order.comments" rows="2" :class="theme.input" /></label>
-        </div>
-      </section>
-
-      <!-- file upload -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div :class="theme.card">
-          <FileUpload
-            file-type="bom"
-            label="Bill of Materials"
-            :order-id="orderId"
-          />
-        </div>
-        <div :class="theme.card">
-          <FileUpload
-            file-type="general"
-            label="Additional Files"
-            :order-id="orderId"
-          />
-        </div>
-      </div>
-
-      <!-- process selection -->
-      <section v-if="processSteps.length > 0" :class="theme.card">
-        <h3 class="font-semibold text-lg">Live Step Management</h3>
-        <label :class="theme.label">Select Step to edit times
-          <select v-model="selectedProcessStep" :class="theme.input">
-            <option :value="null">-- Choose a step --</option>
-            <option v-for="(step, index) in processSteps" :key="step._id" :value="step">
-              {{ hasProcessWarning(step) ? '⚠️ ' : '' }} Step {{ index + 1 }}: {{ step.name || 'Unnamed' }}
+  <main :class="theme.container" class="space-y-6">
+    <!-- order form -->
+    <section :class="theme.card">
+      <div :class="theme.formGrid">
+        <label :class="theme.label">
+            <div class="flex items-center gap-2"><span>Order Name</span><span v-if="hasWarning('name')" class="text-amber-500">⚠️</span></div>
+            <input v-model="order.name" :class="[theme.input, hasWarning('name') ? 'border-amber-500' : '']" />
+        </label>
+        <label :class="theme.label">ID <input :value="order.id" :class="theme.inputDisabled" disabled /></label>
+        <label :class="theme.label">Target Amount <input v-model="order.target_amount" type="number" :class="theme.input" /></label>
+        <label :class="theme.label">Product Name <input v-model="order.product_name" :class="theme.input" /></label>
+        <label :class="theme.label">Start date <input v-model="order.start_date" type="datetime-local" :class="theme.input" /></label>
+        <label :class="theme.label">End Date <input v-model="order.end_date" type="date" :class="theme.input" /></label>
+        <label :class="theme.label">Status
+          <select v-model="order.status" :class="theme.input">
+            <option
+              v-for="(s, i) in ['Planned', 'Running', 'Paused', 'Done']"
+              :key="s"
+              :value="i"
+            >
+              {{ s }}
             </option>
           </select>
         </label>
+        <label :class="theme.label">Priority
+          <select v-model="order.priority" :class="theme.input">
+            <option
+              v-for="(p, i) in ['High', 'Medium', 'Low']"
+              :key="p"
+              :value="i"
+            >
+              {{ p }}
+            </option>
+          </select>
+        </label>
+        <label :class="theme.label" class="sm:col-span-2">Comments <textarea v-model="order.comments" rows="2" :class="theme.input" /></label>
+      </div>
+    </section>
 
-        <div v-if="selectedProcessStep" class="space-y-4 pt-4 border-t" :class="isDarkMode ? 'border-gray-700' : 'border-slate-200'">
-          <!-- process id -->
-          <div>
+    <!-- file upload -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div :class="theme.card"><FileUpload file-type="bom" label="Bill of Materials" :order-id="orderId" /></div>
+      <div :class="theme.card"><FileUpload file-type="general" label="Additional Files" :order-id="orderId" /></div>
+    </div>
+
+    <!-- process selection -->
+    <section v-if="processSteps.length > 0" :class="theme.card">
+      <h3 class="font-semibold text-lg">Live Step Management</h3>
+      <label :class="theme.label">Select Step to edit times
+        <select v-model="selectedProcessStep" :class="theme.input">
+          <option :value="null">-- Choose a step --</option>
+          <option v-for="(step, index) in processSteps" :key="step._id" :value="step">
+            {{ hasProcessWarning(step) ? '⚠️ ' : '' }} Step {{ index + 1 }}: {{ step.name || 'Unnamed' }}
+          </option>
+        </select>
+      </label>
+
+      <div v-if="selectedProcessStep" class="pt-4 border-t border-slate-700/30 space-y-4">
+        <div>
             <span class="text-sm label-text">Process Step ID:</span>
             <span class="ml-2 font-mono font-semibold" :class="isDarkMode ? 'text-slate-200' : 'text-slate-700'">
               {{ selectedProcessStep.id || 'N/A' }}
             </span>
           </div>
 
-          <!-- waiting time -->
-          <ProcessTimer
-              label="Waiting Time"
-              :initial-seconds="selectedProcessStep.waiting_time || 0"
-              :process-id="selectedProcessStep.id"
-              timer-type="waiting_time"
-          />
-
-
           <!-- setup time -->
-          <ProcessTimer
-              label="Setup Time"
-              :initial-seconds="selectedProcessStep.setup_time || 0"
-              :process-id="selectedProcessStep.id"
-              timer-type="setup_time"
-          />
-
-          <!-- horizontal separator -->
-          <hr :class="isDarkMode ? 'border-gray-700' : 'border-slate-300'" />
+          <ProcessTimer label="Setup Time" :initial-seconds="selectedProcessStep.setup_time_seconds || 0"
+                        :process-id="selectedProcessStep.id" timer-type="setup_time" @time-saved="handleTimeSaved" />
 
           <!-- create disruption button -->
           <div>
@@ -292,28 +274,27 @@ onMounted(() => {
             </button>
           </div>
 
+          <!-- waiting time -->
+          <ProcessTimer label="Waiting Time" :initial-seconds="selectedProcessStep.waiting_time_seconds || 0"
+                        :process-id="selectedProcessStep.id" timer-type="waiting_time" @time-saved="handleTimeSaved" />
+
           <!-- horizontal separator -->
           <hr :class="isDarkMode ? 'border-gray-700' : 'border-slate-300'" />
 
           <!-- process time -->
-          <ProcessTimer
-              label="Process Time"
-              :process-id="selectedProcessStep.id"
-              timer-type="process_time"
-              @update="addPart"
-          />
+          <ProcessTimer label="Process Time" :initial-seconds="selectedProcessStep.process_time_seconds || 0"
+                        :process-id="selectedProcessStep.id" timer-type="process_time" @time-saved="handleTimeSaved" />
 
           <!-- add part -->
           <div class="space-y-3 pt-2">
             <div class="flex items-center gap-3">
-              <span class="text-sm label-text">Parts produced</span>
+              <span class="text-sm label-text">Part</span>
               <span class="px-3 py-1 rounded-lg font-mono font-bold" :class="isDarkMode ? 'bg-gray-800 text-green-400' : 'bg-green-50 text-green-600'">
                 {{ partsProduced }}
               </span>
-              <!--
               <button @click="addPart" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg">
                 + Add Part
-              </button>-->
+              </button>
             </div>
 
             <!-- parts list -->
@@ -326,76 +307,63 @@ onMounted(() => {
                      :class="isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-slate-200 bg-slate-50'">
                   <span class="font-medium">Part {{ index + 1 }}</span>
                   <span class="font-mono text-xs" :class="isDarkMode ? 'text-slate-300' : 'text-slate-600'">
-                    {{ part.process_time }}
+                    {{ formatTime(part.process_time_seconds) }}
                   </span>
                 </div>
               </div>
             </div>
           </div>
+      </div>
+    </section>
+
+    <!-- process editor -->
+    <section :class="theme.card">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-semibold text-lg">Process Steps Editor</h3>
+        <button :class="theme.linkAction" @click="addStep">+ Add step</button>
+      </div>
+
+      <div class="space-y-3">
+        <div
+          v-if="processSteps.length > 0"
+          :class="['px-1 opacity-70', theme.processStepGrid.replace('items-start', '')]"
+        >
+          <span></span>
+          <span class="text-center font-bold">#</span>
+          <span :class="theme.label">Process Name</span>
+          <span :class="theme.label">Worker</span>
+          <span :class="theme.label">Resource</span>
+          <span :class="theme.label">Time (Approx.)</span>
         </div>
 
-        <div v-else class="rounded-xl border p-4 text-center transition-colors"
-             :class="isDarkMode ? 'border-gray-900 bg-slate-900' : 'border-slate-200 bg-white'">
-          <p class="text-sm" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-            No process steps defined for this order. Add process steps below to enable timing management.
-          </p>
-        </div>
-      </section>
+        <div v-if="processSteps.length === 0" class="py-10 text-center opacity-50 italic">No steps defined. Add one to begin.</div>
 
-      <!-- process editor -->
-      <section :class="theme.card">
-        <!-- title and add button -->
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="font-semibold text-lg">Process Steps Editor</h3>
-          <button :class="theme.linkAction" @click="addStep">+ Add step</button>
-        </div>
-
-        <!-- table -->
-        <div class="space-y-3">
-          <!-- column names -->
-          <div
-            v-if="processSteps.length > 0"
-            :class="['px-1 opacity-70', theme.processStepGrid.replace('items-start', '')]"
-          >
-            <span></span>
-            <span class="text-center font-bold">#</span>
-            <span :class="theme.label">Process Name</span>
-            <span :class="theme.label">Worker</span>
-            <span :class="theme.label">Resource</span>
-            <span :class="theme.label">Time (Approx.)</span>
-          </div>
-
-          <!-- filler -->
-          <div v-if="processSteps.length === 0" class="py-10 text-center opacity-50 italic">No steps defined. Add one to begin.</div>
-
-          <!-- rows -->
-          <div
-            v-for="(step, i) in processSteps"
-            :key="step._id"
-            :class="[theme.processStepGrid, theme.row, hasProcessWarning(step) ? 'border-amber-500/50' : '']"
-          >
-            <button @click="removeStep(i)" class="mt-2 text-slate-400 hover:text-red-500 transition-colors">✕</button>
-            <span class="mt-2 text-center text-xs opacity-50">{{  i + 1 }}</span>
-            <input v-model="step.name" :class="theme.input" class="mt-0 h-[38px]" placeholder="Step Name" />
-            <MultiSelect v-model="step.workers" :model-list="workerList" />
-            <MultiSelect
-                :model-value="step.resource ? [step.resource] : []"
-                :model-list="resourceList"
-                single
-                @update:model-value="step.resource = $event[0] ?? null"
-            />
-            <div class="flex items-center gap-1">
-              <input v-model.number="step.approximated_time.h" type="number" min="0" :class="theme.input" class="w-16 text-center no-arrows" placeholder="hh" />
-              <span class="opacity-50">:</span>
-              <input v-model.number="step.approximated_time.m" type="number" min="0" max="59" :class="theme.input" class="w-16 text-center no-arrows" placeholder="mm" />
-              <span class="opacity-50">:</span>
-              <input v-model.number="step.approximated_time.s" type="number" min="0" max="59" :class="theme.input" class="w-16 text-center no-arrows" placeholder="ss" />
-            </div>
+        <div
+          v-for="(step, i) in processSteps"
+          :key="step._id"
+          :class="[theme.processStepGrid, theme.row, hasProcessWarning(step) ? 'border-amber-500/50' : '']"
+        >
+          <button @click="removeStep(i)" class="mt-2 text-slate-400 hover:text-red-500 transition-colors">✕</button>
+          <span class="mt-2 text-center text-xs opacity-50">{{  i + 1 }}</span>
+          <input v-model="step.name" :class="theme.input" class="mt-0 h-[38px]" placeholder="Step Name" />
+          <MultiSelect v-model="step.workers" :model-list="workerList" />
+          <MultiSelect
+              :model-value="step.resource ? [step.resource] : []"
+              :model-list="resourceList"
+              single
+              @update:model-value="step.resource = $event[0] ?? null"
+          />
+          <div class="flex items-center gap-1">
+            <input v-model.number="step.approximated_time.h" type="number" min="0" :class="theme.input" class="w-16 text-center no-arrows" placeholder="hh" />
+            <span class="opacity-50">:</span>
+            <input v-model.number="step.approximated_time.m" type="number" min="0" max="59" :class="theme.input" class="w-16 text-center no-arrows" placeholder="mm" />
+            <span class="opacity-50">:</span>
+            <input v-model.number="step.approximated_time.s" type="number" min="0" max="59" :class="theme.input" class="w-16 text-center no-arrows" placeholder="ss" />
           </div>
         </div>
-      </section>
-    </main>
-  </div>
+      </div>
+    </section>
+  </main>
 </template>
 
 <style scoped>

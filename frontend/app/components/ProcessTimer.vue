@@ -113,7 +113,7 @@ onUnmounted(() => {
 
 <template>
   <div class="space-y-2">
-    <label class="text-sm font-medium label-text">
+    <label :class="theme.label">
       {{ label }}
     </label>
 
@@ -133,12 +133,9 @@ onUnmounted(() => {
       <button
         @click="resetTimer"
         :disabled="seconds === 0"
-        class="px-3 py-2 rounded-lg text-sm font-semibold border transition-colors"
         :class="[
-          seconds === 0 ? 'opacity-50 cursor-not-allowed' : '',
-          isDarkMode
-            ? 'border-gray-700 bg-gray-800 text-slate-200 hover:bg-gray-700'
-            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+          theme.timerResetBtn,
+          seconds === 0 ? 'opacity-50 cursor-not-allowed' : ''
         ]"
       >
         Reset
@@ -146,12 +143,9 @@ onUnmounted(() => {
 
       <!-- Time Display -->
       <div
-        class="px-4 py-2 rounded-lg font-mono text-lg font-bold"
         :class="[
-          isRunning ? 'animate-pulse' : '',
-          isDarkMode
-            ? 'bg-gray-800 text-green-400 border border-gray-700'
-            : 'bg-slate-100 text-green-600 border border-slate-300'
+          theme.timerDisplay,
+          isRunning ? 'animate-pulse' : ''
         ]"
       >
         {{ formattedTime }}
@@ -159,12 +153,3 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.label-text {
-  @apply text-slate-300;
-}
-.light-mode .label-text {
-  @apply text-slate-600;
-}
-</style>

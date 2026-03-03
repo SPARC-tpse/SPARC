@@ -61,6 +61,11 @@ various backend fixes
 style changes
 - added useAppTheme composable for better theme management
 - updated badge colors for better visibility
+- Added zooming functionality
+- Refactored the topbar logic for better maintainability
+- updated the design of the disruption timer for better visibility and user experience
+- migrated all pages to useAppTheme for better theme management
+- reworked lightmode colors for better visibility
 
 v0.2.0
 ===

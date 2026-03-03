@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, shallowRef, watch, onMounted, onBeforeUnmount, computed, provide } from 'vue'
-import { useTheme } from '~/composables/useTheme'
 import { useRoute} from "vue-router"
 import { useZoom } from '~/composables/useZoom'
 
@@ -12,8 +11,7 @@ import { useDisruptionTimer } from '~/composables/useDisruptionTimer'
 import { useDisruptionDraft } from '~/composables/useDisruptionDraft'
 
 
-// Get theme for background color
-const { isDarkMode } = useTheme()
+const { colors, isDarkMode } = useAppTheme()
 const route = useRoute()
 
 type TopbarActions = {
@@ -152,7 +150,7 @@ onBeforeUnmount(() => {
 <template>
   <!-- Main container with flex layout -->
   <div class="h-screen overflow-hidden flex transition-colors duration-300"
-       :class="isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'">
+       :class="colors.wrapper">
 
 
     <!-- Left side: Page content (takes up remaining space) -->

@@ -1,11 +1,10 @@
 <script setup lang="js">
     import { ref } from 'vue'
-    import { useTheme } from '~/composables/useTheme'
 
     const props = defineProps({
         fileType: {
             type: String,
-            default: 'general' // 'bom' or 'general'
+            default: 'general'
         },
         label: {
             type: String,
@@ -19,7 +18,7 @@
 
     const emit = defineEmits(['filesUpdated','filesUploaded', 'fileDeleted'])
 
-    const { isDarkMode } = useTheme()
+    const { theme } = useAppTheme()
     const config = useRuntimeConfig()
     const API_BASE_URL = config.public.apiBaseUrl
 
@@ -123,18 +122,15 @@
 <template>
   <div class="space-y-3">
     <div class="flex items-center justify-between">
-      <label class="text-sm font-medium label-text">
+      <label :class="theme.label">
         {{ label }}
       </label>
       <button
         @click="openFilePicker"
         :disabled="uploading"
-        class="px-3 py-1.5 text-xs rounded-lg border transition-colors font-medium"
         :class="[
-          uploading ? 'opacity-50 cursor-not-allowed' : '',
-          isDarkMode
-            ? 'border-gray-700 bg-gray-800 text-slate-200 hover:bg-gray-700'
-            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+          theme.fileUploadBtn,
+          uploading ? 'opacity-50 cursor-not-allowed' : ''
         ]"
       >
         {{ uploading ? 'Uploading...' : '+ Add Files' }}
@@ -152,32 +148,20 @@
     />
 
     <!-- File list -->
-    <div
-      v-if="uploadedFiles.length > 0"
-      class="space-y-2"
-    >
+    <div v-if="uploadedFiles.length > 0" class="space-y-2">
       <div
         v-for="(file, index) in uploadedFiles"
         :key="file.path"
-        class="flex items-center justify-between p-3 rounded-lg border text-sm transition-colors"
-        :class="isDarkMode
-          ? 'border-gray-700 bg-gray-800'
-          : 'border-slate-200 bg-slate-50'"
+        :class="theme.fileRow"
       >
         <div class="flex items-center gap-3 flex-1 min-w-0">
           <!-- File icon -->
-          <div class="text-2xl shrink-0">
-            📄
-          </div>
+          <div class="text-2xl shrink-0">📄</div>
 
           <!-- File info -->
           <div class="flex-1 min-w-0">
-            <div class="font-medium truncate" :class="isDarkMode ? 'text-slate-200' : 'text-slate-700'">
-              {{ file.filename }}
-            </div>
-            <div class="text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-              {{ formatFileSize(file.size) }}
-            </div>
+            <div :class="theme.fileNameText">{{ file.filename }}</div>
+            <div :class="theme.fileMetaText">{{ formatFileSize(file.size) }}</div>
           </div>
         </div>
 
@@ -186,19 +170,13 @@
           <a
             :href="file.url"
             target="_blank"
-            class="px-2 py-1 text-xs rounded border transition-colors"
-            :class="isDarkMode
-              ? 'border-gray-600 text-slate-300 hover:bg-gray-700'
-              : 'border-slate-300 text-slate-600 hover:bg-slate-100'"
+            :class="theme.fileViewBtn"
           >
             View
           </a>
           <button
             @click="deleteFile(file, index)"
-            class="px-2 py-1 text-xs rounded border transition-colors"
-            :class="isDarkMode
-              ? 'border-red-900 text-red-400 hover:bg-red-900/30'
-              : 'border-red-200 text-red-600 hover:bg-red-50'"
+            :class="theme.fileDeleteBtn"
           >
             Delete
           </button>
@@ -207,23 +185,8 @@
     </div>
 
     <!-- Empty state -->
-    <div
-      v-else
-      class="p-4 rounded-lg border-2 border-dashed text-center"
-      :class="isDarkMode
-        ? 'border-gray-700 text-slate-400'
-        : 'border-slate-300 text-slate-500'"
-    >
+    <div v-else :class="theme.fileEmptyState">
       <p class="text-sm">No files uploaded yet</p>
     </div>
   </div>
 </template>
-
-<style scoped>
-.label-text {
-  @apply text-slate-300;
-}
-.light-mode .label-text {
-  @apply text-slate-600;
-}
-</style>

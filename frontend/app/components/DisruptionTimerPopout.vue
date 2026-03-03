@@ -19,6 +19,8 @@ const props = defineProps<{
   onStop: () => void
 }>()
 
+const { theme } = useAppTheme()
+
 const primaryLabel = computed(() => {
   if (!props.isRunning && !props.isPaused) return 'Start'
   if (props.isPaused) return 'Resume'
@@ -41,15 +43,11 @@ function onPrimaryClick() {
 <template>
   <div
     v-if="props.visible && (props.isRunning || props.isPaused)"
-    class="fixed z-50 w-72 overflow-hidden rounded-xl border shadow-lg select-none
-           border-slate-200 bg-white text-slate-900
-           dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
+    :class="theme.popoutContainer"
     :style="{ left: props.pos.x + 'px', top: props.pos.y + 'px' }"
   >
     <div
-      class="cursor-move px-4 py-3 border-b font-semibold text-sm tracking-wide
-             border-slate-200 bg-slate-50 text-slate-800
-             dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+      :class="theme.popoutHeader"
       @pointerdown="props.onPointerDown"
       @pointermove="props.onPointerMove"
       @pointerup="props.onPointerUp"
@@ -79,17 +77,14 @@ function onPrimaryClick() {
                  focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
           :class="(!props.isRunning && !props.isPaused)
             ? 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-md'
-            : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800'"
+            : theme.popoutBtnSecondary"
           @click="onPrimaryClick"
         >
           {{ primaryLabel }}
         </button>
 
         <button
-          class="rounded-lg border px-3 py-2 text-sm transition-colors
-                 border-slate-300 bg-white text-slate-700 hover:bg-slate-50
-                 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800
-                 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
+          :class="theme.popoutBtnSecondary"
           @click="props.onStop"
           :disabled="!props.isRunning && !props.isPaused"
         >

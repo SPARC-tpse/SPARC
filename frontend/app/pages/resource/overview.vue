@@ -53,48 +53,45 @@ onMounted(fetchResources)
 </script>
 
 <template>
-  <div :class="theme.pageWrapper">
-    <!-- <Topbar title="Resources · Overview" :show-reset="false" :show-create="false" /> -->
-    <main :class="theme.container">
-      <section :class="theme.card">
-        <div class="flex items-center justify-between gap-4">
-          <div class="flex items-center gap-4">
-            <h3 class="font-semibold text-lg">Resources Overview</h3>
-            <span :class="theme.totalBadge">{{ resources.length }} total</span>
+  <main :class="theme.container">
+    <section :class="theme.card">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <h3 class="font-semibold text-lg">Resources Overview</h3>
+          <span :class="theme.totalBadge">{{ resources.length }} total</span>
+        </div>
+        <div class="flex gap-2">
+          <button @click="toggleDeleteMode" :class="isDeleteMode ? theme.btnDeleteModeActive : theme.btnDeleteMode">
+            {{ isDeleteMode ? 'Done' : 'Delete Mode' }}
+          </button>
+          <NuxtLink to="/resource/new" :class="theme.btnNewEntity">+ New Resource</NuxtLink>
+        </div>
+      </div>
+
+      <div class="grid gap-2 overflow-x-auto">
+        <div :class="theme.tableHeaderRes">
+          <button @click="sortBy('name')" :class="[theme.headerBtn, 'justify-start']">Name <span class="opacity-50 ml-1">{{ getSortIcon('name') }}</span></button>
+          <button @click="sortBy('id')" :class="[theme.headerBtn, 'justify-start']">ID <span class="opacity-50 ml-1">{{ getSortIcon('id') }}</span></button>
+          <button @click="sortBy('type')" :class="[theme.headerBtn, 'justify-start']">Type <span class="opacity-50 ml-1">{{ getSortIcon('type') }}</span></button>
+          <button @click="sortBy('status')" :class="[theme.headerBtn, 'justify-start']">Status <span class="opacity-50 ml-1">{{ getSortIcon('status') }}</span></button>
+          <span class="text-right cursor-default block w-full">Action</span>
+        </div>
+
+        <div v-for="res in sortedResources" :key="res.id" :class="[theme.tableRowRes, deleteConfirmId === res.id ? '!border-red-500 !bg-red-500/10' : '']">
+          <div class="flex items-center gap-2 overflow-hidden">
+             <button v-if="deleteConfirmId === res.id" @click.stop="executeDelete(res.id)" :class="theme.btnConfirmDelete">Confirm</button>
+             <span class="truncate font-medium">{{ res.name }}</span>
           </div>
-          <div class="flex gap-2">
-            <button @click="toggleDeleteMode" :class="isDeleteMode ? 'bg-slate-700 text-white border-slate-600 px-3 py-2 rounded-lg text-sm font-semibold border' : theme.btnDeleteMode">
-              {{ isDeleteMode ? 'Done' : 'Delete Mode' }}
+          <span class="font-mono text-xs opacity-50">{{ res.id }}</span>
+          <span class="text-xs capitalize">{{ res.type }}</span>
+          <div><span :class="[theme.badge, getBadgeColor('status', getStatusText(res.status))]">{{ getStatusText(res.status) }}</span></div>
+          <div class="text-right">
+            <button @click="handleRowAction(res.id)" :class="isDeleteMode ? theme.btnActionDelete : theme.btnAction">
+              {{ !isDeleteMode ? 'Edit' : (deleteConfirmId === res.id ? 'Cancel' : 'Delete') }}
             </button>
-            <NuxtLink to="/resource/new" class="px-3 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-pink-500 shadow-md">+ New Resource</NuxtLink>
           </div>
         </div>
-
-        <div class="grid gap-2 overflow-x-auto">
-          <div :class="theme.tableHeaderRes">
-            <button @click="sortBy('name')" :class="[theme.headerBtn, 'justify-start']">Name <span class="opacity-50 ml-1">{{ getSortIcon('name') }}</span></button>
-            <button @click="sortBy('id')" :class="[theme.headerBtn, 'justify-start']">ID <span class="opacity-50 ml-1">{{ getSortIcon('id') }}</span></button>
-            <button @click="sortBy('type')" :class="[theme.headerBtn, 'justify-start']">Type <span class="opacity-50 ml-1">{{ getSortIcon('type') }}</span></button>
-            <button @click="sortBy('status')" :class="[theme.headerBtn, 'justify-start']">Status <span class="opacity-50 ml-1">{{ getSortIcon('status') }}</span></button>
-            <span class="text-right cursor-default block w-full">Action</span>
-          </div>
-
-          <div v-for="res in sortedResources" :key="res.id" :class="[theme.tableRowRes, deleteConfirmId === res.id ? '!border-red-500 !bg-red-500/10' : '']">
-            <div class="flex items-center gap-2 overflow-hidden">
-               <button v-if="deleteConfirmId === res.id" @click.stop="executeDelete(res.id)" class="bg-red-600 text-white text-[10px] font-bold uppercase px-2 py-1 rounded animate-pulse shadow-sm">Confirm</button>
-               <span class="truncate font-medium">{{ res.name }}</span>
-            </div>
-            <span class="font-mono text-xs opacity-50">{{ res.id }}</span>
-            <span class="text-xs capitalize">{{ res.type }}</span>
-            <div><span :class="[theme.badge, getBadgeColor('status', getStatusText(res.status))]">{{ getStatusText(res.status) }}</span></div>
-            <div class="text-right">
-              <button @click="handleRowAction(res.id)" :class="isDeleteMode ? 'border-red-200 text-red-500 hover:bg-red-50 w-full px-2 py-1.5 text-xs font-medium rounded border transition-colors text-center' : theme.btnAction">
-                {{ !isDeleteMode ? 'Edit' : (deleteConfirmId === res.id ? 'Cancel' : 'Delete') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
+      </div>
+    </section>
+  </main>
 </template>

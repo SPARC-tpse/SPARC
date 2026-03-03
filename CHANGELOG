@@ -6,8 +6,9 @@ feature/order_backend_integration
 - added part button with list already produced parts to order/edit
 - set DEBUG to False in settings.py
 - change input for update_order and create_order
-- add tests for model Part
-- add tests for part views
+- fix file viewing and file name
+- fix waiting time and setup time display
+- reset process timer after creating part
 
 testing
 - renamed duration disruption_time in disruption model

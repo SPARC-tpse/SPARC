@@ -353,8 +353,10 @@ def list_order_files(request, order_id):
         files = order.order_files.all()
         serializer = OrderFileSerializer(files, many=True, context={'request': request})
         return JsonResponse({'order_id': order_id, 'files': serializer.data})
-    except Order.DoesNotExist: return JsonResponse({'error': 'Order not found'}, status=404)
-    except Exception as e: return JsonResponse({'error': str(e)}, status=500)
+    except Order.DoesNotExist:
+        return JsonResponse({'error': 'Order not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 # --- Process ---

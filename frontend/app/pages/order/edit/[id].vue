@@ -42,36 +42,6 @@ const hasProcessWarning = (step) => {
   return !hasWorkers || !hasResource
 }
 
-/*
-async function addPart() {
-  if (!selectedProcessStep.value || !selectedProcessStep.value.id) {
-    alert('Please select a process step')
-    return
-  }
-
-  const currentProcessTime = selectedProcessStep.value.process_time_seconds || 0
-
-  try {
-    const response = await $fetch(`${API_BASE_URL}/api/process/add_part/${selectedProcessStep.value.id}/`, {
-      method: 'POST',
-      body: { process_time_seconds: currentProcessTime },
-      headers: { 'Content-Type': 'application/json' }
-    })
-
-    partsProduced.value++
-    partsList.value.push({
-      process_time_seconds: currentProcessTime,
-      created_at: new Date()
-    })
-
-    //console.log('Part added:', response)
-  } catch (error) {
-    console.error('Failed to add part:', error)
-    alert('Failed to add part')
-  }
-}
-*/
-
 /**
  * Adds a process to the processSteps list
  */
@@ -79,11 +49,20 @@ function addStep() {
   processSteps.value.push({ _id: Date.now() + Math.random(), name: '', workers: [], resource: null, approximated_time: { h: 0, m: 0, s: 0 } })
 }
 
+/**
+ * Adds a part to the `partsList` and increases `partsProduced` by 1, is called from the ProcessTimer
+ * @param part
+ * @returns {Promise<void>}
+ */
 async function addPart(part) {
   partsProduced.value = partsProduced.value + 1;
   partsList.value.push(part);
 }
 
+/**
+ * Loads all Parts for a process when a process is selected
+ * @returns {Promise<void>}
+ */
 async function loadParts() {
   try {
     console.log(selectedProcessStep.value);
@@ -91,6 +70,7 @@ async function loadParts() {
       method: 'GET',
     });
     partsList.value = response || [];
+    partsProduced.value = partsList.value.length;
   } catch (error) {
     alert(error.data?.error || error.message);
   }
@@ -248,8 +228,20 @@ onMounted(() => {
 
       <!-- file upload -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div :class="theme.card"><FileUpload file-type="bom" label="Bill of Materials" :order-id="orderId" /></div>
-        <div :class="theme.card"><FileUpload file-type="general" label="Additional Files" :order-id="orderId" /></div>
+        <div :class="theme.card">
+          <FileUpload
+            file-type="bom"
+            label="Bill of Materials"
+            :order-id="orderId"
+          />
+        </div>
+        <div :class="theme.card">
+          <FileUpload
+            file-type="general"
+            label="Additional Files"
+            :order-id="orderId"
+          />
+        </div>
       </div>
 
       <!-- process selection -->
@@ -276,7 +268,7 @@ onMounted(() => {
           <!-- waiting time -->
           <ProcessTimer
               label="Waiting Time"
-              :initial-seconds="selectedProcessStep.waiting_time_seconds || 0"
+              :initial-seconds="selectedProcessStep.waiting_time || 0"
               :process-id="selectedProcessStep.id"
               timer-type="waiting_time"
           />
@@ -285,7 +277,7 @@ onMounted(() => {
           <!-- setup time -->
           <ProcessTimer
               label="Setup Time"
-              :initial-seconds="selectedProcessStep.setup_time_seconds || 0"
+              :initial-seconds="selectedProcessStep.setup_time || 0"
               :process-id="selectedProcessStep.id"
               timer-type="setup_time"
           />
@@ -306,7 +298,6 @@ onMounted(() => {
           <!-- process time -->
           <ProcessTimer
               label="Process Time"
-              :initial-seconds="selectedProcessStep.process_time_seconds || 0"
               :process-id="selectedProcessStep.id"
               timer-type="process_time"
               @update="addPart"

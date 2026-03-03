@@ -18,10 +18,6 @@ const props = defineProps({
   timerType: {
     type: String,
     required: true // 'setup_time', 'waiting_time', 'process_time'
-  },
-  update: {
-    type: Function,
-    required: false
   }
 })
 
@@ -84,6 +80,7 @@ async function saveTime() {
         }
       });
       emit('update', response);
+      seconds.value = 0;
     } else {
       await $fetch(`${API_BASE_URL}/api/process/timing/${props.processId}/`, {
         method: 'PUT',

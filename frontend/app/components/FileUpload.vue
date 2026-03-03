@@ -173,10 +173,10 @@
           <!-- File info -->
           <div class="flex-1 min-w-0">
             <div class="font-medium truncate" :class="isDarkMode ? 'text-slate-200' : 'text-slate-700'">
-              {{ file.filename }}
+              {{ file.file_name }}
             </div>
             <div class="text-xs" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-              {{ formatFileSize(file.size) }}
+              {{ formatFileSize(file.file_size) }}
             </div>
           </div>
         </div>
@@ -184,7 +184,7 @@
         <!-- Actions -->
         <div class="flex items-center gap-2">
           <a
-            :href="file.url"
+            :href="file.file_url"
             target="_blank"
             class="px-2 py-1 text-xs rounded border transition-colors"
             :class="isDarkMode

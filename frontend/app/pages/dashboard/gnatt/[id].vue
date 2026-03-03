@@ -1,139 +1,3 @@
-<template>
-  <div class="gantt-wrapper">
-    <!-- Controls -->
-    <div class="gantt-controls">
-      <div class="control-group">
-        <label class="control-label">TIME INTERVAL</label>
-        <div class="btn-group">
-          <button
-            v-for="interval in timeIntervals"
-            :key="interval.value"
-            :class="['btn-interval', { active: selectedInterval === interval.value }]"
-            @click="selectedInterval = interval.value; fetchData()"
-          >
-            {{ interval.label }}
-          </button>
-        </div>
-      </div>
-
-      <div class="control-group">
-        <label class="control-label">VIEW BY</label>
-        <div class="btn-group">
-          <button
-            v-for="view in viewModes"
-            :key="view.value"
-            :class="['btn-view', { active: selectedView === view.value }]"
-            @click="selectedView = view.value; fetchData()"
-          >
-            <span class="view-icon">{{ view.icon }}</span>
-            {{ view.label }}
-          </button>
-        </div>
-      </div>
-
-      <div class="control-group ml-auto">
-        <label class="control-label">CURRENT TIME</label>
-        <div class="current-time-display">{{ currentTimeStr }}</div>
-      </div>
-    </div>
-
-    <!-- Chart Area -->
-    <div class="gantt-chart" ref="chartContainer">
-      <!-- Y-axis labels -->
-      <div class="gantt-rows-panel">
-        <div class="rows-header">
-          <span>{{ selectedView.toUpperCase() }}</span>
-        </div>
-        <div class="rows-body">
-          <div
-            v-for="row in visibleRows"
-            :key="row.id"
-            class="row-label"
-            :style="{ height: ROW_HEIGHT + 'px' }"
-          >
-            <span class="row-label-text" :title="row.label">{{ row.label }}</span>
-            <span class="row-sub" v-if="row.sub">{{ row.sub }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Timeline -->
-      <div class="gantt-timeline-wrap" ref="timelineWrap">
-        <!-- Time ruler -->
-        <div class="time-ruler">
-          <div
-            v-for="tick in timeTicks"
-            :key="tick.ts"
-            class="time-tick"
-            :style="{ left: tick.x + 'px' }"
-          >
-            <span class="tick-label">{{ tick.label }}</span>
-            <span class="tick-line"></span>
-          </div>
-        </div>
-
-        <!-- Grid + bars -->
-        <div class="gantt-body" :style="{ width: timelineWidth + 'px' }">
-          <!-- Grid lines -->
-          <div
-            v-for="tick in timeTicks"
-            :key="'grid-' + tick.ts"
-            class="grid-line"
-            :style="{ left: tick.x + 'px', height: ganttBodyHeight + 'px' }"
-          ></div>
-
-          <!-- NOW line -->
-          <div
-            class="now-line"
-            :style="{ left: nowX + 'px', height: ganttBodyHeight + 'px' }"
-          >
-            <span class="now-label">NOW</span>
-          </div>
-
-          <!-- Rows -->
-          <div
-            v-for="row in visibleRows"
-            :key="'row-' + row.id"
-            class="gantt-row"
-            :style="{ height: ROW_HEIGHT + 'px' }"
-          >
-            <!-- Bars for this row -->
-            <div
-              v-for="bar in row.bars"
-              :key="bar.id"
-              class="gantt-bar"
-              :class="bar.status"
-              :style="{
-                left: bar.x + 'px',
-                width: Math.max(bar.width, 4) + 'px',
-                top: '8px',
-                height: ROW_HEIGHT - 16 + 'px',
-              }"
-              @mouseenter="showTooltip($event, bar)"
-              @mouseleave="hideTooltip"
-            >
-              <span class="bar-label" v-if="bar.width > 60">{{ bar.label }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tooltip -->
-    <div
-      v-if="tooltip.visible"
-      class="gantt-tooltip"
-      :style="{ top: tooltip.y + 'px', left: tooltip.x + 'px' }"
-    >
-      <div class="tooltip-title">{{ tooltip.bar?.label }}</div>
-      <div class="tooltip-row"><span>Start</span><span>{{ tooltip.bar?.startStr }}</span></div>
-      <div class="tooltip-row"><span>End</span><span>{{ tooltip.bar?.endStr }}</span></div>
-      <div class="tooltip-row"><span>Duration</span><span>{{ tooltip.bar?.duration }}</span></div>
-      <div class="tooltip-status" :class="tooltip.bar?.status">{{ tooltip.bar?.status }}</div>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 
@@ -380,6 +244,142 @@ watch(selectedInterval, () => {
   }, 50)
 })
 </script>
+
+<template>
+  <div class="gantt-wrapper">
+    <!-- Controls -->
+    <div class="gantt-controls">
+      <div class="control-group">
+        <label class="control-label">TIME INTERVAL</label>
+        <div class="btn-group">
+          <button
+            v-for="interval in timeIntervals"
+            :key="interval.value"
+            :class="['btn-interval', { active: selectedInterval === interval.value }]"
+            @click="selectedInterval = interval.value; fetchData()"
+          >
+            {{ interval.label }}
+          </button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">VIEW BY</label>
+        <div class="btn-group">
+          <button
+            v-for="view in viewModes"
+            :key="view.value"
+            :class="['btn-view', { active: selectedView === view.value }]"
+            @click="selectedView = view.value; fetchData()"
+          >
+            <span class="view-icon">{{ view.icon }}</span>
+            {{ view.label }}
+          </button>
+        </div>
+      </div>
+
+      <div class="control-group ml-auto">
+        <label class="control-label">CURRENT TIME</label>
+        <div class="current-time-display">{{ currentTimeStr }}</div>
+      </div>
+    </div>
+
+    <!-- Chart Area -->
+    <div class="gantt-chart" ref="chartContainer">
+      <!-- Y-axis labels -->
+      <div class="gantt-rows-panel">
+        <div class="rows-header">
+          <span>{{ selectedView.toUpperCase() }}</span>
+        </div>
+        <div class="rows-body">
+          <div
+            v-for="row in visibleRows"
+            :key="row.id"
+            class="row-label"
+            :style="{ height: ROW_HEIGHT + 'px' }"
+          >
+            <span class="row-label-text" :title="row.label">{{ row.label }}</span>
+            <span class="row-sub" v-if="row.sub">{{ row.sub }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="gantt-timeline-wrap" ref="timelineWrap">
+        <!-- Time ruler -->
+        <div class="time-ruler">
+          <div
+            v-for="tick in timeTicks"
+            :key="tick.ts"
+            class="time-tick"
+            :style="{ left: tick.x + 'px' }"
+          >
+            <span class="tick-label">{{ tick.label }}</span>
+            <span class="tick-line"></span>
+          </div>
+        </div>
+
+        <!-- Grid + bars -->
+        <div class="gantt-body" :style="{ width: timelineWidth + 'px' }">
+          <!-- Grid lines -->
+          <div
+            v-for="tick in timeTicks"
+            :key="'grid-' + tick.ts"
+            class="grid-line"
+            :style="{ left: tick.x + 'px', height: ganttBodyHeight + 'px' }"
+          ></div>
+
+          <!-- NOW line -->
+          <div
+            class="now-line"
+            :style="{ left: nowX + 'px', height: ganttBodyHeight + 'px' }"
+          >
+            <span class="now-label">NOW</span>
+          </div>
+
+          <!-- Rows -->
+          <div
+            v-for="row in visibleRows"
+            :key="'row-' + row.id"
+            class="gantt-row"
+            :style="{ height: ROW_HEIGHT + 'px' }"
+          >
+            <!-- Bars for this row -->
+            <div
+              v-for="bar in row.bars"
+              :key="bar.id"
+              class="gantt-bar"
+              :class="bar.status"
+              :style="{
+                left: bar.x + 'px',
+                width: Math.max(bar.width, 4) + 'px',
+                top: '8px',
+                height: ROW_HEIGHT - 16 + 'px',
+              }"
+              @mouseenter="showTooltip($event, bar)"
+              @mouseleave="hideTooltip"
+            >
+              <span class="bar-label" v-if="bar.width > 60">{{ bar.label }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div
+      v-if="tooltip.visible"
+      class="gantt-tooltip"
+      :style="{ top: tooltip.y + 'px', left: tooltip.x + 'px' }"
+    >
+      <div class="tooltip-title">{{ tooltip.bar?.label }}</div>
+      <div class="tooltip-row"><span>Start</span><span>{{ tooltip.bar?.startStr }}</span></div>
+      <div class="tooltip-row"><span>End</span><span>{{ tooltip.bar?.endStr }}</span></div>
+      <div class="tooltip-row"><span>Duration</span><span>{{ tooltip.bar?.duration }}</span></div>
+      <div class="tooltip-status" :class="tooltip.bar?.status">{{ tooltip.bar?.status }}</div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');

@@ -308,6 +308,18 @@ def delete_order(request: Request, order_id: int) -> JsonResponse:
     except Order.DoesNotExist:
         return JsonResponse({'error': 'Order not found'}, status=404)
 
+@api_view(['GET'])
+def get_order_approximated_time(request: Request, order_id: int) -> JsonResponse:
+    try:
+        processes = Process.objects.all().filter(order__id=order_id)
+        sum: int = 0
+        for process in processes:
+            sum = sum + process.approximated_time
+        return JsonResponse({'order': order_id, 'approximated_time': sum}, status=200)
+    except Process.DoesNotExist:
+        return JsonResponse({'error': 'Process not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 # --- ORDER/FILES ---
 @api_view(['POST'])

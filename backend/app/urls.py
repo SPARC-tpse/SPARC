@@ -7,7 +7,7 @@ from .views import (
     delete_resource, get_resource, get_disruptions, get_disruption_types,
     create_disruption, delete_disruption, get_disruption, update_disruption,
     delete_process, get_processes, get_order_processes,
-    add_part, get_parts
+    add_part, get_parts, get_order_approximated_time
 )
 
 urlpatterns = [
@@ -18,6 +18,7 @@ urlpatterns = [
     path("order/post/", create_order, name="create_order"),
     path("order/put/<int:order_id>/", update_order, name="update_order"),
     path("order/delete/<int:order_id>/", delete_order, name="delete_order"),
+    path("order/approximated_time/<int:order_id>/", get_order_approximated_time, name="get_order_approximated_time"),
 
     # File endpoints
     path("order/file/post/", upload_order_file, name="upload_order_file"),

@@ -152,7 +152,7 @@ class DisruptionSerializer(serializers.ModelSerializer):
             "disruption_time"
         ]
 
-class Part(serializers.ModelSerializer):
+class PartSerializer(serializers.ModelSerializer):
     process = ProcessSerializer(many = False)
 
     class Meta:

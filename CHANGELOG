@@ -1,5 +1,15 @@
 v0.3.0
 ===
+feature/order_backend_integration
+- added add_part api function
+- added get_parts api function
+- added part button with list already produced parts to order/edit
+- set DEBUG to False in settings.py
+- change input for update_order and create_order
+- fix file viewing and file name
+- fix waiting time and setup time display
+- reset process timer after creating part
+
 testing
 - renamed duration disruption_time in disruption model
 - added Part model
@@ -36,27 +46,17 @@ fix/workflow
 - update run_server script
 
 disruptions
-- backend integration
+- backend intergration
 - time save fix
 - fixed edit mode
 - added delete mode
-- Added drafts for disruptions
 
 Resources
-- backend integration
+- backend intergration
 - added delete mode
 - fixed edit mode
-- Added drafts for resources
 
 various backend fixes
-
-Orders
-- Addes Drafts for orders
-- Fixed the create (submit) button
-- The target amount of the new order can now only be digits
-
-Worker
-- Added drafts for workers
 
 style changes
 - added useAppTheme composable for better theme management
@@ -162,4 +162,3 @@ feature/frontend
 
 feature/hello-world
 - basic structure of the website
-

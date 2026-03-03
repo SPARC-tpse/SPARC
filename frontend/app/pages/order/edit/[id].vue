@@ -41,6 +41,10 @@ const canSubmit = computed(() => {
   return Boolean(o.name && o.start_date && o.end_date && o.target_amount && o.product_name)
 })
 
+// parts tracking
+const partsProduced = ref(0)
+const partsList = ref([])
+
 const hasWarning = (field) => !order.value[field]
 const hasProcessWarning = (step) => {
   const hasWorkers = step.workers && step.workers.length > 0
@@ -53,6 +57,33 @@ const hasProcessWarning = (step) => {
  */
 function addStep() {
   processSteps.value.push({ _id: Date.now() + Math.random(), name: '', workers: [], resource: null, approximated_time: { h: 0, m: 0, s: 0 } })
+}
+
+/**
+ * Adds a part to the `partsList` and increases `partsProduced` by 1, is called from the ProcessTimer
+ * @param part
+ * @returns {Promise<void>}
+ */
+async function addPart(part) {
+  partsProduced.value = partsProduced.value + 1;
+  partsList.value.push(part);
+}
+
+/**
+ * Loads all Parts for a process when a process is selected
+ * @returns {Promise<void>}
+ */
+async function loadParts() {
+  try {
+    console.log(selectedProcessStep.value);
+    const response = await $fetch(`${API_BASE_URL}/api/process/part/get/${selectedProcessStep.value.id}/`, {
+      method: 'GET',
+    });
+    partsList.value = response || [];
+    partsProduced.value = partsList.value.length;
+  } catch (error) {
+    alert(error.data?.error || error.message);
+  }
 }
 
 /**
@@ -108,7 +139,7 @@ async function loadDependencies() {
   try {
     const [w, r] = await Promise.all([
       $fetch(`${API_BASE_URL}/api/worker/get/`),
-      $fetch(`${API_BASE_URL}/api/resource/get/`)
+      $fetch(`${API_BASE_URL}/api/resource/get/`),
     ])
     workerList.value = w || [];
     resourceList.value = r || [];
@@ -145,6 +176,12 @@ async function updateOrder() {
     alert(error.data?.error || error.message)
   }
 }
+
+watch(selectedProcessStep, (newValue) => {
+  if (newValue?.id) {
+    loadParts();
+  }
+})
 
 function resetForm() {
   navigateTo('/order/overview')
@@ -219,12 +256,63 @@ onMounted(() => {
       </label>
 
       <div v-if="selectedProcessStep" class="pt-4 border-t border-slate-700/30 space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <ProcessTimer label="Setup" :initial-seconds="selectedProcessStep.setup_time_seconds" :process-id="selectedProcessStep.id" timer-type="setup_time" />
-          <ProcessTimer label="Waiting" :initial-seconds="selectedProcessStep.waiting_time_seconds" :process-id="selectedProcessStep.id" timer-type="waiting_time" />
-          <ProcessTimer label="Process" :initial-seconds="selectedProcessStep.process_time_seconds" :process-id="selectedProcessStep.id" timer-type="process_time" />
-        </div>
-        <button @click="navigateTo(`/disruption/new?process=${selectedProcessStep.id}`)" :class="theme.btnWarning">⚠️ Create Disruption</button>
+        <div>
+            <span class="text-sm label-text">Process Step ID:</span>
+            <span class="ml-2 font-mono font-semibold" :class="isDarkMode ? 'text-slate-200' : 'text-slate-700'">
+              {{ selectedProcessStep.id || 'N/A' }}
+            </span>
+          </div>
+
+          <!-- setup time -->
+          <ProcessTimer label="Setup Time" :initial-seconds="selectedProcessStep.setup_time_seconds || 0"
+                        :process-id="selectedProcessStep.id" timer-type="setup_time" @time-saved="handleTimeSaved" />
+
+          <!-- create disruption button -->
+          <div>
+            <button @click="createDisruption" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md bg-gradient-to-r from-amber-500 to-red-500 hover:shadow-lg">
+              ⚠️ Create Disruption
+            </button>
+          </div>
+
+          <!-- waiting time -->
+          <ProcessTimer label="Waiting Time" :initial-seconds="selectedProcessStep.waiting_time_seconds || 0"
+                        :process-id="selectedProcessStep.id" timer-type="waiting_time" @time-saved="handleTimeSaved" />
+
+          <!-- horizontal separator -->
+          <hr :class="isDarkMode ? 'border-gray-700' : 'border-slate-300'" />
+
+          <!-- process time -->
+          <ProcessTimer label="Process Time" :initial-seconds="selectedProcessStep.process_time_seconds || 0"
+                        :process-id="selectedProcessStep.id" timer-type="process_time" @time-saved="handleTimeSaved" />
+
+          <!-- add part -->
+          <div class="space-y-3 pt-2">
+            <div class="flex items-center gap-3">
+              <span class="text-sm label-text">Part</span>
+              <span class="px-3 py-1 rounded-lg font-mono font-bold" :class="isDarkMode ? 'bg-gray-800 text-green-400' : 'bg-green-50 text-green-600'">
+                {{ partsProduced }}
+              </span>
+              <button @click="addPart" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg">
+                + Add Part
+              </button>
+            </div>
+
+            <!-- parts list -->
+            <div v-if="partsList.length > 0" class="space-y-2">
+              <div class="text-xs font-semibold" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
+                Produced Parts:
+              </div>
+              <div class="max-h-40 overflow-y-auto space-y-1">
+                <div v-for="(part, index) in partsList" :key="index" class="flex items-center justify-between p-2 rounded border text-sm"
+                     :class="isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-slate-200 bg-slate-50'">
+                  <span class="font-medium">Part {{ index + 1 }}</span>
+                  <span class="font-mono text-xs" :class="isDarkMode ? 'text-slate-300' : 'text-slate-600'">
+                    {{ formatTime(part.process_time_seconds) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
       </div>
     </section>
 

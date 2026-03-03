@@ -160,15 +160,19 @@
 
           <!-- File info -->
           <div class="flex-1 min-w-0">
-            <div :class="theme.fileNameText">{{ file.filename }}</div>
-            <div :class="theme.fileMetaText">{{ formatFileSize(file.size) }}</div>
+            <div class="font-medium truncate" :class="theme.fileNameText">
+              {{ file.file_name }}
+            </div>
+            <div class="text-xs" :class="theme.fileMetaText">
+              {{ formatFileSize(file.file_size) }}
+            </div>
           </div>
         </div>
 
         <!-- Actions -->
         <div class="flex items-center gap-2">
           <a
-            :href="file.url"
+            :href="file.file_url"
             target="_blank"
             :class="theme.fileViewBtn"
           >

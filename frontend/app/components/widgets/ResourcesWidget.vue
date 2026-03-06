@@ -4,13 +4,14 @@ import type { Resource } from '~/composables/useDashboardData'
 defineProps<{ resources: Resource[] }>()
 
 const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
-  '0': { label: 'Available',   color: '#10b981', dot: '#10b981' },
-  '1': { label: 'In Use',      color: '#3b82f6', dot: '#3b82f6' },
-  '2': { label: 'Maintenance', color: '#f59e0b', dot: '#f59e0b' },
-  '3': { label: 'Offline',     color: '#6b7a90', dot: '#4a5568' },
+  '0': { label: 'Offline',   color: '#10b981', dot: '#10b981' },
+  '1': { label: 'Maintenance',      color: '#3b82f6', dot: '#3b82f6' },
+  '2': { label: 'In Use', color: '#f59e0b', dot: '#f59e0b' },
+  '3': { label: 'Available',     color: '#6b7a90', dot: '#4a5568' },
 }
-function getStatus(status: string) {
-  return statusConfig[String(status)] ?? { label: status, color: '#8a9bb0', dot: '#8a9bb0' }
+
+function getStatus(status: number) {
+  return statusConfig[status] ?? { label: status, color: '#8a9bb0', dot: '#8a9bb0' }
 }
 </script>
 

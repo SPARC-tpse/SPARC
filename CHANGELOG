@@ -1,7 +1,10 @@
 v0.3.0
 ===
 feature/gnatt_chart
-- added gnatt view
+- added gantt view
+- changed dashboard
+- widgets in components
+- backend integration for dashboard
 
 fix/merge_bugs
 - fixed order edit and Part creation

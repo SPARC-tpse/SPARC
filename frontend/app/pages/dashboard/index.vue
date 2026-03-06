@@ -15,6 +15,7 @@ import ResourcesWidget   from '~/components/widgets/ResourcesWidget.vue'
 import KPIWidget         from '~/components/widgets/KPIWidget.vue'
 import DisruptionsWidget from '~/components/widgets/DisruptionsWidget.vue'
 import GanttWidget       from '~/components/widgets/GanttWidget.vue'
+import Orderganttwidget from "~/components/widgets/Orderganttwidget.vue";
 
 
 definePageMeta({
@@ -166,10 +167,15 @@ const lastUpdateStr = computed(() =>
               :disruptions="disruptions"
             />
             <!-- Gantt widgets -->
-            <GanttWidget
+            <!--<GanttWidget
               v-else-if="widget.type.startsWith('gantt-')"
               :items="getGanttItems(widget.type)"
               :label="widget.title"
+            />-->
+            <!-- Gantt widgets -->
+            <Orderganttwidget
+                v-else-if="widget.type === 'gantt-order'"
+                :orders="getGanttItems('gantt-order')"
             />
           </DashboardWidget>
         </template>

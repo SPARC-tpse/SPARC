@@ -16,12 +16,11 @@ export interface Order {
   start_date: string        // was "start"
   end_date: string
   product_name: string
-  priority: 'low' | 'medium' | 'high'
-  status: string
+  priority: number
+  status: number
   comments: string
   bom_files: OrderFile[]
   general_files: OrderFile[]
-  approximated_time: number | null
 }
 
 export interface ResourceType {
@@ -33,7 +32,7 @@ export interface Resource {
   id: number
   name: string
   type: ResourceType
-  status: string
+  status: number
 }
 
 export interface KPI {
@@ -88,8 +87,7 @@ export function useDashboardData() {
     } catch (err) {
       console.error('Failed to load resources:', err)
     }
-
-    // update Order for Gnatt
+    // Order Gnatt
     /*
     try {
       response = await $fetch(`${base}/api/order/approximated_time/${}/`)
@@ -99,7 +97,11 @@ export function useDashboardData() {
     */
 
     // Disruptions
-
+    try {
+      disruptions.value = await $fetch<Disruption[]>(`${base}/api/disruption/chart/get/`)
+    } catch (err) {
+      console.error('Failed to load disruptions:', err)
+    }
   }
 
   function loadMockData() {

@@ -315,7 +315,7 @@ def get_order_approximated_time(request: Request, order_id: int) -> JsonResponse
         sum: int = 0
         for process in processes:
             sum = sum + process.approximated_time
-        return JsonResponse({'order': order_id, 'approximated_time': sum}, status=200)
+        return JsonResponse({'approximated_time': sum}, status=200)
     except Process.DoesNotExist:
         return JsonResponse({'error': 'Process not found'}, status=404)
     except Exception as e:
@@ -675,5 +675,56 @@ def delete_disruption(request: Request, disruption_id: int) -> JsonResponse:
         return JsonResponse({'success': True, 'message': 'Disruption deleted'})
     except Disruption.DoesNotExist:
         return JsonResponse({'error': 'Disruption not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+def get_disruption_chart(request: Request) -> JsonResponse:
+    """Returns a chart of frequent disruption times"""
+    try:
+        res = [
+            {
+                "duration": "0–5m",
+                "frequency": Disruption.objects.filter(
+                    disruption_time__lt=300
+                ).count()
+            },
+            {
+                "duration": "5–15m",
+                "frequency": Disruption.objects.filter(
+                    disruption_time__gte=300,
+                    disruption_time__lt=900
+                ).count()
+            },
+            {
+                "duration": "15–30m",
+                "frequency": Disruption.objects.filter(
+                    disruption_time__gte=900,
+                    disruption_time__lt=1800
+                ).count()
+            },
+            {
+                "duration": "30–60m",
+                "frequency": Disruption.objects.filter(
+                    disruption_time__gte=1800,
+                    disruption_time__lt=3600
+                ).count()
+            },
+            {
+                "duration": "1–2h",
+                "frequency": Disruption.objects.filter(
+                    disruption_time__gte=3600,
+                    disruption_time__lt=7200
+                ).count()
+            },
+            {
+                "duration": ">2h",
+                "frequency": Disruption.objects.filter(
+                    disruption_time__gte=7200
+                ).count()
+            },
+        ]
+
+        return JsonResponse(res, safe=False)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

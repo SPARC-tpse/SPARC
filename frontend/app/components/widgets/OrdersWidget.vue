@@ -20,8 +20,7 @@ function formatDate(iso: string) {
 }
 
 // fallback for unknown status values from the backend
-function getStatus(status: string) {
-  console.log(status)
+function getStatus(status: number) {
   return statusConfig[status] ?? { label: status, color: '#8a9bb0', bg: 'rgba(138,155,176,0.1)' }
 }
 </script>

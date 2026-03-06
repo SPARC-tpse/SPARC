@@ -7,7 +7,8 @@ from .views import (
     delete_resource, get_resource, get_disruptions, get_disruption_types,
     create_disruption, delete_disruption, get_disruption, update_disruption,
     delete_process, get_processes, get_order_processes,
-    add_part, get_parts, get_order_approximated_time
+    add_part, get_parts, get_order_approximated_time, get_order_approximated_time,
+    get_disruption_chart
 )
 
 urlpatterns = [
@@ -53,4 +54,5 @@ urlpatterns = [
     path("disruption/post/", create_disruption, name="create_disruption"),
     path("disruption/delete/<int:disruption_id>/", delete_disruption, name="delete_disruption"),
     path("disruption-type/get/", get_disruption_types, name="get_disruption_types"),
+    path("disruption/chart/get/", get_disruption_chart, name="get_disruption_chart"),
 ]

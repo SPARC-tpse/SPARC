@@ -53,6 +53,21 @@ const hasProcessWarning = (step) => {
 }
 
 /**
+ * Turns time in seconds into a string with format hh:mm:ss
+ * @param time_in_sec
+ * @returns {string}
+ */
+function formatTime(time_in_sec) {
+  const h = Math.floor(time_in_sec / 3600)
+  const m = Math.floor((time_in_sec % 3600) / 60)
+  const s = Math.floor(time_in_sec % 60)
+
+  return [h, m, s]
+    .map(v => String(v).padStart(2, '0'))
+    .join(':')
+}
+
+/**
  * Adds a process to the processSteps list
  */
 function addStep() {
@@ -257,62 +272,77 @@ onMounted(() => {
 
       <div v-if="selectedProcessStep" class="pt-4 border-t border-slate-700/30 space-y-4">
         <div>
-            <span class="text-sm label-text">Process Step ID:</span>
-            <span class="ml-2 font-mono font-semibold" :class="isDarkMode ? 'text-slate-200' : 'text-slate-700'">
-              {{ selectedProcessStep.id || 'N/A' }}
+          <span class="text-sm label-text">Process Step ID:</span>
+          <span class="ml-2 font-mono font-semibold" :class="theme.label">
+            {{ selectedProcessStep.id || 'N/A' }}
+          </span>
+        </div>
+
+        <!-- setup time -->
+        <ProcessTimer
+          label="Setup Time"
+          :initial-seconds="selectedProcessStep.setup_time || 0"
+          :process-id="selectedProcessStep.id"
+          timer-type="setup_time"
+        />
+
+        <!-- waiting time -->
+        <ProcessTimer
+          label="Waiting Time"
+          :initial-seconds="selectedProcessStep.waiting_time || 0"
+          :process-id="selectedProcessStep.id"
+          timer-type="waiting_time"
+        />
+
+        <!-- horizontal separator -->
+        <hr/>
+
+        <!-- create disruption button -->
+        <div>
+          <button @click="createDisruption" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md bg-gradient-to-r from-amber-500 to-red-500 hover:shadow-lg">
+            ⚠️ Create Disruption
+          </button>
+        </div>
+
+        <!-- horizontal separator -->
+        <hr/>
+
+        <!-- process time -->
+        <ProcessTimer
+          label="Process Time"
+          :initial-seconds="selectedProcessStep.process_time || 0"
+          :process-id="selectedProcessStep.id"
+          timer-type="process_time"
+          @update="addPart"
+        />
+
+        <!-- add part -->
+        <div class="space-y-3 pt-2">
+          <!--<div class="flex items-center gap-3">
+            <span class="text-sm label-text">Part</span>
+            <span class="px-3 py-1 rounded-lg font-mono font-bold" :class="isDarkMode ? 'bg-gray-800 text-green-400' : 'bg-green-50 text-green-600'">
+              {{ partsProduced }}
             </span>
-          </div>
-
-          <!-- setup time -->
-          <ProcessTimer label="Setup Time" :initial-seconds="selectedProcessStep.setup_time_seconds || 0"
-                        :process-id="selectedProcessStep.id" timer-type="setup_time" @time-saved="handleTimeSaved" />
-
-          <!-- create disruption button -->
-          <div>
-            <button @click="createDisruption" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md bg-gradient-to-r from-amber-500 to-red-500 hover:shadow-lg">
-              ⚠️ Create Disruption
+            <button @click="addPart" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg">
+              + Add Part
             </button>
-          </div>
+          </div>-->
 
-          <!-- waiting time -->
-          <ProcessTimer label="Waiting Time" :initial-seconds="selectedProcessStep.waiting_time_seconds || 0"
-                        :process-id="selectedProcessStep.id" timer-type="waiting_time" @time-saved="handleTimeSaved" />
-
-          <!-- horizontal separator -->
-          <hr :class="isDarkMode ? 'border-gray-700' : 'border-slate-300'" />
-
-          <!-- process time -->
-          <ProcessTimer label="Process Time" :initial-seconds="selectedProcessStep.process_time_seconds || 0"
-                        :process-id="selectedProcessStep.id" timer-type="process_time" @time-saved="handleTimeSaved" />
-
-          <!-- add part -->
-          <div class="space-y-3 pt-2">
-            <div class="flex items-center gap-3">
-              <span class="text-sm label-text">Part</span>
-              <span class="px-3 py-1 rounded-lg font-mono font-bold" :class="isDarkMode ? 'bg-gray-800 text-green-400' : 'bg-green-50 text-green-600'">
-                {{ partsProduced }}
-              </span>
-              <button @click="addPart" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-md bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg">
-                + Add Part
-              </button>
+          <!-- parts list -->
+          <div v-if="partsList.length > 0" class="space-y-2">
+            <div class="text-xs font-semibold">
+              Produced Parts:
             </div>
-
-            <!-- parts list -->
-            <div v-if="partsList.length > 0" class="space-y-2">
-              <div class="text-xs font-semibold" :class="isDarkMode ? 'text-slate-400' : 'text-slate-500'">
-                Produced Parts:
-              </div>
-              <div class="max-h-40 overflow-y-auto space-y-1">
-                <div v-for="(part, index) in partsList" :key="index" class="flex items-center justify-between p-2 rounded border text-sm"
-                     :class="isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-slate-200 bg-slate-50'">
-                  <span class="font-medium">Part {{ index + 1 }}</span>
-                  <span class="font-mono text-xs" :class="isDarkMode ? 'text-slate-300' : 'text-slate-600'">
-                    {{ formatTime(part.process_time_seconds) }}
-                  </span>
-                </div>
+            <div class="max-h-40 overflow-y-auto space-y-1">
+              <div v-for="(part, index) in partsList" :key="index" class="flex items-center justify-between p-2 rounded border text-sm">
+                <span class="font-medium">Part {{ index + 1 }}</span>
+                <span class="font-mono text-xs">
+                  {{ formatTime(part.process_time) }}
+                </span>
               </div>
             </div>
           </div>
+        </div>
       </div>
     </section>
 

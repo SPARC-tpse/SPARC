@@ -22,7 +22,6 @@ const API_BASE_URL = config.public.apiBaseUrl
 
 const {draft: form, resetDraft } = useResourceDraft()
 
-// robuster: keine Truthy-Fallen, keine Whitespaces
 const canSubmit = computed(() => {
   const f = form.value
   return Boolean(
@@ -32,19 +31,25 @@ const canSubmit = computed(() => {
   )
 })
 
+/**
+ * Submits the resource form
+ * @returns {Promise<void>}
+ */
 async function submit() {
     if (!canSubmit.value) return
-    const mapping = { 'available': 3, 'in-use': 2, 'maintenance': 4, 'offline': 1 }
     try {
         await $fetch(`${API_BASE_URL}/api/resource/post/`, {
             method: 'POST',
-            body: { ...form.value, status: mapping[form.value.status] }
+            body: form.value
         })
         resetDraft()
         await router.push('/resource/overview')
     } catch (e) { alert('Error during creation') }
 }
 
+/**
+ * Resets the Form
+ */
 function resetForm() {
     resetDraft()
 }
@@ -81,10 +86,10 @@ watchEffect(() => {
           <label :class="theme.label">
             Status
             <select v-model="form.status" :class="theme.input">
-              <option value="available">Available</option>
-              <option value="in-use">In Use</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="offline">Offline</option>
+              <option value=0>Available</option>
+              <option value=1>In Use</option>
+              <option value=2>Maintenance</option>
+              <option value=3>Offline</option>
             </select>
           </label>
       </div>

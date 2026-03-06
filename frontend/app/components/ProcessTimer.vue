@@ -23,7 +23,7 @@ const props = defineProps({
 
 const emit = defineEmits(['timeSaved'])
 
-const { isDarkMode } = useTheme()
+const { theme } = useAppTheme();
 const config = useRuntimeConfig()
 const API_BASE_URL = config.public.apiBaseUrl
 

@@ -18,7 +18,8 @@ const resources = ref([])
 const isDeleteMode = ref(false)
 const deleteConfirmId = ref(null)
 const sortColumn = ref('id'), sortDirection = ref('asc')
-
+const statusMap = { 0: 'Available', 1: 'In Use', 2: 'Maintenance', 3: 'Offline' }
+const getStatusText = (val) => statusMap[val] || 'Unknown'
 const sortedResources = computed(() => {
     const copy = [...resources.value]
     return copy.sort((a, b) => {
@@ -29,26 +30,53 @@ const sortedResources = computed(() => {
     })
 })
 
+/**
+ * Sorts the list or resources by selected column
+ * @param col
+ */
 function sortBy(col) {
     if (sortColumn.value === col) sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
     else { sortColumn.value = col; sortDirection.value = 'asc'; }
 }
+
+/**
+ * Returns the sort icon for a column
+ * @param col
+ * @returns {string}
+ */
 function getSortIcon(col) { return sortColumn.value !== col ? '↕' : (sortDirection.value === 'asc' ? '↑' : '↓') }
 
-const statusMap = { 1: 'Offline', 2: 'In Use', 3: 'Available', 4: 'Maintenance' }
-const getStatusText = (val) => statusMap[val] || 'Unknown'
-
-async function fetchResources() { try { resources.value = await $fetch(`${API_BASE_URL}/api/resource/get/`) } catch (e) {} }
+/**
+ * Toggles the delete mode
+ */
 function toggleDeleteMode() { isDeleteMode.value = !isDeleteMode.value; deleteConfirmId.value = null; }
+
+/**
+ * Handles action to edit or delete resource
+ * @param id
+ */
 function handleRowAction(id) {
     if (!isDeleteMode.value) navigateTo(`/resource/edit/${id}`)
     else deleteConfirmId.value = (deleteConfirmId.value === id) ? null : id
 }
+
+/**
+ * Deletes resource from backend
+ * @param id
+ * @returns {Promise<void>}
+ */
 async function executeDelete(id) {
     try { await $fetch(`${API_BASE_URL}/api/resource/delete/${id}/`, { method: 'DELETE' })
     resources.value = resources.value.filter(r => r.id !== id); deleteConfirmId.value = null;
     } catch (e) { alert('Delete failed') }
 }
+
+/**
+ * Loads resources from backend
+ * @returns {Promise<void>}
+ */
+async function fetchResources() { try { resources.value = await $fetch(`${API_BASE_URL}/api/resource/get/`) } catch (e) {} }
+
 onMounted(fetchResources)
 </script>
 
@@ -83,7 +111,7 @@ onMounted(fetchResources)
              <span class="truncate font-medium">{{ res.name }}</span>
           </div>
           <span class="font-mono text-xs opacity-50">{{ res.id }}</span>
-          <span class="text-xs capitalize">{{ res.type }}</span>
+          <span class="text-xs capitalize">{{ res.type.name }}</span>
           <div><span :class="[theme.badge, getBadgeColor('status', getStatusText(res.status))]">{{ getStatusText(res.status) }}</span></div>
           <div class="text-right">
             <button @click="handleRowAction(res.id)" :class="isDeleteMode ? theme.btnActionDelete : theme.btnAction">

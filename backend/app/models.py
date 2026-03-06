@@ -19,7 +19,7 @@ class Resource(models.Model):
         null = True,
         blank = True
     )
-    status = models.IntegerField() # 1 - broken, 2 - in use, 3 - available
+    status = models.IntegerField() # 0 - Available, 1 - In Use, 2 - Maintenance, 3 - Offline
 
     class Meta:
         db_table = 'sparc_resource'

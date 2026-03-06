@@ -495,6 +495,7 @@ def update_worker(request: Request, worker_id: int) -> JsonResponse:
 # --- RESOURCES ---
 @api_view(['GET'])
 def get_resources(request: Request) -> JsonResponse:
+    """Get all resources"""
     try:
         resources = Resource.objects.all()
         serializer = ResourceSerializer(resources, many=True)
@@ -504,6 +505,7 @@ def get_resources(request: Request) -> JsonResponse:
 
 @api_view(['GET'])
 def get_resource(request: Request, resource_id: int) -> JsonResponse:
+    """Get a single resource by ID"""
     try:
         resource = Resource.objects.get(id=resource_id)
         serializer = ResourceSerializer(resource)
@@ -516,6 +518,7 @@ def get_resource(request: Request, resource_id: int) -> JsonResponse:
 
 @api_view(['POST'])
 def create_resource(request: Request) -> JsonResponse:
+    """Create a new resource"""
     try:
         print(request.data,flush=True)
         name = request.data.get('name')
@@ -539,6 +542,7 @@ def create_resource(request: Request) -> JsonResponse:
 
 @api_view(['PUT'])
 def update_resource(request: Request, resource_id: int) -> JsonResponse:
+    """Update an existing resource"""
     try:
         r = Resource.objects.get(id=resource_id)
         r.name = request.data.get('name', r.name)
@@ -561,6 +565,7 @@ def update_resource(request: Request, resource_id: int) -> JsonResponse:
 
 @api_view(['DELETE'])
 def delete_resource(request: Request, resource_id: int) -> JsonResponse:
+    """Delete an existing resource"""
     try:
         Resource.objects.get(id=resource_id).delete()
         return JsonResponse({'message': 'Resource deleted'})

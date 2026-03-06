@@ -1,5 +1,10 @@
 v0.3.0
 ===
+fix/merge_bugs
+- fixed order edit and Part creation
+- fixed Resource overview type display
+- unified encoding of status for resource
+
 feature/order_backend_integration
 - added add_part api function
 - added get_parts api function

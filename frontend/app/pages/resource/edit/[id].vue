@@ -15,49 +15,57 @@ definePageMeta({
 const registerTopbarActions = inject('registerTopbarActions')
 
 const { theme } = useAppTheme()
-const route = useRoute()
-const router = useRouter()
 const config = useRuntimeConfig()
 const API_BASE_URL = config.public.apiBaseUrl
+const route = useRoute()
 const resId = route.params.id
+const router = useRouter()
 
 const form = ref({ name: '', type: '', status: '' })
 
-const statusToStr = { 3: 'available', 2: 'in-use', 4: 'maintenance', 1: 'offline' }
-const strToStatus = { 'available': 3, 'in-use': 2, 'maintenance': 4, 'offline': 1 }
-
 const canSubmit = computed(() => Boolean(form.value.name?.trim()))
 
+/**
+ * Updates the backend with changes made
+ * @returns {Promise<void>}
+ */
+async function update() {
+    try {
+        await $fetch(`${API_BASE_URL}/api/resource/put/${resId}/`, {
+            method: 'PUT',
+            body: { ...form.value, status: form.value.status }
+        })
+        router.push('/resource/overview')
+    } catch (e) { alert('Update failed') }
+}
+
+/**
+ * Cancels the change and redirects to overview
+ */
+function resetForm() {
+    router.push('/resource/overview')
+}
+
+/**
+ * Loads the Resource by id
+ * @returns {Promise<void>}
+ */
 async function load() {
     try {
         const data = await $fetch(`${API_BASE_URL}/api/resource/get/${resId}/`)
         form.value = {
             name: data.name,
             type: data.type,
-            status: statusToStr[data.status] || 'available'
+            status: data.status
         }
     } catch (e) { console.error(e) }
 }
 
-async function update() {
-    try {
-        await $fetch(`${API_BASE_URL}/api/resource/put/${resId}/`, {
-            method: 'PUT',
-            body: { ...form.value, status: strToStatus[form.value.status] }
-        })
-        router.push('/resource/overview')
-    } catch (e) { alert('Update failed') }
-}
-
-function resetForm() {
-    router.push('/resource/overview')
-}
+onMounted(load)
 
 watchEffect(() => {
   registerTopbarActions?.({ reset: resetForm, submit: update, canSubmit })
 })
-
-onMounted(load)
 </script>
 
 <template>
@@ -71,7 +79,7 @@ onMounted(load)
 
           <label :class="theme.label">
             Type
-            <select v-model="form.type" :class="theme.input">
+            <select v-model="form.type.name" :class="theme.input">
               <option value="Machinery">Machinery</option>
               <option value="Worker">Worker</option>
               <option value="Tool">Tool</option>
@@ -82,10 +90,10 @@ onMounted(load)
           <label :class="theme.label">
             Status
             <select v-model="form.status" :class="theme.input">
-              <option value="available">Available</option>
-              <option value="in-use">In Use</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="offline">Offline</option>
+              <option value=0>Available</option>
+              <option value=1>In Use</option>
+              <option value=2>Maintenance</option>
+              <option value=3>Offline</option>
             </select>
           </label>
       </div>

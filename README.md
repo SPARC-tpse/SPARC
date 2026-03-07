@@ -15,7 +15,14 @@ SPARC (Smart Planning and Resource Control) is a web application that runs on mo
 
 ### from source
 
-`docker compose up --build`
+`sudo docker compose up --build`
+
+dev setup for PyCharm (You will  need PyCharm Pro if you want nuxt support):
+`sudo docker compose up -d frontend`
+`sudo docker exec -it nuxt-frontend npm install`
+`sudo docker exec -it nuxt-frontend npx nuxi prepare`
+`sudo chown -R $USER:$USER ~/Documents/GitHub/SPARC/frontend/node_modules`
+`sudo chown -R $USER:$USER ~/Documents/GitHub/SPARC/frontend/.nuxt`
 
 > [!Warning]
 > if you get this error:

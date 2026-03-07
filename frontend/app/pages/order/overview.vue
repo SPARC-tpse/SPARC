@@ -155,12 +155,9 @@ async function loadOrders() {
  */
 async function loadWarnings() {
   try {
-    const response = await $fetch(`${API_BASE_URL}/api/process/get`, { method: 'GET' });
-    const processes = response.processes;
-    console.log(processes)
+    const processes = await $fetch(`${API_BASE_URL}/api/process/get/`, { method: 'GET' });
     for (let i = 0; i < processes.length; i++) {
       if (processes[i].resource === null || (processes[i].resource.status !== 3 && processes[i].resource.status !== 2)) {
-        console.log(processes[i]);
         warningList.value.push(processes[i].order.id);
       }
     }

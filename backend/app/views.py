@@ -308,6 +308,18 @@ def delete_order(request: Request, order_id: int) -> JsonResponse:
     except Order.DoesNotExist:
         return JsonResponse({'error': 'Order not found'}, status=404)
 
+@api_view(['GET'])
+def get_order_approximated_time(request: Request, order_id: int) -> JsonResponse:
+    try:
+        processes = Process.objects.all().filter(order__id=order_id)
+        sum: int = 0
+        for process in processes:
+            sum = sum + process.approximated_time
+        return JsonResponse({'approximated_time': sum}, status=200)
+    except Process.DoesNotExist:
+        return JsonResponse({'error': 'Process not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 # --- ORDER/FILES ---
 @api_view(['POST'])
@@ -365,7 +377,7 @@ def get_processes(request: Request) -> JsonResponse:
     try:
         processes = Process.objects.all()
         serializer = ProcessSerializer(processes, many=True, context={'request': request})
-        return JsonResponse({'processes': serializer.data}, safe=False)
+        return JsonResponse(serializer.data, safe=False)
     except Process.DoesNotExist:
         return JsonResponse({'error': 'Process not found'}, status=404)
     except Exception as e:
@@ -572,6 +584,17 @@ def delete_resource(request: Request, resource_id: int) -> JsonResponse:
     except Resource.DoesNotExist:
         return JsonResponse({'error': 'Resource not found'}, status=404)
 
+@api_view(['GET'])
+def get_resource_approximated_time(request: Request, resource_id:int) -> JsonResponse:
+    """Get all processes a resource is used in"""
+    try:
+        processes = Process.objects.filter(resource__id=resource_id)
+        res = []
+        for processes in processes:
+            res.append(processes.approximated_time)
+        return JsonResponse({'approximated_times': res}, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 # --- DISRUPTIONS ---
 def format_dt(dt):
@@ -663,5 +686,56 @@ def delete_disruption(request: Request, disruption_id: int) -> JsonResponse:
         return JsonResponse({'success': True, 'message': 'Disruption deleted'})
     except Disruption.DoesNotExist:
         return JsonResponse({'error': 'Disruption not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+def get_disruption_chart(request: Request) -> JsonResponse:
+    """Returns a chart of frequent disruption times"""
+    try:
+        res = [
+            {
+                "duration": "0–5m",
+                "frequency": Disruption.objects.filter(
+                    disruption_time__lt=300
+                ).count()
+            },
+            {
+                "duration": "5–15m",
+                "frequency": Disruption.objects.filter(
+                    disruption_time__gte=300,
+                    disruption_time__lt=900
+                ).count()
+            },
+            {
+                "duration": "15–30m",
+                "frequency": Disruption.objects.filter(
+                    disruption_time__gte=900,
+                    disruption_time__lt=1800
+                ).count()
+            },
+            {
+                "duration": "30–60m",
+                "frequency": Disruption.objects.filter(
+                    disruption_time__gte=1800,
+                    disruption_time__lt=3600
+                ).count()
+            },
+            {
+                "duration": "1–2h",
+                "frequency": Disruption.objects.filter(
+                    disruption_time__gte=3600,
+                    disruption_time__lt=7200
+                ).count()
+            },
+            {
+                "duration": ">2h",
+                "frequency": Disruption.objects.filter(
+                    disruption_time__gte=7200
+                ).count()
+            },
+        ]
+
+        return JsonResponse(res, safe=False)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

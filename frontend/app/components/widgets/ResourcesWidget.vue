@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import type { Resource } from '~/composables/useDashboardData'
 
-defineProps<{ resources: Resource[] }>()
+const props = defineProps<{ resources: Resource[] }>()
 
 const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
-  '0': { label: 'Offline',   color: '#10b981', dot: '#10b981' },
-  '1': { label: 'Maintenance',      color: '#3b82f6', dot: '#3b82f6' },
-  '2': { label: 'In Use', color: '#f59e0b', dot: '#f59e0b' },
-  '3': { label: 'Available',     color: '#6b7a90', dot: '#4a5568' },
+  '0': { label: 'Available',   color: '#10b981', dot: '#10b981' },
+  '1': { label: 'In Use',      color: '#3b82f6', dot: '#3b82f6' },
+  '2': { label: 'Maintenance', color: '#f59e0b', dot: '#f59e0b' },
+  '3': { label: 'Offline',     color: '#6b7a90', dot: '#4a5568' },
 }
 
-function getStatus(status: number) {
-  return statusConfig[status] ?? { label: status, color: '#8a9bb0', dot: '#8a9bb0' }
-}
+// Sorts the list of resources
+const sortedResources = computed(() =>
+  [...props.resources]
+    .filter(r => r.id)
+    .sort((a, b) => a.id - b.id)
+)
 </script>
 
 <template>
@@ -26,14 +29,14 @@ function getStatus(status: number) {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="r in resources" :key="r.id" class="data-row">
+        <tr v-for="r in sortedResources" :key="r.id" class="data-row">
           <td class="res-name">{{ r.name }}</td>
           <td class="res-type">{{ r.type.name }}</td>
           <td>
             <span class="status-row">
-              <span class="status-dot" :style="{ background: getStatus(r.status).dot }" />
-              <span :style="{ color: getStatus(r.status).color }">
-                {{ getStatus(r.status).label }}
+              <span class="status-dot" :style="{ background: statusConfig[r.status].dot }" />
+              <span :style="{ color: statusConfig[r.status].color }">
+                {{ statusConfig[r.status].label }}
               </span>
             </span>
           </td>

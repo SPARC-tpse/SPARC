@@ -42,9 +42,9 @@ export const WIDGET_DEFS: WidgetDef[] = [
 const STORAGE_KEY = 'dashboard-layout-v1'
 
 const DEFAULT_LAYOUT: WidgetLayout[] = [
-  { id: 'w-kpi',         type: 'kpi',               title: 'KPI Overview',     x: 0, y: 0, w: 8, h: 3, visible: true },
+  { id: 'w-kpi',         type: 'kpi',                title: 'KPI Overview',     x: 0, y: 0, w: 6, h: 3, visible: true },
   { id: 'w-orders',      type: 'orders',             title: 'Orders',           x: 0, y: 3, w: 6, h: 4, visible: true },
-  { id: 'w-resources',   type: 'resources',          title: 'Resources',        x: 8, y: 0, w: 4, h: 4, visible: true },
+  { id: 'w-resources',   type: 'resources',          title: 'Resources',        x: 6, y: 0, w: 6, h: 3, visible: true },
   { id: 'w-disruptions', type: 'disruptions-chart',  title: 'Disruptions',      x: 6, y: 3, w: 6, h: 4, visible: true },
   { id: 'w-gantt-order', type: 'gantt-order',        title: 'Gantt · Order',    redirect: '/dashboard/gantt/order',    x: 0, y: 7, w: 12, h: 4, visible: true },
 ]

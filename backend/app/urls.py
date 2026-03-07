@@ -7,8 +7,8 @@ from .views import (
     delete_resource, get_resource, get_disruptions, get_disruption_types,
     create_disruption, delete_disruption, get_disruption, update_disruption,
     delete_process, get_processes, get_order_processes,
-    add_part, get_parts, get_order_approximated_time, get_order_approximated_time,
-    get_disruption_chart
+    add_part, get_parts, get_order_approximated_time,
+    get_disruption_chart, get_resource_approximated_time
 )
 
 urlpatterns = [
@@ -46,6 +46,7 @@ urlpatterns = [
     path("resource/post/", create_resource, name="create_resource"),
     path("resource/put/<int:resource_id>/", update_resource, name="update_resource"),
     path("resource/delete/<int:resource_id>/", delete_resource, name="delete_resource"),
+    path("resource/approximated_time/<int:resource_id>/", get_resource_approximated_time, name="get_resource_approximated_time"),
 
     # DISRUPTIONS
     path("disruption/get/", get_disruptions, name="get_disruptions"),

@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 
+const route = useRoute();
+const gantt_type = String(route.params.id);
+
 // ─── Config ────────────────────────────────────────────────────────────────
 const ROW_HEIGHT = 52
 const TIMELINE_PADDING = 80 // px on each side beyond the window

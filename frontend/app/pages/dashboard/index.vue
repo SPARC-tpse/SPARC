@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useTheme } from '~/composables/useTheme.js'
+import { useAppTheme } from '~/composables/useAppTheme'
 
 import { useDashboardData }   from '~/composables/useDashboardData'
 import { useDashboardLayout } from '~/composables/useDashboardLayout'
@@ -15,7 +15,9 @@ import ResourcesWidget   from '~/components/widgets/ResourcesWidget.vue'
 import KPIWidget         from '~/components/widgets/KPIWidget.vue'
 import DisruptionsWidget from '~/components/widgets/DisruptionsWidget.vue'
 import GanttWidget       from '~/components/widgets/GanttWidget.vue'
-import Orderganttwidget from "~/components/widgets/Orderganttwidget.vue";
+import OrderGanttWidget from "~/components/widgets/OrderGanttWidget.vue";
+import ResourceGanttWidget from "~/components/widgets/ResourceGanttWidget.vue";
+import ProcessGanttWidget from "~/components/widgets/ProcessGanttWidget.vue";
 
 
 definePageMeta({
@@ -27,12 +29,11 @@ definePageMeta({
   },
 })
 
-const { isDarkMode } = useTheme()
+const { theme, colors, toggleDarkMode, getBadgeColor } = useAppTheme()
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 const {
-  orders, resources, kpis, disruptions,
-  ganttOrders, ganttProcesses, ganttResources,
+  orders, resources, kpis, disruptions, processes,
   wsConnected,
 } = useDashboardData()
 
@@ -51,12 +52,14 @@ const {
 } = useDashboardLayout()
 
 // ── Widget content resolver ───────────────────────────────────────────────────
+/*
 function getGanttItems(type: WidgetLayout['type']) {
   if (type === 'gantt-order')   return ganttOrders.value
   if (type === 'gantt-process') return ganttProcesses.value
   if (type === 'gantt-resource') return ganttResources.value
   return []
 }
+*/
 
 // Timestamp for last update indicator
 const lastUpdate = ref(new Date())
@@ -69,7 +72,7 @@ const lastUpdateStr = computed(() =>
 </script>
 
 <template>
-  <div :class="isDarkMode ? 'dark-mode' : 'light-mode'" class="dashboard-root">
+  <div :class="theme.pageWrapper">
 
     <!-- ── Top toolbar ──────────────────────────────────────────────────── -->
     <div class="toolbar">
@@ -151,31 +154,51 @@ const lastUpdateStr = computed(() =>
               v-if="widget.type === 'orders'"
               :orders="orders"
             />
+
             <!-- Resources -->
             <ResourcesWidget
               v-else-if="widget.type === 'resources'"
               :resources="resources"
             />
+
             <!-- KPI -->
             <KPIWidget
               v-else-if="widget.type === 'kpi'"
               :kpis="kpis"
             />
+
             <!-- Disruptions chart -->
             <DisruptionsWidget
               v-else-if="widget.type === 'disruptions-chart'"
               :disruptions="disruptions"
             />
+
             <!-- Gantt widgets -->
             <!--<GanttWidget
               v-else-if="widget.type.startsWith('gantt-')"
               :items="getGanttItems(widget.type)"
               :label="widget.title"
             />-->
-            <!-- Gantt widgets -->
-            <Orderganttwidget
+
+            <!-- Order Gantt widgets -->
+            <OrderGanttWidget
                 v-else-if="widget.type === 'gantt-order'"
-                :orders="getGanttItems('gantt-order')"
+                :orders="orders"
+            />
+
+            <!-- Resource Gantt widgets -->
+            <ResourceGanttWidget
+                v-else-if="widget.type === 'gantt-resource'"
+                :resources="resources"
+                :processes="processes"
+                :orders="orders"
+            />
+
+            <!-- Process Gantt widgets -->
+            <ProcessGanttWidget
+                v-else-if="widget.type === 'gantt-process'"
+                :processes="processes"
+                :orders="orders"
             />
           </DashboardWidget>
         </template>
@@ -202,7 +225,7 @@ const lastUpdateStr = computed(() =>
 </template>
 
 <style>
-/* Google Fonts import — add to nuxt.config or <head> if needed */
+/* Google Fonts import */
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap');
 </style>
 

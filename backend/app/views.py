@@ -377,7 +377,7 @@ def get_processes(request: Request) -> JsonResponse:
     try:
         processes = Process.objects.all()
         serializer = ProcessSerializer(processes, many=True, context={'request': request})
-        return JsonResponse({'processes': serializer.data}, safe=False)
+        return JsonResponse(serializer.data, safe=False)
     except Process.DoesNotExist:
         return JsonResponse({'error': 'Process not found'}, status=404)
     except Exception as e:
@@ -584,6 +584,17 @@ def delete_resource(request: Request, resource_id: int) -> JsonResponse:
     except Resource.DoesNotExist:
         return JsonResponse({'error': 'Resource not found'}, status=404)
 
+@api_view(['GET'])
+def get_resource_approximated_time(request: Request, resource_id:int) -> JsonResponse:
+    """Get all processes a resource is used in"""
+    try:
+        processes = Process.objects.filter(resource__id=resource_id)
+        res = []
+        for processes in processes:
+            res.append(processes.approximated_time)
+        return JsonResponse({'approximated_times': res}, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 # --- DISRUPTIONS ---
 def format_dt(dt):

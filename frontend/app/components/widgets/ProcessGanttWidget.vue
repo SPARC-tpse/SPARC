@@ -1,40 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import type { Order } from '~/composables/useDashboardData'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import type { Process, Order } from '~/composables/useDashboardData'
 
-const props = defineProps<{ orders: Order[] }>()
-
-// ── Approximated times — fetched separately, keyed by order id ────────────────
-const approxTimes  = ref<Map<number, number>>(new Map())   // id → seconds
-const loadingTimes = ref(false)
-
-const config = useRuntimeConfig()
-const base   = config.public.apiBaseUrl
-
-async function fetchApproxTimes() {
-  if (!props.orders.length) return
-  loadingTimes.value = true
-
-  const results = await Promise.allSettled(
-    props.orders.map((order: { id: number; }) =>
-      $fetch<{ approximated_time: number }>(
-        `${base}/api/order/approximated_time/${order.id}/`
-      )
-    )
-  )
-
-  const map = new Map<number, number>()
-  results.forEach((result: { status: string; value: { approximated_time: number; }; }, i: number) => {
-    if (result.status === 'fulfilled') {
-      map.set(props.orders[i].id, result.value.approximated_time)
-    }
-  })
-  approxTimes.value  = map
-  loadingTimes.value = false
-}
-
-// Re-fetch whenever orders list changes
-watch(() => props.orders, fetchApproxTimes, { immediate: true })
+const props = defineProps<{ processes: Process[], orders: Order[] }>()
 
 // ── Time range options ────────────────────────────────────────────────────────
 type RangeKey = '30min' | '1hour' | '1day' | '1week'
@@ -47,8 +15,8 @@ const RANGES: Record<RangeKey, { label: string; ms: number }> = {
 }
 
 const selectedRange = ref<RangeKey>('1day')
-const halfRangeMs = computed(() => RANGES[selectedRange.value as RangeKey].ms / 2)
-const totalRangeMs = computed(() => RANGES[selectedRange.value as RangeKey].ms)
+const halfRangeMs   = computed(() => RANGES[selectedRange.value as RangeKey].ms / 2)
+const totalRangeMs  = computed(() => RANGES[selectedRange.value as RangeKey].ms)
 
 // ── Live clock — updates every 30 seconds ─────────────────────────────────────
 const now = ref(Date.now())
@@ -56,26 +24,68 @@ let ticker: ReturnType<typeof setInterval>
 onMounted(()   => { ticker = setInterval(() => { now.value = Date.now() }, 30_000) })
 onUnmounted(() => clearInterval(ticker))
 
-// ── Status colors ─────────────────────────────────────────────────────────────
-const STATUS_COLORS: Record<string, string> = {
-  '0': '#8b5cf6',
-  '1': '#3b82f6',
-  '2': '#f59e0b',
-  '3': '#10b981',
+// ── Order status colors (bar color is driven by the parent order's status) ────
+const STATUS_COLORS: { [key: number]: string } = {
+  0: '#8b5cf6',
+  1: '#3b82f6',
+  2: '#f59e0b',
+  3: '#10b981',
 }
-function statusColor(status: string | number) {
-  return STATUS_COLORS[String(status)] ?? '#6b7a90'
+function statusColor(status: number): string {
+  return STATUS_COLORS[status] ?? '#6b7a90'
 }
 
-// ── Bar geometry ──────────────────────────────────────────────────────────────
-function barGeometry(order: Order): { left: number; width: number } | null {
-  const approxSec = approxTimes.value.get(order.id)
-  if (approxSec == null) return null
-
-  const startMs     = new Date(order.start_date).getTime()
-  const endMs       = startMs + approxSec * 1_000
+// ── Visible processes filtered by time range, sorted by order id then process id
+const visibleProcesses = computed(() => {
   const windowStart = now.value - halfRangeMs.value
   const windowEnd   = now.value + halfRangeMs.value
+
+  return [...props.processes]
+    .filter(process => {
+      const order = props.orders.find(o => o.id === process.order)
+      if (!order?.start_date) return false
+
+      const startMs = new Date(order.start_date).getTime()
+      const endMs   = startMs + process.approximated_time * 1_000
+
+      return endMs >= windowStart && startMs <= windowEnd
+    })
+    .sort((a, b) => {
+      // primary sort: order id, secondary: process id
+      if (a.order !== b.order) return a.order - b.order
+      return a.id - b.id
+    })
+})
+
+// ── Bar geometry for a single process ────────────────────────────────────────
+function processStartMs(process: Process): number | null {
+  const order = props.orders.find(o => o.id === process.order)
+  if (!order?.start_date) return null
+
+  // get all processes for the same order, sorted by id (insertion order)
+  const siblings = props.processes
+    .filter(p => p.order === process.order)
+    .sort((a, b) => a.id - b.id)
+
+  const orderStartMs = new Date(order.start_date).getTime()
+
+  // sum approximated_time of all processes that come before this one
+  let offset = 0
+  for (const sibling of siblings) {
+    if (sibling.id === process.id) break
+    offset += sibling.approximated_time * 1_000
+  }
+
+  return orderStartMs + offset
+}
+
+function barGeometry(process: Process): { left: number; width: number } | null {
+  const startMs = processStartMs(process)
+  if (startMs == null) return null
+
+  const windowStart = now.value - halfRangeMs.value
+  const windowEnd   = now.value + halfRangeMs.value
+  const endMs       = startMs + process.approximated_time * 1_000
 
   if (endMs < windowStart || startMs > windowEnd) return null
 
@@ -86,6 +96,11 @@ function barGeometry(order: Order): { left: number; width: number } | null {
     left:  ((clampedStart - windowStart) / totalRangeMs.value) * 100,
     width: Math.max(((clampedEnd - clampedStart) / totalRangeMs.value) * 100, 0.15),
   }
+}
+
+// ── Helper: get the order for a process ──────────────────────────────────────
+function getOrder(process: Process): Order | undefined {
+  return props.orders.find(o => o.id === process.order)
 }
 
 // ── X-axis ticks ──────────────────────────────────────────────────────────────
@@ -114,13 +129,6 @@ function formatTick(ms: number): string {
   }
   return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 }
-
-// ── Visible orders (sorted by start_date) ─────────────────────────────────────
-const visibleOrders = computed(() =>
-  [...props.orders]
-    .filter(o => o.start_date)
-    .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
-)
 </script>
 
 <template>
@@ -135,47 +143,40 @@ const visibleOrders = computed(() =>
         :class="{ 'range-btn--active': selectedRange === key }"
         @click="selectedRange = (key as RangeKey)"
       >{{ opt.label }}</button>
-      <span v-if="loadingTimes" class="loading-indicator">loading…</span>
     </div>
 
     <!-- ── Chart ───────────────────────────────────────────────────────────── -->
     <div class="chart-area">
       <!-- Label column -->
       <div class="label-col">
-        <div v-for="order in visibleOrders" :key="order.id" class="row-label">
-          <span class="row-name">{{ order.name }}</span>
-          <span class="row-num">#{{ order.order_number }}</span>
+        <div v-for="process in visibleProcesses" :key="process.id" class="row-label">
+          <span class="row-name">{{ process.name }}</span>
+          <span class="row-order">#{{ getOrder(process)?.order_number ?? process.order }}</span>
         </div>
         <div class="row-label row-label--axis" />
       </div>
 
       <!-- Track column -->
       <div class="track-col">
+        <!-- Process rows -->
         <div
-          v-for="order in visibleOrders"
-          :key="order.id"
+          v-for="process in visibleProcesses"
+          :key="process.id"
           class="track-row"
         >
-          <!-- Loading placeholder while time is being fetched -->
-          <div
-            v-if="loadingTimes && !approxTimes.has(order.id)"
-            class="bar-placeholder"
-          />
-
-          <!-- Actual bar -->
-          <template v-else-if="barGeometry(order)">
+          <template v-if="barGeometry(process)">
             <div
               class="bar"
               :style="{
-                left:       `${barGeometry(order)!.left}%`,
-                width:      `${barGeometry(order)!.width}%`,
-                background: statusColor(order.status),
+                left:       `${barGeometry(process)!.left}%`,
+                width:      `${barGeometry(process)!.width}%`,
+                background: statusColor(getOrder(process)?.status ?? 0),
               }"
-              :title="`${order.name} · starts ${formatTick(new Date(order.start_date).getTime())}`"
+              :title="`${process.name} · #${getOrder(process)?.order_number}`"
             >
               <div class="bar-shimmer" />
-              <span v-if="barGeometry(order)!.width > 6" class="bar-label">
-                {{ order.name }}
+              <span v-if="barGeometry(process)!.width > 6" class="bar-label">
+                {{ process.name }}
               </span>
             </div>
           </template>
@@ -200,8 +201,8 @@ const visibleOrders = computed(() =>
       </div>
     </div>
 
-    <div v-if="visibleOrders.length === 0" class="empty">
-      No orders in this range.
+    <div v-if="visibleProcesses.length === 0" class="empty">
+      No processes active in this range.
     </div>
   </div>
 </template>
@@ -250,12 +251,6 @@ const visibleOrders = computed(() =>
   background: rgba(245,158,11,0.1);
   color: #f59e0b;
 }
-.loading-indicator {
-  font-size: 10px;
-  color: var(--text-muted);
-  font-style: italic;
-  margin-left: 4px;
-}
 
 /* ── Layout ──────────────────────────────────────────────────────────────── */
 .chart-area {
@@ -266,14 +261,14 @@ const visibleOrders = computed(() =>
 
 /* ── Labels ──────────────────────────────────────────────────────────────── */
 .label-col {
-  width: 90px;
+  width: 100px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
 }
 .row-label {
   flex: 1;
-  min-height: 30px;
+  min-height: 34px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -288,7 +283,7 @@ const visibleOrders = computed(() =>
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.row-num { font-size: 9px; color: var(--text-muted); }
+.row-order { font-size: 9px; color: var(--text-muted); }
 
 /* ── Tracks ──────────────────────────────────────────────────────────────── */
 .track-col {
@@ -300,7 +295,7 @@ const visibleOrders = computed(() =>
 }
 .track-row {
   flex: 1;
-  min-height: 30px;
+  min-height: 34px;
   position: relative;
   border-bottom: 1px solid var(--border);
   background: var(--bg-input);
@@ -310,11 +305,11 @@ const visibleOrders = computed(() =>
 /* ── Bars ────────────────────────────────────────────────────────────────── */
 .bar {
   position: absolute;
-  top: 4px;
-  bottom: 4px;
+  top: 5px;
+  bottom: 5px;
   border-radius: 3px;
   overflow: hidden;
-  opacity: 0.85;
+  opacity: 0.82;
   transition: opacity 0.15s;
   display: flex;
   align-items: center;
@@ -343,17 +338,6 @@ const visibleOrders = computed(() =>
   text-overflow: ellipsis;
   pointer-events: none;
 }
-.bar-placeholder {
-  position: absolute;
-  top: 4px;
-  bottom: 4px;
-  left: 10%;
-  right: 10%;
-  border-radius: 3px;
-  background: var(--border);
-  animation: pulse 1.5s ease-in-out infinite;
-}
-@keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
 
 /* ── Now line ────────────────────────────────────────────────────────────── */
 .now-line {

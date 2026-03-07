@@ -1,5 +1,53 @@
 v0.3.0
 ===
+feature/gnatt_chart
+- added gantt view
+- changed dashboard
+- widgets in components
+- backend integration for dashboard
+
+fix/merge_bugs
+- fixed order edit and Part creation
+- fixed Resource overview type display
+- unified encoding of status for resource
+
+feature/order_backend_integration
+- added add_part api function
+- added get_parts api function
+- added part button with list already produced parts to order/edit
+- set DEBUG to False in settings.py
+- change input for update_order and create_order
+- fix file viewing and file name
+- fix waiting time and setup time display
+- reset process timer after creating part
+
+testing
+- renamed duration disruption_time in disruption model
+- added Part model
+- added order_number to Order model
+- deleted process in Order model
+- changed start_date type to date-time format in Order model
+- added order in Process model
+- added approximated_time to Process model
+- changed create_order view to accommodate model changes
+- changed update_order view to accommodate model changes
+- added small documentation for all order api functions
+- added small documentation for all order pages
+- added get_order_processes view
+- added get_processes view
+- added unit tests for every api function
+- fixed all order logic
+- added generate_test_data script for better testing
+- generalise frontend/app/components/MultiWorkerSelect and rename it to MultiSelect
+- added dropdown for Resource in order/new
+- added time approx. field in order/new
+- default sort for order/new is ascending now
+- changed order/new order/overview and order/edit pages to accommodate model changes
+- order/overview checks if resource is status "available" or "in use", else a warning appear for the order
+- unified order status and priority encoding across front- and backend
+- change api urls to be disruption/get instead of disruption/list same for resource and worker and end on a /
+- changed disruption api -> Disruption is broken! but it should be redesigned anyway considering the change in model
+
 fix/workflow
 - change `frontend/Dockerfile` from `npm run dev` to `npm run release`
 - precent try to create release when opening a pull request
@@ -24,6 +72,11 @@ various backend fixes
 style changes
 - added useAppTheme composable for better theme management
 - updated badge colors for better visibility
+- Added zooming functionality
+- Refactored the topbar logic for better maintainability
+- updated the design of the disruption timer for better visibility and user experience
+- migrated all pages to useAppTheme for better theme management
+- reworked lightmode colors for better visibility
 
 v0.2.0
 ===

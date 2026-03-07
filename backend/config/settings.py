@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Django requires a secret key; used internally for hashing
 SECRET_KEY = 'local-network-key-no-internet-exposure'
 
-DEBUG = True
+DEBUG = False
 
 # Allow access from any device on your local network
 ALLOWED_HOSTS = ['*']

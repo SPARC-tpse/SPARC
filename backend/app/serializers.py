@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Order, Process, Resource, DisruptionType, Worker, Disruption, OrderFile
+from .models import Order, Process, Resource, DisruptionType, Worker, Disruption, OrderFile, Part
+
 
 class ResourceTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,23 +30,6 @@ class WorkerSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name"
-        ]
-
-
-class ProcessSerializer(serializers.ModelSerializer):
-    workers = WorkerSerializer(many = True)
-    resource = ResourceSerializer(many = False)
-
-    class Meta:
-        model = Process
-        fields = [
-            "id",
-            "name",
-            "setup_time_seconds",
-            "waiting_time_seconds",
-            "process_time_seconds",
-            "workers",
-            "resource"
         ]
 
 
@@ -90,7 +74,6 @@ class OrderFileSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    processes = ProcessSerializer(many = True, read_only = True)
     order_files = OrderFileSerializer(many = True, read_only = True)
     bom_files = serializers.SerializerMethodField()
     general_files = serializers.SerializerMethodField()
@@ -100,6 +83,7 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "order_number",
             "target_amount",
             "order_files",  # All files attached to this order
             "start_date",
@@ -108,7 +92,6 @@ class OrderSerializer(serializers.ModelSerializer):
             "priority",
             "status",
             "comments",
-            "processes",
             "bom_files",
             "general_files"
         ]
@@ -122,6 +105,25 @@ class OrderSerializer(serializers.ModelSerializer):
         """Get only general files"""
         general_files = obj.order_files.filter(file_type='general')
         return OrderFileSerializer(general_files, many=True, context=self.context).data
+
+
+class ProcessSerializer(serializers.ModelSerializer):
+    workers = WorkerSerializer(many=True)
+    resource = ResourceSerializer(many=False)
+    order = OrderSerializer(many=False)
+
+    class Meta:
+        model = Process
+        fields = [
+            "id",
+            "name",
+            "approximated_time",
+            "setup_time",
+            "waiting_time",
+            "workers",
+            "resource",
+            "order"
+        ]
 
 
 class DisruptionTypeSerializer(serializers.ModelSerializer):
@@ -147,5 +149,15 @@ class DisruptionSerializer(serializers.ModelSerializer):
             "process",
             "resource",
             "created_at",
-            "duration"
+            "disruption_time"
         ]
+
+class PartSerializer(serializers.ModelSerializer):
+    process = ProcessSerializer(many = False)
+
+    class Meta:
+         model = Part
+         fields = [
+             "process",
+             "process_time"
+         ]

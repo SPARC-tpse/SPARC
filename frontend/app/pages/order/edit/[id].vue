@@ -280,6 +280,7 @@ onMounted(() => {
 
         <!-- setup time -->
         <ProcessTimer
+          :id="selectedProcessStep.id"
           label="Setup Time"
           :initial-seconds="selectedProcessStep.setup_time || 0"
           :process-id="selectedProcessStep.id"
@@ -288,6 +289,7 @@ onMounted(() => {
 
         <!-- waiting time -->
         <ProcessTimer
+          :id="selectedProcessStep.id"
           label="Waiting Time"
           :initial-seconds="selectedProcessStep.waiting_time || 0"
           :process-id="selectedProcessStep.id"

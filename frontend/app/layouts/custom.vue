@@ -12,6 +12,7 @@ import { useDisruptionDraft } from '~/composables/useDisruptionDraft'
 
 
 const { colors, isDarkMode } = useAppTheme()
+const { zoom } = useZoom()
 const route = useRoute()
 
 type TopbarActions = {
@@ -167,7 +168,7 @@ onBeforeUnmount(() => {
       />
       <!-- This is where page content gets injected -->
       <div class="flex-1 min-h-0 overflow-auto">
-        <div class="zoom-root">
+        <div class="zoom-root" :style="{ '--app-zoom': String(zoom) }">
           <slot />
         </div>
       </div>
@@ -202,9 +203,22 @@ onBeforeUnmount(() => {
   --app-zoom: 1;
 }
 .zoom-root {
-  transform: scale(var(--app-zoom, 1));
-  transform-origin: top left;
-  width: calc(100% / var(--app-zoom, 1));
-  height: calc(100% / var(--app-zoom, 1));
+  width: 100%;
+  min-height: 100%;
+}
+
+@supports (zoom: 1) {
+  .zoom-root {
+    zoom: var(--app-zoom, 1);
+  }
+}
+
+@supports not (zoom: 1) {
+  .zoom-root {
+    transform: scale(var(--app-zoom, 1));
+    transform-origin: top left;
+    width: calc(100% / var(--app-zoom, 1));
+    height: calc(100% / var(--app-zoom, 1));
+  }
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import type { WidgetLayout } from '~/composables/useDashboardLayout'
 
 const props = defineProps<{
@@ -12,15 +12,35 @@ const emit = defineEmits<{
   (e: 'remove', id: string): void
 }>()
 
-const COLS = 12
-const ROW_HEIGHT = 100  // px
-const GAP = 8           // px
+const DESKTOP_COLS = 12
+const TABLET_COLS = 2
+const STACKED_COLS = 1
+const STACKED_BREAKPOINT = 620
+const TABLET_BREAKPOINT = 1080
+const ROW_HEIGHT = 100
+const GAP = 8
+
+type LayoutMode = 'desktop' | 'tablet' | 'stacked'
 
 const containerRef = ref<HTMLElement>()
 const containerWidth = ref(1200)
-const colWidth = computed(() => (containerWidth.value - GAP * (COLS - 1)) / COLS)
 
-// Drag state
+const layoutMode = computed<LayoutMode>(() => {
+  if (containerWidth.value <= STACKED_BREAKPOINT) return 'stacked'
+  if (containerWidth.value <= TABLET_BREAKPOINT) return 'tablet'
+  return 'desktop'
+})
+
+const gridCols = computed(() => {
+  if (layoutMode.value === 'stacked') return STACKED_COLS
+  if (layoutMode.value === 'tablet') return TABLET_COLS
+  return DESKTOP_COLS
+})
+
+const isCompactLayout = computed(() => layoutMode.value !== 'desktop')
+const canEditLayout = computed(() => props.editMode && !isCompactLayout.value)
+const colWidth = computed(() => (containerWidth.value - GAP * (gridCols.value - 1)) / gridCols.value)
+
 interface DragState {
   id: string
   startMouseX: number
@@ -33,7 +53,6 @@ interface DragState {
   h: number
 }
 
-// Resize state
 interface ResizeState {
   id: string
   startMouseX: number
@@ -47,62 +66,161 @@ interface ResizeState {
 const dragging = ref<DragState | null>(null)
 const resizing = ref<ResizeState | null>(null)
 
+function overlaps(a: Pick<WidgetLayout, 'x' | 'y' | 'w' | 'h'>, b: Pick<WidgetLayout, 'x' | 'y' | 'w' | 'h'>) {
+  return (
+    a.x < b.x + b.w &&
+    a.x + a.w > b.x &&
+    a.y < b.y + b.h &&
+    a.y + a.h > b.y
+  )
+}
+
+function widgetOrder(a: WidgetLayout, b: WidgetLayout) {
+  return a.y - b.y || a.x - b.x || a.id.localeCompare(b.id)
+}
+
+function compactSpan(widget: WidgetLayout, cols: number) {
+  if (cols === 1) return 1
+  if (widget.type.startsWith('gantt-') || widget.w >= 7 || widget.h >= 5) return cols
+  return 1
+}
+
+function compactHeight(widget: WidgetLayout, cols: number) {
+  if (cols === 1 && widget.type === 'kpi') return Math.max(2, widget.h)
+  if (cols === 2 && widget.type.startsWith('gantt-')) return Math.max(4, widget.h)
+  return widget.h
+}
+
+function canPlaceCompact(occupied: boolean[][], x: number, y: number, w: number, h: number, cols: number) {
+  if (x + w > cols) return false
+
+  for (let row = y; row < y + h; row += 1) {
+    if (!occupied[row]) occupied[row] = Array(cols).fill(false)
+    for (let col = x; col < x + w; col += 1) {
+      if (occupied[row][col]) return false
+    }
+  }
+
+  return true
+}
+
+function occupyCompact(occupied: boolean[][], x: number, y: number, w: number, h: number, cols: number) {
+  for (let row = y; row < y + h; row += 1) {
+    if (!occupied[row]) occupied[row] = Array(cols).fill(false)
+    for (let col = x; col < x + w; col += 1) {
+      occupied[row][col] = true
+    }
+  }
+}
+
+function buildCompactLayout(widgets: WidgetLayout[], cols: number) {
+  const occupied: boolean[][] = []
+
+  return [...widgets]
+    .sort(widgetOrder)
+    .map(widget => {
+      const w = compactSpan(widget, cols)
+      const h = compactHeight(widget, cols)
+
+      let y = 0
+      while (true) {
+        for (let x = 0; x <= cols - w; x += 1) {
+          if (!canPlaceCompact(occupied, x, y, w, h, cols)) continue
+
+          occupyCompact(occupied, x, y, w, h, cols)
+          return {
+            ...widget,
+            x,
+            y,
+            w,
+            h,
+          }
+        }
+        y += 1
+      }
+    })
+}
+
+const renderedWidgets = computed(() => {
+  if (!isCompactLayout.value) return props.widgets
+  return buildCompactLayout(props.widgets, gridCols.value)
+})
+
 const gridHeight = computed(() => {
-  const maxRow = props.widgets.reduce((m, w) => Math.max(m, w.y + w.h), 0)
-  const extra = (dragging.value || resizing.value) ? 4 : 1
+  const maxRow = renderedWidgets.value.reduce((max, widget) => Math.max(max, widget.y + widget.h), 0)
+  const extra = dragging.value || resizing.value ? 4 : 1
   return (maxRow + extra) * (ROW_HEIGHT + GAP)
 })
 
-function widgetStyle(w: WidgetLayout) {
-  const isDragging = dragging.value?.id === w.id
-  const isResizing = resizing.value?.id === w.id
+const dropTargetId = computed(() => {
+  if (!dragging.value || !canEditLayout.value) return null
 
-  let x = w.x, y = w.y, ww = w.w, hh = w.h
+  const dragRect = {
+    x: dragging.value.ghostX,
+    y: dragging.value.ghostY,
+    w: dragging.value.w,
+    h: dragging.value.h,
+  }
+  const collisions = renderedWidgets.value.filter(widget => widget.id !== dragging.value?.id && overlaps(dragRect, widget))
+
+  return collisions.length === 1 ? collisions[0].id : null
+})
+
+function widgetStyle(widget: WidgetLayout) {
+  const isDragging = dragging.value?.id === widget.id
+  const isResizing = resizing.value?.id === widget.id
+
+  let x = widget.x
+  let y = widget.y
+  let w = widget.w
+  let h = widget.h
+
   if (isDragging && dragging.value) {
     x = dragging.value.ghostX
     y = dragging.value.ghostY
   }
+
   if (isResizing && resizing.value) {
-    ww = resizing.value.ghostW
-    hh = resizing.value.ghostH
+    w = resizing.value.ghostW
+    h = resizing.value.ghostH
   }
 
   return {
     position: 'absolute' as const,
-    left:   `${x * (colWidth.value + GAP)}px`,
-    top:    `${y * (ROW_HEIGHT + GAP)}px`,
-    width:  `${ww * colWidth.value + (ww - 1) * GAP}px`,
-    height: `${hh * ROW_HEIGHT + (hh - 1) * GAP}px`,
-    zIndex: (isDragging || isResizing) ? 100 : 1,
-    transition: (isDragging || isResizing) ? 'none' : 'left 0.2s, top 0.2s, width 0.2s, height 0.2s',
+    left: `${x * (colWidth.value + GAP)}px`,
+    top: `${y * (ROW_HEIGHT + GAP)}px`,
+    width: `${w * colWidth.value + (w - 1) * GAP}px`,
+    height: `${h * ROW_HEIGHT + (h - 1) * GAP}px`,
+    zIndex: isDragging || isResizing ? 100 : 1,
+    transition: isDragging || isResizing ? 'none' : 'left 0.2s ease, top 0.2s ease, width 0.2s ease, height 0.2s ease',
   }
 }
 
 function ghostStyle() {
   if (!dragging.value) return {}
-  const { ghostX, ghostY, w, h } = dragging.value
+
   return {
-    position:   'absolute' as const,
-    left:        `${ghostX * (colWidth.value + GAP)}px`,
-    top:         `${ghostY * (ROW_HEIGHT + GAP)}px`,
-    width:       `${w  * colWidth.value + (w  - 1) * GAP}px`,
-    height:      `${h  * ROW_HEIGHT    + (h  - 1) * GAP}px`,
-    background: 'rgba(245,158,11,0.12)',
-    border:     '2px dashed rgba(245,158,11,0.5)',
-    borderRadius: '6px',
-    zIndex:      0,
+    position: 'absolute' as const,
+    left: `${dragging.value.ghostX * (colWidth.value + GAP)}px`,
+    top: `${dragging.value.ghostY * (ROW_HEIGHT + GAP)}px`,
+    width: `${dragging.value.w * colWidth.value + (dragging.value.w - 1) * GAP}px`,
+    height: `${dragging.value.h * ROW_HEIGHT + (dragging.value.h - 1) * GAP}px`,
+    background: 'var(--dashboard-ghost-bg)',
+    border: '2px dashed var(--dashboard-ghost-border)',
+    borderRadius: '8px',
+    zIndex: 0,
     pointerEvents: 'none' as const,
   }
 }
 
-// ── Drag ──────────────────────────────────────────────────────────────────────
-function startDrag(e: MouseEvent, widget: WidgetLayout) {
-  if (!props.editMode) return
-  e.preventDefault()
+function startDrag(event: MouseEvent, widget: WidgetLayout) {
+  if (!canEditLayout.value) return
+
+  event.preventDefault()
   dragging.value = {
     id: widget.id,
-    startMouseX: e.clientX,
-    startMouseY: e.clientY,
+    startMouseX: event.clientX,
+    startMouseY: event.clientY,
     startX: widget.x,
     startY: widget.y,
     ghostX: widget.x,
@@ -112,23 +230,43 @@ function startDrag(e: MouseEvent, widget: WidgetLayout) {
   }
 }
 
-function onMouseMove(e: MouseEvent) {
+function startResize(event: MouseEvent, widget: WidgetLayout) {
+  if (!canEditLayout.value) return
+
+  event.preventDefault()
+  event.stopPropagation()
+  resizing.value = {
+    id: widget.id,
+    startMouseX: event.clientX,
+    startMouseY: event.clientY,
+    startW: widget.w,
+    startH: widget.h,
+    ghostW: widget.w,
+    ghostH: widget.h,
+  }
+}
+
+function onMouseMove(event: MouseEvent) {
   if (dragging.value) {
-    const dx = e.clientX - dragging.value.startMouseX
-    const dy = e.clientY - dragging.value.startMouseY
+    const dx = event.clientX - dragging.value.startMouseX
+    const dy = event.clientY - dragging.value.startMouseY
     const rawX = dragging.value.startX + dx / (colWidth.value + GAP)
     const rawY = dragging.value.startY + dy / (ROW_HEIGHT + GAP)
-    dragging.value.ghostX = Math.max(0, Math.min(COLS - dragging.value.w, Math.round(rawX)))
+
+    dragging.value.ghostX = Math.max(0, Math.min(DESKTOP_COLS - dragging.value.w, Math.round(rawX)))
     dragging.value.ghostY = Math.max(0, Math.round(rawY))
   }
 
   if (resizing.value) {
-    const dx = e.clientX - resizing.value.startMouseX
-    const dy = e.clientY - resizing.value.startMouseY
+    const dx = event.clientX - resizing.value.startMouseX
+    const dy = event.clientY - resizing.value.startMouseY
     const rawW = resizing.value.startW + dx / (colWidth.value + GAP)
     const rawH = resizing.value.startH + dy / (ROW_HEIGHT + GAP)
-    const widget = props.widgets.find(w => w.id === resizing.value!.id)!
-    resizing.value.ghostW = Math.max(1, Math.min(COLS - widget.x, Math.round(rawW)))
+    const widget = props.widgets.find(item => item.id === resizing.value?.id)
+
+    if (!widget) return
+
+    resizing.value.ghostW = Math.max(1, Math.min(DESKTOP_COLS - widget.x, Math.round(rawW)))
     resizing.value.ghostH = Math.max(1, Math.round(rawH))
   }
 }
@@ -138,44 +276,32 @@ function onMouseUp() {
     emit('update', dragging.value.id, { x: dragging.value.ghostX, y: dragging.value.ghostY })
     dragging.value = null
   }
+
   if (resizing.value) {
     emit('update', resizing.value.id, { w: resizing.value.ghostW, h: resizing.value.ghostH })
     resizing.value = null
   }
 }
 
-// ── Resize ────────────────────────────────────────────────────────────────────
-function startResize(e: MouseEvent, widget: WidgetLayout) {
-  if (!props.editMode) return
-  e.preventDefault()
-  e.stopPropagation()
-  resizing.value = {
-    id: widget.id,
-    startMouseX: e.clientX,
-    startMouseY: e.clientY,
-    startW: widget.w,
-    startH: widget.h,
-    ghostW: widget.w,
-    ghostH: widget.h,
-  }
-}
+let resizeObserver: ResizeObserver | null = null
 
-// ── ResizeObserver ────────────────────────────────────────────────────────────
-let ro: ResizeObserver | null = null
 onMounted(async () => {
   await nextTick()
+
   if (containerRef.value) {
     containerWidth.value = containerRef.value.clientWidth
-    ro = new ResizeObserver(entries => {
+    resizeObserver = new ResizeObserver(entries => {
       containerWidth.value = entries[0].contentRect.width
     })
-    ro.observe(containerRef.value)
+    resizeObserver.observe(containerRef.value)
   }
+
   window.addEventListener('mousemove', onMouseMove)
   window.addEventListener('mouseup', onMouseUp)
 })
+
 onUnmounted(() => {
-  ro?.disconnect()
+  resizeObserver?.disconnect()
   window.removeEventListener('mousemove', onMouseMove)
   window.removeEventListener('mouseup', onMouseUp)
 })
@@ -185,58 +311,60 @@ onUnmounted(() => {
   <div
     ref="containerRef"
     class="grid-container"
-    :class="{ 'edit-active': editMode }"
+    :class="{
+      'edit-active': canEditLayout,
+      'grid-container--compact': isCompactLayout,
+      'grid-container--stacked': layoutMode === 'stacked',
+    }"
     :style="{ height: `${gridHeight}px` }"
   >
-    <!-- Drop ghost -->
     <div v-if="dragging" :style="ghostStyle()" class="drop-ghost" />
 
-    <!-- Widgets -->
     <div
-      v-for="widget in widgets"
+      v-for="widget in renderedWidgets"
       :key="widget.id"
       :style="widgetStyle(widget)"
       class="grid-item"
       :class="{
         'is-dragging': dragging?.id === widget.id,
         'is-resizing': resizing?.id === widget.id,
+        'is-drop-target': dropTargetId === widget.id,
       }"
     >
-      <!-- Drag handle (edit mode only) -->
       <div
-        v-if="editMode"
+        v-if="canEditLayout"
         class="drag-handle"
         @mousedown="startDrag($event, widget)"
       >
         <svg viewBox="0 0 20 20" fill="currentColor" class="handle-icon">
-          <circle cx="7" cy="5" r="1.5" /><circle cx="13" cy="5" r="1.5" />
-          <circle cx="7" cy="10" r="1.5" /><circle cx="13" cy="10" r="1.5" />
-          <circle cx="7" cy="15" r="1.5" /><circle cx="13" cy="15" r="1.5" />
+          <circle cx="7" cy="5" r="1.5" />
+          <circle cx="13" cy="5" r="1.5" />
+          <circle cx="7" cy="10" r="1.5" />
+          <circle cx="13" cy="10" r="1.5" />
+          <circle cx="7" cy="15" r="1.5" />
+          <circle cx="13" cy="15" r="1.5" />
         </svg>
       </div>
 
-      <!-- Widget slot -->
-      <slot :widget="widget" :edit-mode="editMode" />
+      <slot :widget="widget" :edit-mode="props.editMode" />
 
-      <!-- Resize handle (edit mode only) -->
       <div
-        v-if="editMode"
+        v-if="canEditLayout"
         class="resize-handle"
         @mousedown="startResize($event, widget)"
       >
         <svg viewBox="0 0 16 16" fill="currentColor" class="resize-icon">
-          <path d="M6 14l8-8v8H6zm2 0h6v-6l-6 6z"/>
+          <path d="M6 14l8-8v8H6zm2 0h6v-6l-6 6z" />
         </svg>
       </div>
     </div>
 
-    <!-- Edit-mode grid lines overlay -->
-    <div v-if="editMode" class="grid-lines" aria-hidden="true">
+    <div v-if="canEditLayout" class="grid-lines" aria-hidden="true">
       <div
-        v-for="c in COLS"
-        :key="c"
+        v-for="column in DESKTOP_COLS"
+        :key="column"
         class="grid-col-line"
-        :style="{ left: `${(c - 1) * (colWidth + GAP)}px`, width: `${colWidth}px` }"
+        :style="{ left: `${(column - 1) * (colWidth + GAP)}px`, width: `${colWidth}px` }"
       />
     </div>
   </div>
@@ -254,66 +382,95 @@ onUnmounted(() => {
   border-radius: 8px;
   overflow: hidden;
 }
+
 .grid-item.is-dragging {
-  opacity: 0.85;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  opacity: 0.88;
+  box-shadow: var(--dashboard-shadow-soft);
   cursor: grabbing;
 }
+
 .grid-item.is-resizing {
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--dashboard-shadow-soft);
+}
+
+.grid-item.is-drop-target {
+  box-shadow: 0 0 0 2px var(--dashboard-accent-border);
 }
 
 .drag-handle {
   position: absolute;
   top: 8px;
   left: 50%;
-  transform: translateX(-50%);
   z-index: 10;
-  cursor: grab;
-  color: rgba(255,255,255,0.3);
   padding: 4px 8px;
   border-radius: 4px;
-  background: rgba(255,255,255,0.05);
-  transition: color 0.15s, background 0.15s;
+  color: var(--dashboard-handle-color);
+  background: var(--dashboard-handle-bg);
+  cursor: grab;
+  transform: translateX(-50%);
+  transition: color 0.15s ease, background 0.15s ease;
 }
+
 .drag-handle:hover {
-  color: #f59e0b;
-  background: rgba(245,158,11,0.15);
+  color: var(--dashboard-accent);
+  background: color-mix(in srgb, var(--dashboard-accent) 14%, transparent);
 }
-.drag-handle:active { cursor: grabbing; }
-.handle-icon { width: 16px; height: 16px; }
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.handle-icon {
+  width: 16px;
+  height: 16px;
+}
 
 .resize-handle {
   position: absolute;
-  bottom: 4px;
   right: 4px;
+  bottom: 4px;
   z-index: 10;
-  cursor: se-resize;
-  color: rgba(255,255,255,0.2);
   padding: 3px;
   border-radius: 3px;
-  transition: color 0.15s;
+  color: var(--dashboard-resize-color);
+  cursor: se-resize;
+  transition: color 0.15s ease;
 }
-.resize-handle:hover { color: #f59e0b; }
-.resize-icon { width: 14px; height: 14px; }
+
+.resize-handle:hover {
+  color: var(--dashboard-accent);
+}
+
+.resize-icon {
+  width: 14px;
+  height: 14px;
+}
 
 .drop-ghost {
   border-radius: 8px;
-  transition: none;
 }
 
 .grid-lines {
   position: absolute;
   inset: 0;
-  pointer-events: none;
   z-index: 0;
+  pointer-events: none;
 }
+
 .grid-col-line {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: rgba(245, 158, 11, 0.04);
-  border: 1px dashed rgba(245, 158, 11, 0.12);
+  background: var(--dashboard-grid-line-bg);
+  border: 1px dashed var(--dashboard-grid-line-border);
   border-radius: 4px;
+}
+
+.grid-container--compact .grid-item {
+  border-radius: 10px;
+}
+
+.grid-container--stacked .grid-item {
+  border-radius: 12px;
 }
 </style>

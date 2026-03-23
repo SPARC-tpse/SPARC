@@ -1,16 +1,22 @@
 """
 Pytest fixtures and configuration for tests
 """
-import pytest
-from django.utils import timezone
-from django.contrib.auth.models import User
-from rest_framework.test import APIClient
-from app.models import (
-    Order, Process, Worker, Resource, ResourceType,
-    Disruption, DisruptionType, OrderFile
-)
 from datetime import date, datetime, time
+
+import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
+from rest_framework.test import APIClient
+
+from app.models import (
+    Disruption,
+    DisruptionType,
+    Order,
+    Process,
+    Resource,
+    ResourceType,
+    Worker,
+)
 
 
 @pytest.fixture

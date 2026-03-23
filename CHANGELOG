@@ -1,5 +1,16 @@
 v0.3.0
 ===
+fix/websocket
+- changed backend package manager to uv
+- fixed README's
+- fixed docmentation Backend
+- fixed structure backend
+- fixed settings backend
+- fixed Docker setup
+- fixed workflow
+- fixed deployment scripts
+- fixed manuel tests
+
 feature/gnatt_chart
 - added gantt view
 - changed dashboard

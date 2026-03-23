@@ -1,0 +1,59 @@
+services:
+  # reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./backend/staticfiles:/app/staticfiles:ro
+      - ./backend/media:/app/media:ro
+    depends_on:
+      - backend
+      - frontend
+
+  backend:
+    build:
+      context: ./backend
+      target: production
+    image: sparc-backend:latest
+    container_name: django-backend
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - db:
+          condition: service_healthy # Wait for db to be ready
+
+  frontend:
+    image: sparc-frontend:latest
+    container_name: nuxt-frontend
+    ports:
+      - "0.0.0.0:3000:3000"
+    environment:
+      - NUXT_PUBLIC_API_BASE=${API_URL:-http://localhost:8000}
+    depends_on:
+      - backend
+
+  db:
+    image: postgres:18
+    container_name: postgres-db
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    volumes:
+      - pgdata:/var/lib/postgresql/18/data
+    healthcheck:
+          test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+          interval: 10s
+          timeout: 5s
+          retries: 5
+
+volumes:
+  pgdata:

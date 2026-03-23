@@ -1,0 +1,41 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Node
+node_modules/
+
+# Nuxt build artefacts
+.output/
+.nuxt/
+dist/
+
+# Secrets / local config
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# Docker
+Dockerfile*
+.dockerignore
+
+# Tests / tooling
+*.test.ts
+*.spec.ts
+cypress/
+playwright/
+coverage/
+
+# Docs / misc
+README.md
+*.md
+
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo

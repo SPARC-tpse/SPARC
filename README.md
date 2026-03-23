@@ -1,79 +1,135 @@
 # SPARC
 
-SPARC (Smart Planning and Resource Control) is a web application that runs on mobile devices. It allows users to enter production steps and manage resources, such as personnel and machinery
+SPARC (Smart Planning and Resource Control) is a web application that allows the users to enter production steps and manage resources, such as personnel and machinery.
 
 > [!IMPORTANT]
-> 1. This repo is under active development till 08.03.2026
-> 2. Instructions are planted to be performed on an ubuntu system
-> 3. This project is only planed for use in a private network
+> This project is only planed for use in a private network!
 
-> [!IMPORTANT]
-> Before you commit!
-> Run the tests before you commit and check that pylint does not complain about the formating of your code.
+## Developer setup
 
-## run app
+### IDE
 
-### from source
-
-`sudo docker compose up --build`
+if you use zed as IDE there is a ./.zed/settings.json conofig file
 
 dev setup for PyCharm (You will  need PyCharm Pro if you want nuxt support):
-`sudo docker compose up -d frontend`
-`sudo docker exec -it nuxt-frontend npm install`
-`sudo docker exec -it nuxt-frontend npx nuxi prepare`
-`sudo chown -R $USER:$USER ~/Documents/GitHub/SPARC/frontend/node_modules`
-`sudo chown -R $USER:$USER ~/Documents/GitHub/SPARC/frontend/.nuxt`
+```bash
+sudo docker compose up -d frontend
+```
+```bash
+sudo docker exec -it nuxt-frontend npm install
+```
+```bash
+sudo docker exec -it nuxt-frontend npx nuxi prepare
+```
+```bash
+sudo chown -R $USER:$USER ~/Documents/GitHub/SPARC/frontend/node_modules
+```
+```bash
+sudo chown -R $USER:$USER ~/Documents/GitHub/SPARC/frontend/.nuxt
+```
 
-> [!Warning]
-> if you get this error:
->
-> Error response from daemon: Conflict. The container name "/django-backend" is already in use by container
->
-> just do this:
->
-> `sudo docker rm -f <container-name>`
+### envirment
+
+create a file ./.env with following fileds (replace the default user and password!)
+```.env
+# --- DJANGO SETTINGS ---
+# Generate a new one with: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
+DJANGO_SECRET_KEY=your-super-secret-random-string-here
+DEBUG=False
+# Space-separated list of IPs/domains (e.g., 192.168.1.50 localhost)
+ALLOWED_HOSTS=192.168.178.59 localhost 127.0.0.1
+CSRF_TRUSTED_ORIGINS=http://192.168.178.59 http://localhost:3000
+
+# --- DATABASE SETTINGS (Postgres) ---
+POSTGRES_DB=django_db
+POSTGRES_USER=db_admin
+POSTGRES_PASSWORD=choose_a_strong_password
+DB_HOST=db
+DB_PORT=5432
+
+# --- FRONTEND SETTINGS (Nuxt) ---
+# This is what the USER'S browser will use to call the API
+NUXT_PUBLIC_API_BASE=http://192.168.178.59/api
+
+# --- REDIS SETTINGS (For Channels) ---
+REDIS_URL=redis://redis:6379/0
+```
+
+### backend
+
+follow the [README](./backend/README.md) in ./backend
+
+### frontend
+
+follow the [README](./frontend/README.md) in ./frontend
 
 
-### on ubuntu server
+## Run
+
+### Development
+
+```bash
+sudo docker compose up --build
+```
+
+migrations:
+
+```bash
+sudo docker compose exec backend python manage.py makemigrations
+```
+```bash
+sudo docker compose exec backend python manage.py migrate
+```
+
+create super user:
+```bash
+sudo docker compose exec backend python manage.py collectstatic --noinput
+```
+```bash
+sudo docker compose exec backend python manage.py createsuperuser
+```
+
+### Production
+
 open your firewall at port 3000 and 8000:\
-\
-In this repo (if manually else just take from repo release):
-1. `sudo docker compose build`
-2. `sudo docker save sparc-backend sparc-frontend postgres:18 -o sparc-images.tar`
+`u allow 3000`
 
 install docker on server:
 https://docs.docker.com/engine/install/ubuntu/
 
-on server: (make sure that the docker-compose.yml does not use build instead of image or uses volumes)
-1. `sudo docker load -i sparc-images.tar`
-2. `sudo docker compose down` (when updating)
-3. `sudo docker compose up -d`
-4. `sudo docker stop django-backend nuxt-frontend postgres-db`
-
-## make migrations
-`sudo docker compose exec backend python manage.py makemigrations`\
-`1`\
-`None`\
-`sudo docker compose exec backend python manage.py migrate`
 
 ## run tests
-`sudo docker compose exec backend pytest`\
-or if you want to run a specific test (e.g.: test_models):\
-`sudo docker compose exec backend pytest app/tests/test_models.py`\
-if you want to add a test:\
-1. go to backend\app\tests\
-2. if you want to 
 
-## create super user
-`sudo docker compose exec backend python manage.py collectstatic --noinput`\
-`sudo docker compose exec backend python manage.py createsuperuser`
+### backend
+
+look in the backend [README](./backend/README.md#run)
+
+### frontend
+
 
 ## reset all data
+
 `sudo docker volume rm sparc_pgdata`\
 `sudo docker compose up -d`\
 `sudo docker compose exec backend python manage.py createsuperuser`
 
-## project structure
+## Package manager
+
+- pip (v25.3)
+- npm (v10.9.3)
+
+## Dependencies
+
+- nuxt                (v4.2.1)
+- vue                 (v3.5.24)
+- vue-router          (v4.6.3)
+- uvcorn              (v0.38.0)
+- django              (v5.2.8)
+- djangorestframework (v3.16.1)
+- PostgreSQL          (v18.0)
+- nginx               (v)
+
+## Project Structure
 
 `tree -I 'node_modules*|staticfiles*|htmlcov*|media*|__pycache__*|migrations*' --dirsfirst`
 ```
@@ -175,19 +231,3 @@ SPARC
 ├── README.md                           |
 └── run_server.sh                       |
 ```
-
-## Package manager
-
-- pip (v25.3)
-- npm (v10.9.3)
-
-## Dependencies
-
-- nuxt          (v4.2.1)
-- vue           (v3.5.24)
-- vue-router  (v4.6.3)
-- uvcorn        (v0.38.0) (gunicorn instead?)
-- django        (v5.2.8)
-- djangorestframework (v3.16.1)
-- PostgreSQL    (v18.0)
-- nginx         (? we probably don't need a reverse proxy because we are not connected to the internet)

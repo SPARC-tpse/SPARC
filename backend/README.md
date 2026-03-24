@@ -1,7 +1,8 @@
-# Backend
+# SPARC Backend
 
 ## Developer setup
-prerequisites:
+
+Prerequisites:
 - uv
 - python >= 3.12
 
@@ -10,10 +11,13 @@ steps:
 2. download the dependencies in pyproject.toml: `uv sync`
 
 ## Run
-### with dev setup
+
+### without Docker
+
 `uv run daphne -b 0.0.0.0 -p 8000 config.asgi:application`
 
-### with docker
+### Docker
+
 development:\
 `sudo docker build --target development -t sparc:dev .`\
 `sudo docker run -it -p 8000:8000 -v $(pwd):/app sparc:dev`
@@ -23,23 +27,29 @@ production:\
 `sudo docker run -it -p 8000:8000 --env-file .env sparc:prod`
 
 ## Tests
-### run
-#### dev
+
+### Run
+
+#### Dev
+
 `uv run pytest`
 or if you want to run a specific test (e.g.: test_models):\
 `uv run pytest app/tests/test_models.py`
 
-#### docker
+#### Docker
+
 `sudo docker compose exec backend pytest`\
 or if you want to run a specific test (e.g.: test_models):\
 `sudo docker compose exec backend pytest app/tests/test_models.py`\
 
 ### add test
+
 1. Go into the ./app/tests/ folder.
 2. if you want to add a view test open test_views.py or if you want to test for a model open test_models.py
 
-## Project structure
-`tree -I "staticfiles|.venv|media|__pycache__"`
+## Project Structure
+
+`tree -I "staticfiles|.venv|media|__pycache__" --dirsfirst`
 ```
 .
 ├── app

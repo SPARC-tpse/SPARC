@@ -55,5 +55,9 @@ services:
           timeout: 5s
           retries: 5
 
+  redis:
+    image: redis:alpine
+    container_name: redis-cache
+
 volumes:
   pgdata:

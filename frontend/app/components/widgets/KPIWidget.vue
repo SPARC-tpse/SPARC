@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import type { KPI } from '~/composables/useDashboardData'
+
 defineProps<{ kpis: KPI[] }>()
 
 const trendConfig = {
-  up:     { icon: '▲', color: '#10b981' },
-  down:   { icon: '▼', color: '#ef4444' },
-  stable: { icon: '■', color: '#6b7a90' },
+  up: { icon: '+', color: '#10b981' },
+  down: { icon: '-', color: '#ef4444' },
+  stable: { icon: '=', color: '#6b7a90' },
 }
 </script>
 
@@ -13,10 +14,12 @@ const trendConfig = {
   <div class="kpi-grid">
     <div v-for="kpi in kpis" :key="kpi.id" class="kpi-card">
       <div class="kpi-label">{{ kpi.label }}</div>
+
       <div class="kpi-value-row">
         <span class="kpi-value">{{ kpi.value }}</span>
         <span v-if="kpi.unit" class="kpi-unit">{{ kpi.unit }}</span>
       </div>
+
       <div
         v-if="kpi.trend"
         class="kpi-trend"
@@ -39,24 +42,28 @@ const trendConfig = {
 }
 
 .kpi-card {
-  background: #0d1017;
-  border: 1px solid #1e2430;
-  border-radius: 6px;
-  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  transition: border-color 0.15s;
+  padding: 12px 14px;
+  border: 1px solid var(--dashboard-panel-border);
+  border-radius: 6px;
+  background: var(--dashboard-surface);
+  transition: border-color 0.15s ease, transform 0.15s ease;
 }
-.kpi-card:hover { border-color: rgba(245,158,11,0.3); }
+
+.kpi-card:hover {
+  border-color: var(--dashboard-accent-border);
+  transform: translateY(-1px);
+}
 
 .kpi-label {
+  color: var(--dashboard-text-soft);
   font-family: 'Rajdhani', sans-serif;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #4a5568;
 }
 
 .kpi-value-row {
@@ -64,25 +71,31 @@ const trendConfig = {
   align-items: baseline;
   gap: 4px;
 }
+
 .kpi-value {
+  color: var(--dashboard-text-strong);
   font-family: 'JetBrains Mono', monospace;
   font-size: 22px;
   font-weight: 700;
-  color: #e2e8f0;
   letter-spacing: -0.02em;
 }
+
 .kpi-unit {
+  color: var(--text-muted);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: #4a5568;
 }
 
 .kpi-trend {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
   font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
 }
-.trend-icon { font-size: 8px; }
+
+.trend-icon {
+  font-size: 10px;
+  font-weight: 700;
+}
 </style>

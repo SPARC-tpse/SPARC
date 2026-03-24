@@ -68,7 +68,7 @@ function statusColor(status: string | number) {
 }
 
 // Bar geometry
-function barGeometry(resource: Resource): { left: number; width: number; label: string; orderId: number }[] {
+function barGeometry(resource: Resource): { left: number; width: number; label: string; orderId: number; processId: number }[] {
   const windowStart = now.value - halfRangeMs.value
   const windowEnd   = now.value + halfRangeMs.value
 
@@ -92,6 +92,7 @@ function barGeometry(resource: Resource): { left: number; width: number; label: 
         width:   Math.max(((clampedEnd - clampedStart) / totalRangeMs.value) * 100, 0.15),
         label:   `${process.name} · #${order.order_number}`,
         orderId: order.id,
+        processId: process.id,
       }]
     })
 }
@@ -311,7 +312,7 @@ const visibleResources = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.row-num { font-size: 9px; color: var(--text-muted); }
+.row-type { font-size: 9px; color: var(--text-muted); }
 
 /* ── Tracks ──────────────────────────────────────────────────────────────── */
 .track-col {

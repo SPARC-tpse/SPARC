@@ -2,16 +2,16 @@ type DisruptionDraft = {
   name: string;
   start_date: string;
   end_date: string;
-  resource: string | number;
-  type: string | number;
+  resource: number;
+  type: number;
 };
 
 const emptyDraft = (): DisruptionDraft => ({
   name: '',
   start_date: '',
   end_date: '',
-  resource: '',
-  type: '',
+  resource: 0,
+  type: 0,
 });
 
 export function useDisruptionDraft() {

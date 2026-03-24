@@ -22,39 +22,42 @@ const API_BASE_URL = config.public.apiBaseUrl
 const { isRunning, isPaused, formatted, start: timerStart, pause: timerPause, resume: timerResume, stopAndMaybeApply, reset: timerReset } = useDisruptionTimer()
 const { draft: newDisruption, resetDraft } = useDisruptionDraft()
 
-const resources = ref([])
-const types = ref([])
-const formId = ref(`DIS-${Math.floor(Math.random() * 10000)}`)
+const resources = ref([]);
+const types = ref([]);
 
 const primaryLabel = computed(() => {
   if (!isRunning.value && !isPaused.value) return 'Start'
   if (isPaused.value) return 'Resume'
   return 'Pause'
-})
+});
 
+const canSubmit = computed(() => newDisruption.value.name.length > 0
+    && newDisruption.value.resource > 0
+    && newDisruption.value.type > 0
+    && newDisruption.value.start_date.length > 0
+    && newDisruption.value.end_date.length > 0);
+
+/**
+ *
+ */
 function onPrimaryClick() {
   if (!isRunning.value && !isPaused.value) { timerStart(); return }
   if (isPaused.value) { timerResume(); return }
   timerPause()
 }
 
-async function loadFormData() {
-  try {
-    const [resData, typeData] = await Promise.all([
-      $fetch(`${API_BASE_URL}/api/resource/get/`),
-      $fetch(`${API_BASE_URL}/api/disruption-type/get/`)
-    ])
-    resources.value = resData
-    types.value = typeData
-  } catch (e) { console.error(e) }
-}
-
-const canSubmit = computed(() => newDisruption.value.name.length > 0 && newDisruption.value.resource.length > 0 && newDisruption.value.type.length > 0 && newDisruption.value.start_date && newDisruption.value.end_date)
-
+/**
+ *
+ * @param field
+ */
 function setNow(field) {
   newDisruption.value[field] = new Date().toISOString().slice(0, 19)
 }
 
+/**
+ *
+ * @returns {boolean}
+ */
 function isEndBeforeStart() {
   const start = newDisruption.value.start_date
   const end = newDisruption.value.end_date
@@ -65,20 +68,18 @@ function isEndBeforeStart() {
   return e < s
 }
 
-watch(
-  () => [newDisruption.value.start_date, newDisruption.value.end_date],
-  () => {
-    if (isEndBeforeStart()) {
-      alert('The end time must not be earlier than the start time.')
-    }
-  }
-)
-
+/**
+ *
+ */
 function resetForm() {
   resetDraft()
   timerReset()
 }
 
+/**
+ *
+ * @returns {Promise<void>}
+ */
 async function submitDisruption() {
   if (isEndBeforeStart()) {
     alert('The end time must not be earlier than the start time.')
@@ -95,9 +96,35 @@ async function submitDisruption() {
   } catch (error) { console.error(error) }
 }
 
-watchEffect(() => { registerTopbarActions?.({ reset: resetForm, submit: submitDisruption, canSubmit }) })
+/**
+ *
+ * @returns {Promise<void>}
+ */
+async function loadFormData() {
+  try {
+    const [resData, typeData] = await Promise.all([
+      $fetch(`${API_BASE_URL}/api/resource/get/`),
+      $fetch(`${API_BASE_URL}/api/disruption-type/get/`)
+    ]);
+    resources.value = resData;
+    types.value = typeData;
+  } catch (e) {
+    console.error(e)
+  }
+}
 
-onMounted(loadFormData)
+onMounted(loadFormData);
+
+watch(
+  () => [newDisruption.value.start_date, newDisruption.value.end_date],
+  () => {
+    if (isEndBeforeStart()) {
+      alert('The end time must not be earlier than the start time.')
+    }
+  }
+)
+
+watchEffect(() => { registerTopbarActions?.({ reset: resetForm, submit: submitDisruption, canSubmit }) });
 </script>
 
 <template>
@@ -131,7 +158,6 @@ onMounted(loadFormData)
           </label>
 
           <label :class="theme.label">
-            Draft ID <input :value="formId" :class="[theme.input, 'opacity-50']" disabled />
           </label>
 
           <div class="flex flex-col">

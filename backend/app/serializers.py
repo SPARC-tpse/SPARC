@@ -148,9 +148,10 @@ class DisruptionSerializer(serializers.ModelSerializer):
             "type",
             "process",
             "resource",
-            "created_at",
+            "start_date",
             "disruption_time"
         ]
+
 
 class PartSerializer(serializers.ModelSerializer):
     process = ProcessSerializer(many = False)

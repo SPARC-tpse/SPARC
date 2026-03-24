@@ -143,7 +143,7 @@ export function useDisruptionTimer() {
 
     if (hasExistingStart || hasExistingEnd) {
       const ok = window.confirm(
-        `Start und/oder Endzeit sind bereits eingetragen.\nMöchtest du diese durch die Timer-Zeiten überschreiben?`
+        `Start and/or end date are already eingetragen.\nMöchtest du diese durch die Timer-Zeiten überschreiben?`
       );
       if (!ok) return;
     }

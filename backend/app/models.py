@@ -128,7 +128,7 @@ class Disruption(models.Model):
         null = True,
         blank = True,
     )
-    created_at = models.DateTimeField(auto_now_add = True)
+    start_date = models.DateTimeField()
     disruption_time = models.IntegerField(
         default = 0,
         help_text = "Disruption time in seconds"

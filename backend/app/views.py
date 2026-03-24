@@ -626,13 +626,12 @@ def get_disruption(request: Request, disruption_id: int) -> JsonResponse:
 
 @api_view(['GET'])
 def get_disruption_types(request: Request) -> JsonResponse:
-    """Liefert Typen und erstellt 'Error' & 'Maintenance', falls sie fehlen"""
+    """Get all disruption types"""
     try:
         default_types = ['Error', 'Maintenance']
 
         for t_name in default_types:
             DisruptionType.objects.get_or_create(name=t_name)
-
 
         types = DisruptionType.objects.all()
         data = [{'id': t.id, 'name': t.name} for t in types]
@@ -643,6 +642,16 @@ def get_disruption_types(request: Request) -> JsonResponse:
 
 @api_view(['POST'])
 def create_disruption(request: Request) -> JsonResponse:
+    """create a new disruption
+    expected input format:
+    {
+        name: string,
+        type: int,
+        resource: int,
+        start_date: string,
+        end_date: string,
+    }
+    """
     try:
         type_obj = DisruptionType.objects.get(id=request.data.get('type'))
         resource_obj = Resource.objects.get(id=request.data.get('resource'))
@@ -659,6 +668,7 @@ def create_disruption(request: Request) -> JsonResponse:
 
 @api_view(['PUT'])
 def update_disruption(request: Request, disruption_id: int) -> JsonResponse:
+    """update an existing disruption"""
     try:
         d = Disruption.objects.get(id=disruption_id)
         data = request.data
@@ -680,7 +690,7 @@ def update_disruption(request: Request, disruption_id: int) -> JsonResponse:
 
 @api_view(['DELETE'])
 def delete_disruption(request: Request, disruption_id: int) -> JsonResponse:
-    """Störung löschen"""
+    """Delete an existing disruption"""
     try:
         Disruption.objects.get(id=disruption_id).delete()
         return JsonResponse({'success': True, 'message': 'Disruption deleted'})

@@ -25,14 +25,41 @@ if ! docker compose version &> /dev/null; then
     exit 1
 fi
 
-# Stop and remove existing containers
-echo "Stopping existing containers..."
+# ------------------------------------
+# DATABASE BACKUP before touching anything
+# ------------------------------------
+echo "Backing up database..."
+BACKUP_DIR="./db_backups"
+mkdir -p "$BACKUP_DIR"
+BACKUP_FILE="$BACKUP_DIR/backup_$(date +%Y%m%d_%H%M%S).sql"
+
+# Try to back up — skip gracefully if DB container isn't running yet
+if sudo docker compose -f docker-compose-server.yml ps 2>/dev/null | grep -q "db\|postgres\|mysql"; then
+    sudo docker compose -f docker-compose-server.yml exec -T db \
+        sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$BACKUP_FILE" 2>/dev/null \
+        && echo "Database backed up to $BACKUP_FILE" \
+        || echo "WARNING: Backup failed or DB not ready — continuing anyway"
+else
+    echo "No running DB container found — skipping backup"
+fi
+
+# ------------------------------------
+# Stop containers WITHOUT wiping volumes
+# ------------------------------------
+echo "Stopping existing containers (preserving volumes)..."
+# NOTE: 'down' without '-v' keeps named volumes safe.
+#       We intentionally do NOT pass '-v' here.
 sudo docker compose -f docker-compose-server.yml down 2>/dev/null || true
 
-# Clean up old Docker resources
-echo "Cleaning up old Docker resources..."
+# Clean up OLD containers only (NOT volumes)
+echo "Cleaning up stopped containers..."
 sudo docker container prune -f
-sudo docker image prune -a -f
+
+# Clean up dangling images only (NOT all images, to avoid losing DB images)
+echo "Cleaning up dangling images..."
+sudo docker image prune -f
+# Removed: 'docker image prune -a' — this was removing ALL unused images
+# including ones needed to restore DB state on next run.
 
 # Load Docker images from tarball if it exists
 TARBALL=$(ls sparc-images-*.tar.gz 2>/dev/null | head -1)
@@ -64,9 +91,13 @@ sudo docker compose -f docker-compose-server.yml up -d
 echo "Waiting for services to start..."
 sleep 10
 
-# Run database migrations
+# ------------------------------------
+# Run ONLY new migrations (not --run-syncdb or fresh migrate)
+# ------------------------------------
 echo "Running database migrations..."
-sudo docker compose -f docker-compose-server.yml exec -T backend python manage.py migrate
+sudo docker compose -f docker-compose-server.yml exec -T backend python manage.py migrate --no-input
+# '--no-input' prevents Django from prompting and stalling the script.
+# 'migrate' on an existing DB only applies unapplied migrations — it won't wipe data.
 
 # Create superuser (optional)
 echo ""
@@ -93,3 +124,4 @@ echo "  View logs:    sudo docker compose -f docker-compose-server.yml logs -f"
 echo "  Stop:         sudo docker compose -f docker-compose-server.yml stop"
 echo "  Restart:      sudo docker compose -f docker-compose-server.yml restart"
 echo "  Show status:  sudo docker ps"
+echo "  DB backups:   ls $BACKUP_DIR"

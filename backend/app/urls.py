@@ -11,7 +11,7 @@ from .views.disruption_view import (
 )
 from .views.order_file_view import (
     delete_order_file,
-    list_order_files,
+    get_order_files,
     upload_order_file,
 )
 from .views.order_view import (
@@ -59,7 +59,7 @@ urlpatterns = [
     # File endpoints
     path("order/file/post/", upload_order_file, name="upload_order_file"),
     path("order/file/delete/<int:file_id>/", delete_order_file, name="delete_order_file"),
-    path("order/file/get/<int:order_id>/", list_order_files, name="list_order_files"),
+    path("order/file/get/<int:order_id>/", get_order_files, name="get_order_files"),
 
     # Process
     path("process/timing/<int:process_id>/", update_process_timing, name="update_process_timing"),

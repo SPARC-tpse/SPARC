@@ -7,24 +7,37 @@ Prerequisites:
 - python >= 3.12
 
 steps:
-1. create the virtual envirment: `uv venv`
-2. download the dependencies in pyproject.toml: `uv sync`
+1. create the virtual envirment:
+```bash
+uv venv
+```
+
+2. download the dependencies in pyproject.toml:
+```bash
+uv sync
+```
 
 ## Run
 
 ### without Docker
 
-`uv run daphne -b 0.0.0.0 -p 8000 config.asgi:application`
+```bash
+uv run daphne -b 0.0.0.0 -p 8000 config.asgi:application
+```
 
 ### Docker
 
 development:\
-`sudo docker build --target development -t sparc:dev .`\
-`sudo docker run -it -p 8000:8000 -v $(pwd):/app sparc:dev`
+```bash
+sudo docker build --target development -t sparc:dev .
+sudo docker run -it -p 8000:8000 -v $(pwd):/app sparc:dev
+```
 
 production:\
-`sudo docker build --target production -t sparc:prod .`\
-`sudo docker run -it -p 8000:8000 --env-file .env sparc:prod`
+```bash
+sudo docker build --target production -t sparc:prod .
+sudo docker run -it -p 8000:8000 --env-file .env sparc:prod
+```
 
 ## Tests
 
@@ -32,15 +45,23 @@ production:\
 
 #### Dev
 
-`uv run pytest`
+```bash
+uv run pytest
+```
 or if you want to run a specific test (e.g.: test_models):\
-`uv run pytest app/tests/test_models.py`
+```bash
+uv run pytest app/tests/test_models.py
+```
 
 #### Docker
 
-`sudo docker compose exec backend pytest`\
+```bash
+sudo docker compose exec backend pytest
+```
 or if you want to run a specific test (e.g.: test_models):\
-`sudo docker compose exec backend pytest app/tests/test_models.py`\
+```bash
+sudo docker compose exec backend pytest app/tests/test_models.py
+```
 
 ### add test
 

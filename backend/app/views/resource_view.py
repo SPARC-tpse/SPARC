@@ -89,20 +89,15 @@ def update_resource(request: Request, resource_id: int) -> JsonResponse:
     if err_response:
         return err_response
     assert data is not None
-
     try:
         r = Resource.objects.get(id=resource_id)
         r.name = data.get('name', r.name)
         r.status = int(data.get('status', r.status))
-
         if 'type' in data:
-            type_name = data['type']
-            r_type_obj, _ = ResourceType.objects.get_or_create(
-                name__iexact=type_name,
-                defaults={'name': type_name}
-            )
+            type_data = data['type']
+            type_name = type_data['name'] if isinstance(type_data, dict) else type_data
+            r_type_obj, _ = ResourceType.objects.get_or_create(name=type_name)
             r.type = r_type_obj
-
         r.save()
         return JsonResponse({'message': 'Resource updated'})
     except Resource.DoesNotExist:

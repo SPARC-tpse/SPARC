@@ -48,13 +48,13 @@ def delete_order_file(request, file_id):
         return JsonResponse({'error': str(e)}, status=500)
 
 @api_view(['GET'])
-def list_order_files(request, order_id):
+def get_order_files(request, order_id):
     """Lists all order files for a given order ID"""
     try:
-        files = OrderFile.objects.get(order__id=order_id)
+        if not Order.objects.filter(id=order_id).exists():
+            return JsonResponse({'error': 'Order not found'}, status=404)
+        files = OrderFile.objects.filter(order__id=order_id)
         serializer = OrderFileSerializer(files, many=True, context={'request': request})
         return JsonResponse({'order_id': order_id, 'files': serializer.data})
-    except Order.DoesNotExist:
-        return JsonResponse({'error': 'Order not found'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

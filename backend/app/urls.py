@@ -1,14 +1,49 @@
 from django.urls import path
-from .views import (
-    get_orders, create_order, update_order, delete_order, get_order,
-    upload_order_file, delete_order_file, list_order_files,
-    update_process_timing, get_workers, create_worker, delete_worker,
-    get_worker, update_worker, get_resources, create_resource, update_resource,
-    delete_resource, get_resource, get_disruptions, get_disruption_types,
-    create_disruption, delete_disruption, get_disruption, update_disruption,
-    delete_process, get_processes, get_order_processes,
-    add_part, get_parts, get_order_approximated_time,
-    get_disruption_chart, get_resource_approximated_time
+
+from .views.disruption_view import (
+    create_disruption,
+    delete_disruption,
+    get_disruption,
+    get_disruption_chart,
+    get_disruption_types,
+    get_disruptions,
+    update_disruption,
+)
+from .views.order_file_view import (
+    delete_order_file,
+    get_order_files,
+    upload_order_file,
+)
+from .views.order_view import (
+    create_order,
+    delete_order,
+    get_order,
+    get_order_approximated_time,
+    get_order_processes,
+    get_orders,
+    update_order,
+)
+from .views.process_view import (
+    add_part,
+    delete_process,
+    get_parts,
+    get_processes,
+    update_process_timing,
+)
+from .views.resource_view import (
+    create_resource,
+    delete_resource,
+    get_resource,
+    get_resource_approximated_time,
+    get_resources,
+    update_resource,
+)
+from .views.worker_view import (
+    create_worker,
+    delete_worker,
+    get_worker,
+    get_workers,
+    update_worker,
 )
 
 urlpatterns = [
@@ -24,7 +59,7 @@ urlpatterns = [
     # File endpoints
     path("order/file/post/", upload_order_file, name="upload_order_file"),
     path("order/file/delete/<int:file_id>/", delete_order_file, name="delete_order_file"),
-    path("order/file/get/<int:order_id>/", list_order_files, name="list_order_files"),
+    path("order/file/get/<int:order_id>/", get_order_files, name="get_order_files"),
 
     # Process
     path("process/timing/<int:process_id>/", update_process_timing, name="update_process_timing"),

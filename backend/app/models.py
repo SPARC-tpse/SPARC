@@ -1,7 +1,10 @@
-from django.db import models
 import os
 
+from django.db import models
+
+
 class ResourceType(models.Model):
+    id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length = 255)
 
     class Meta:
@@ -12,6 +15,7 @@ class ResourceType(models.Model):
 
 
 class Resource(models.Model):
+    id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length = 255)
     type = models.ForeignKey(
         ResourceType,
@@ -29,6 +33,7 @@ class Resource(models.Model):
 
 
 class DisruptionType(models.Model):
+    id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length = 255)
 
     class Meta:
@@ -39,6 +44,7 @@ class DisruptionType(models.Model):
 
 
 class Worker(models.Model):
+    id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length = 255)
 
     class Meta:
@@ -49,6 +55,7 @@ class Worker(models.Model):
 
 
 class Order(models.Model):
+    id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length = 255)
     order_number = models.CharField(max_length = 255)
     target_amount = models.IntegerField()
@@ -68,6 +75,7 @@ class Order(models.Model):
 
 
 class Process(models.Model):
+    id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length = 255)
     approximated_time = models.IntegerField(
         default = 0,
@@ -108,6 +116,7 @@ class Process(models.Model):
 
 
 class Disruption(models.Model):
+    id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length = 255)
     type = models.ForeignKey(
         DisruptionType,
@@ -141,7 +150,7 @@ class Disruption(models.Model):
         return f"Disruption (id: {self.id}, name: {self.name}, type: {self.type}, process: {self.process}, resource: {self.resource}, disruption_time: {self.disruption_time})"
 
 
-def order_file_upload_path(instance, filename):
+def order_file_upload_path(instance: "OrderFile", filename: str) -> str:
     """
     Files will be uploaded to:
     - media/{order_id}/bom/{filename} for BOM files
@@ -157,7 +166,7 @@ class OrderFile(models.Model):
         ('bom', 'Bill of Materials'),
         ('general', 'General File'),
     ]
-
+    id = models.BigAutoField(primary_key=True)
     order = models.ForeignKey(
         Order,
         on_delete = models.CASCADE,
@@ -173,12 +182,15 @@ class OrderFile(models.Model):
     def __str__(self):
         return f"OrderFile (id: {self.id}, order: {str(self.order)}, name: {self.get_filename()}, type: {self.file_type})"
 
-    def get_filename(self):
+    def get_filename(self) -> str:
         """Extract just the filename from the file path"""
-        return os.path.basename(self.file.name)
+        if self.file and self.file.name:
+                return os.path.basename(self.file.name)
+        return ""
 
 
 class Part(models.Model):
+    id = models.BigAutoField(primary_key=True)
     process = models.ForeignKey(
         Process,
         on_delete = models.CASCADE,

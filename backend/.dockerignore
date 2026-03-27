@@ -1,0 +1,39 @@
+# Version control
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+htmlcov
+.coverage
+
+# Virtual environments (use the builder stage venv, not a local one)
+.venv
+venv
+env
+
+# Django dev artefacts
+*.sqlite3
+media/
+staticfiles/
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Secrets / local config — never bake into image
+.env
+.env.*
+secrets/
+
+# Editors / OS noise
+.DS_Store
+.idea
+.vscode
+*.swp

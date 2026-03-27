@@ -1,0 +1,89 @@
+name: Django Tests
+
+on:
+  # Makes this workflow callable from other workflows (e.g. build.yaml)
+  workflow_call:
+    # Optionally surface the test result to the caller
+    outputs:
+      result:
+        description: "Test result: success or failure"
+        value: ${{ jobs.test.outputs.result }}
+
+  # Also allow running this workflow directly (e.g. on PRs)
+  pull_request:
+    paths:
+      - "backend/**"
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+
+jobs:
+  test:
+    name: Run pytest
+    runs-on: ubuntu-latest
+
+    outputs:
+      result: ${{ steps.set-result.outputs.result }}
+
+    services:
+      # Spin up a real postgres instance — matches your production setup
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test_user -d test_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # These mirror your .env but are safe to hardcode for the test runner
+      DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_db
+      DJANGO_SETTINGS_MODULE: config.settings
+      SECRET_KEY: ci-only-not-a-real-secret
+      DEBUG: "False"
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.6.6"   # pin to match your Dockerfile
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run migrations
+        run: uv run python manage.py migrate --noinput
+
+      - name: Run pytest
+        id: pytest
+        run: |
+          uv run pytest \
+            --tb=short \
+            --strict-markers \
+            -q
+
+      - name: Set result output
+        id: set-result
+        if: always()
+        run: |
+          if [ "${{ steps.pytest.outcome }}" == "success" ]; then
+            echo "result=success" >> $GITHUB_OUTPUT
+          else
+            echo "result=failure" >> $GITHUB_OUTPUT
+          fi

@@ -4,34 +4,54 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Django requires a secret key; used internally for hashing
-SECRET_KEY = 'local-network-key-no-internet-exposure'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'change-me-in-production')
 
-DEBUG = False
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# Allow access from any device on your local network
-ALLOWED_HOSTS = ['*']
+# Add your Server IP and localhost
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost 127.0.0.1').split(' ')
 
 INSTALLED_APPS = [
+    #
     'daphne',
-    'django.contrib.admin',         # for viewing the database with easy ui based access
-    'django.contrib.auth',          # needed?
-    'django.contrib.contenttypes',  # Required for Django to work
-    'django.contrib.sessions',      # needed?
-    'django.contrib.messages',      #
-    'django.contrib.staticfiles',   # For serving CSS/JS files
+    # for viewing the database with easy ui based access
+    'django.contrib.admin',
+    #
+    'django.contrib.auth',
+    # Required for Django to work
+    'django.contrib.contenttypes',
+    #
+    'django.contrib.sessions',
+    #
+    'django.contrib.messages',
+    # For serving CSS/JS files
+    'django.contrib.staticfiles',
+    #
     'rest_framework',
+    #
     'corsheaders',
-    'app.apps.SparcConfig',
+    # used for real-time communication (WebSockets)
     'channels',
+    #
+    'app.apps.SparcConfig',
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # Allow frontend to talk to backend
+    # Allow frontend to talk to backend
+    'corsheaders.middleware.CorsMiddleware',
+    #
     'django.middleware.security.SecurityMiddleware',
+    # Best practice for static files
+    #'whitenoise.middleware.WhiteNoiseMiddleware',
+    #
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',  # Basic HTTP handling
+    # Basic HTTP handling
+    'django.middleware.common.CommonMiddleware',
+    # CSRF protection
     'django.middleware.csrf.CsrfViewMiddleware',
+    #
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    #
     'django.contrib.messages.middleware.MessageMiddleware',
 ]
 
@@ -53,32 +73,32 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
+#WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
 # Simple SQLite database (no PostgreSQL needed)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'django',
-        'USER': 'django',
-        'PASSWORD': 'django',
-        'HOST': 'db',  # This is the service name from docker-compose
-        'PORT': '5432',  # Default PostgreSQL port
+        'NAME': os.environ.get('POSTGRES_DB', 'django'),
+        'USER': os.environ.get('POSTGRES_USER', 'django'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'django'),
+        'HOST': os.environ.get('DB_HOST', 'db'),
+        'PORT': '5432',
     }
 }
-
-# German language
-LANGUAGE_CODE = 'en-uk'
-TIME_ZONE = 'Europe/Berlin'
-USE_I18N = True
-USE_TZ = True
 
 # Static files
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+#STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+os.makedirs(MEDIA_ROOT, exist_ok=True)
+
+#DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # REST Framework - simple configuration
 REST_FRAMEWORK = {
@@ -87,44 +107,17 @@ REST_FRAMEWORK = {
     ],
 }
 
-# CORS Configuration
-CORS_ALLOW_ALL_ORIGINS = True  # Simple solution for local development
+# CSRF / CORS Configuration
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000').split(' ')
+CORS_ALLOWED_ORIGINS = CSRF_TRUSTED_ORIGINS
 CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
-]
-
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
-
-# CSRF Configuration for cross-origin requests
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-]
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
-os.makedirs(MEDIA_ROOT, exist_ok=True)
-
+# Django Channels Configuration
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer'
-    }
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)],
+        },
+    },
 }
